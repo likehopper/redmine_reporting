@@ -1,0 +1,215 @@
+en:
+  label_reporting: Reporting
+  project_module_reporting: Reporting
+  permission_view_reporting: View reporting
+  label_reporting_grouping: Period grouping
+  label_reporting_grouping_day: Day
+  label_reporting_grouping_week: Week
+  label_reporting_grouping_month: Month
+  label_reporting_grouping_quarter: Quarter
+  label_reporting_closed_on: "Closed on (or not closed)"
+  label_reporting_flow_on: "Created or closed on"
+  permission_manage_reporting: Configure reporting
+  field_hours_per_day: Hours per day
+  field_initial_credit_days: Initial credit (days)
+  field_anniversary_month: Anniversary month
+  field_anniversary_day: Anniversary day
+  field_active_from: Active from
+  field_active_until: Active until
+  field_credit_days: Credit (days)
+  field_starts_on: From
+  field_ends_on: Until
+  field_enabled: Enabled
+  field_month: Month
+  field_day: Day
+  field_section_ids: Displayed reports
+  field_build_tracker_ids: Build trackers
+
+  reporting:
+    no_section: "No report is enabled for this project."
+    no_module: "Reporting needs the Issue tracking or Time tracking module on this project (or a subproject), with the permission to view issues or spent time."
+    no_section_settings: "Choose the reports in the project settings"
+    settings:
+      inherited: "This project uses the configuration of \"%{project}\". Saving it creates a configuration of its own."
+      sections: Displayed reports
+      section:
+        run: Run
+        sla: Run & Support (SLA)
+        build: Build & Projects
+        workload: Workload & Team
+      section_desc:
+        run: "Issue flow, backlog and performance (Issue tracking module); activity and credit consumption (Time tracking module)."
+        sla: "Compliance with response and resolution times."
+        build: "Planning and progress of versions."
+        workload: "Workload per collaborator and team capacity."
+      planned: Coming soon
+      sla:
+        configured: "SLA plugin configured for this project"
+        no_tracker: "SLA plugin enabled, but no tracker has an SLA in this project"
+        module_disabled: "SLA plugin installed, but its module is not enabled on this project"
+        missing: "SLA plugin not installed"
+      time_unit: Time unit
+      hours_per_day_desc: "Converts logged time and estimates into days, for credits and the banner."
+      trackers: Tracker scope
+      trackers_desc: "Run charts only count Run trackers. As long as no tracker is classified as Run, all of them count. The Build classification will feed the Build & Projects charts."
+      tracker_role:
+        run: Run
+        build: Build
+        none: Unclassified
+      sla_statuses: SLA statuses
+      sla_statuses_desc: "Provided by the SLA plugin: delays only elapse in the statuses of each type. Open statuses in which no delay elapses are waiting statuses."
+      sla_type: SLA type
+      sla_active_statuses: Statuses in which the delay elapses
+      sla_waiting_statuses: Derived waiting statuses
+      credits: Time credits
+      credits_desc: "Yearly credit per tracker, granted on its anniversary date, with its refills. Logged time is converted at %{hours} h per day."
+      anniversary: Anniversary date
+      anniversary_hint: "The initial credit is granted every year on this date."
+      validity: Validity
+      validity_between: "from %{from} to %{to}"
+      validity_from: "since %{from}"
+      validity_until: "until %{to}"
+      validity_always: Permanent
+      refills: Refills
+      refill: "%{days} on %{date}"
+      refills_hint: "Credit added every year on the given date. Leave the credit empty to ignore a row."
+      new_policy: New credit
+      day_of_year: "%{month} %{day}"
+      days_hint: "At %{hours} h per day."
+    title: "%{project} · Reporting"
+    sections_label: Reporting sections
+    unknown: Unknown
+    tabs:
+      flow: Issue flow
+      activity: Activity
+      consumption: Consumption
+      backlog: Backlog
+      performance: Performance
+    periods:
+      day_format: "%m/%d/%y"
+      week_format: "%m/%d"
+      month_format: "%b %y"
+      quarter: "Q%{quarter} %{year}"
+    aging:
+      lt7: "< 7 d"
+      "7-30": "7-30 d"
+      "30-90": "30-90 d"
+      "90-180": "90-180 d"
+      gt180: "> 180 d"
+    scope:
+      flow: "Issues created and closed from %{from} to %{to}, by %{grouping}; statuses of issues open today and of issues closed over the period."
+      activity: "Time logged from %{from} to %{to}, by collaborator and activity type."
+      consumption: "Time logged, converted to days (%{hours} h/d), over the 12 months up to %{to}%{contract}, against the trackers' credits and refills."
+      consumption_contract: " and since the start of the contract (%{date})"
+      backlog: "Issues not closed at the end of each period (%{grouping}) from %{from} to %{to}, and their time left (estimated − spent at that date)."
+      performance: "Issues closed from %{from} to %{to} (velocity by %{grouping}, average lead time); age of issues open on %{to}."
+      projects: "Projects: %{projects}"
+      filters: "Filters: %{filters}"
+      no_filter: none
+      no_project: No project
+      project_with_subprojects: "%{project} and its %{count} subprojects"
+      other_projects: "%{count} others"
+    summary:
+      issues: Issues
+      time: Time
+      days: "%{value}d"
+      total: Total issues
+      total_title: "Issues open during the period: created before %{to} and not closed before %{from}"
+      open: Open
+      open_title: "Issues of the period still open today"
+      closed: Closed
+      closed_title: "Issues of the period closed today"
+      closed_ratio: Resolution rate
+      closed_ratio_title: "Closed / total issues of the period"
+      initial_credit: Initial credit
+      initial_credit_title: "Initial credits of the project's active policies"
+      spent: Time spent
+      spent_title: "Time logged from %{from} to %{to} (%{hours} h/d)"
+      remaining: Time left
+      remaining_title: "Estimated time (%{estimated} h) − spent time (%{spent} h) of the %{count} issues of the period still open, %{hours} h/d. The list shows both columns and their totals."
+      progress: Progress
+      progress_title: "Spent time / estimated time of the issues of the period still open"
+    sections:
+      flow: "1. Issue flow"
+      activity: "2. Activity over the period"
+      consumption: "3. Consumption"
+      backlog: "4. Backlog"
+      performance: "5. Performance"
+    charts:
+      flow_tracker: "1.1 Opened / Closed by Tracker"
+      flow_priority: "1.1 Opened / Closed by Priority"
+      flow_mirrored_desc: "Creations above zero; closures below, by issue dates."
+      flow_period: "1.2 Opened vs closed issues over time"
+      flow_period_desc: "Absolute number of issues opened and closed per period"
+      flow_cumulative: "1.3 Cumulative opened vs closed issues"
+      flow_cumulative_desc: "Creations and closures accumulated since the start of the filtered period. A click opens the counted issues."
+      status_open: "1.4 Open issues by status"
+      status_open_desc: "Currently open issues (all creation dates)"
+      status_closed: "1.5 Closed issues by status"
+      status_closed_desc: "Issues closed over the selected period"
+      time_user: "2.1 Time spent by collaborator"
+      time_activity: "2.2 Time spent by activity type"
+      consumption_desc: "Time logged converted to days (%{hours} h/day). Initial credits and refills follow the trackers' yearly rules."
+      consumption_12m: "3.1 Last 12 months"
+      consumption_contract: "3.2 Over the contract's duration"
+      consumption_projects: "Summary by project"
+      consumption_projects_desc: "Credits and time consumed by each subproject over the contract, its own subprojects included; the displayed project only counts its own credits and time. A click opens the subproject's reporting."
+      consumption_own: "(own credits and time)"
+      backlog_desc: "Issues in progress over the period (reconstructed from creation / closing dates)"
+      backlog_tracker: "4.1 Backlog by Tracker"
+      backlog_priority: "4.2 Backlog by Priority"
+      remaining: "4.3 Time left by Tracker (backlog issues)"
+      remaining_desc: "At the end of each period: estimated minus spent time up to that date, for issues not closed · negative value = overrun"
+      velocity: "5.1 Velocity (issues closed per period)"
+      resolution: "5.2 Average resolution time by priority (days)"
+      aging: "5.3 Age of open issues"
+      aging_desc: "Breakdown by age bucket (days since creation) — click a bar to see the list"
+    hints:
+      bar_issues: "↑ click a bar to see the issues"
+      issues: "↑ click to see the issues"
+      detail: "↑ click to see the detail"
+      bar_time_entries: "↑ click a bar to see the time entries"
+      backlog_issues: "↑ click to see the backlog issues"
+      remaining: "↑ click to see the related issues, with their estimated and spent time"
+      closed_issues: "↑ click to see the closed issues"
+    # Chart labels, tooltips and list titles rendered by the page script.
+    js:
+      no_issue: No issue
+      opened: Opened
+      closed: Closed
+      created: Created
+      closures: Closed
+      created_cumulative: "Created (cumulative)"
+      closed_cumulative: "Closed (cumulative)"
+      created_or_closed: "Created or closed — %{period}"
+      backlog_at: "Backlog open as of %{period}"
+      backlog_group: "Backlog %{group} — %{period}"
+      created_between: "Created from %{from} to %{to}"
+      closed_between: "Closed from %{from} to %{to}"
+      created_or_closed_between: "Created or closed from %{from} to %{to}"
+      value: "%{label}: %{value}"
+      days: "%{value} d"
+      days_short: "%{value}d"
+      hours_short: "%{value}h"
+      hours: Hours
+      time: Time
+      activity: Activity
+      initial_credit: Initial credit
+      refills: Refills
+      consumed: Consumed
+      remaining_credit: Remaining credit
+      progress: Progress
+      spent: Time spent
+      credit: Credit
+      balance_at_month_start: Balance at month start
+      horizon: Horizon
+      cumulative_spent: Cumulative time spent
+      remaining: Time left
+      total: Total
+      remaining_hours: "%{label}: %{value} h left (estimated − spent)"
+      closed_issues: Closed issues
+      average_days: Average days
+      average_days_tooltip: "%{days} days on average (%{count} issues)"
+      resolution: Resolution
+      open_issues: Open issues
+      aging: Age

@@ -1,0 +1,192 @@
+# Redmine Reporting
+
+Project reporting for Redmine: a dashboard of issue flow, activity, time-credit
+consumption, backlog and performance, computed from Redmine's own issues and time
+entries. Every figure opens the matching native Redmine list, with its filters,
+columns, sorting and exports.
+
+Version 1.0.0 covers the **Run** reports. Run & Support (SLA) reports are planned for
+1.1.0; Build & Projects and Workload & Team reports will follow.
+
+## Requirements
+
+- Redmine 5.0 through 7.0, with Ruby 3.1 or later supported by that Redmine release.
+  See the [compatibility matrix](test/compatibility/README.md) for the exact tested combinations.
+- No external service: Chart.js 4.4.0 (MIT) is bundled with the plugin's assets.
+- Optional, from 1.1.0: the redmine_sla plugin for SLA reports.
+
+## Installation
+
+```sh
+cd /path/to/redmine/plugins
+git clone <repository-url> redmine_reporting
+cd ..
+RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_reporting
+```
+
+Restart Redmine, then for each project:
+
+1. Enable the **Reporting** module (project settings, *Modules*).
+2. Give roles the permissions they need:
+   - *View reporting* (`view_reporting`) to open the dashboard;
+   - *Configure reporting* (`manage_reporting`) for the **Reporting** settings tab and
+     time credits.
+
+To uninstall, roll the migrations back with
+`rake redmine:plugins:migrate NAME=redmine_reporting VERSION=0` and remove the folder.
+
+## The dashboard
+
+The *Reporting* project menu opens five tabs, over a date range and a grouping (day,
+week, month or quarter), with Redmine's native filters (subprojects, tracker, status,
+priority, target version):
+
+| Tab | Charts |
+|---|---|
+| Issue flow | creations and closures per tracker and priority, per period, cumulated; open and closed issues by status |
+| Activity | time logged per collaborator and per activity |
+| Consumption | credit, refills and consumption over the last 12 months and over the contract; summary per subproject |
+| Backlog | issues not closed at each period end, per tracker and priority; time left |
+| Performance | velocity, average resolution time per priority, age of open issues |
+
+A sticky banner states what the active tab counts (dates, grouping, projects,
+filters) and sums up issues (total, open, closed, resolution rate) and time (initial
+credit, time spent, time left, progress). A click on a bar, a point, anywhere in a
+period's column or on a period label opens the native issue or time entry list;
+the banner figures open theirs too.
+
+Texts follow the user's language (French or English). Dates follow the user's time
+zone, as Redmine's date filters do.
+
+### Modules and permissions
+
+Figures follow Redmine's visibility rules for each viewer: issue and time entry
+visibility, private issues and projects. On the reporting subtree, issue charts
+(flow, backlog, performance) need *View issues*, which Redmine only grants where
+*Issue tracking* is enabled; time charts (activity, consumption) need *View spent
+time* and *Time tracking*; the time left chart and banner cards need both. A tab
+without its data is not shown.
+
+## How figures are computed
+
+- **Created / closed** use `created_on` and Redmine's `closed_on`, the last closing
+  date. Redmine keeps `closed_on` when an issue is reopened: such an issue still counts
+  as a closure of its period in the flow charts, but as open wherever the current
+  status matters (status charts, resolution time, velocity, banner).
+- **Issues of the period** (banner): created before the end of the period and not
+  closed before its start.
+- **Backlog at a date**: created by that date and not closed at that date.
+- **Time left**: estimated minus spent time, globally over the issues still open, as
+  the totals of their native list (negative on overruns). In the backlog tab, the
+  same balance at each period end, from the time logged by that date.
+- **Resolution time and velocity**: issues closed over the period and still closed.
+- **Days**: logged hours divided by the project's hours per day (8 by default).
+
+## Time credits
+
+A credit policy belongs to a project and a tracker. Its initial credit is granted
+every year on its anniversary date, within its optional validity dates; refills add
+credit every year on their own date and validity. February 29 falls on February 28
+in non-leap years, and day 31 on the last day of shorter months.
+
+The consumption tab balances credits against time logged month by month. An overrun
+carries over and is paid back by later grants, while the displayed credit never
+goes below zero. The horizon spreads the remaining credit over the months left.
+
+A project's report cumulates the credits and time of all its subprojects in scope.
+Below the global figures, **Summary by project** lists the displayed project
+(its own credits and time) and each subproject with its whole subtree, over the
+contract; a click opens that subproject's own reporting, which shows the same
+figures.
+
+## Project settings
+
+The **Reporting** tab of the project settings holds:
+
+- **Displayed reports**: the report families. Run is available; the others are listed
+  as coming soon. The SLA family will need redmine_sla, its module enabled on the
+  project and at least one tracker with an SLA.
+- **Time unit**: hours per day, to convert logged time and estimates into days.
+- **Tracker scope**: each tracker is Run, Build or unclassified. Once a tracker is Run,
+  Run reports, credits and their lists only count Run trackers (time logged without an
+  issue still counts); until then, every tracker counts. Build will feed the Build &
+  Projects reports.
+- **SLA statuses**: read-only, when redmine_sla is configured for the project. An SLA
+  status is a status in which an SLA type's delay elapses; open statuses where no type
+  of the project elapses are waiting statuses. Nothing SLA-related is entered here: it
+  comes from redmine_sla only.
+- **Time credits**: policies and their refills.
+
+A subproject without its own settings uses its nearest configured ancestor's; saving
+the tab on the subproject creates its own. Project copies keep the settings and
+credits; deleting a project removes them.
+
+## Demo data
+
+```sh
+RAILS_ENV=production bundle exec rake redmine:plugins:redmine_reporting:seed_demo
+```
+
+Creates or refreshes a *Reporting Demo* project and two subprojects over the last 12
+months: about 390 issues with realistic workflow histories (status, assignee, done
+ratio and version changes, reopenings, postponed versions), time entries, five
+collaborators, two roles with their workflows, and credits on each project. It can be
+run again without duplicating anything: a later run replays the same stories up to
+the current date.
+
+## Development
+
+### Architecture
+
+| Object | Responsibility |
+|---|---|
+| `ReportingQuery < Query` | native filters, visible project subtree, issue and time entry scopes |
+| `RedmineReporting::ReportBuilder` | assembles one report per tab over the same data |
+| `RedmineReporting::ReportData` | records loaded once per request: issue timelines, time entries, spent time, credit policies |
+| `RedmineReporting::Reports::{Summary, Flow, Activity, Consumption, Backlog, Performance}` | one tab each |
+| `RedmineReporting::PeriodGrid`, `Period` | report periods: bounds, labels |
+| `RedmineReporting::IssueTimeline` | an issue's dates in the viewer's time zone, and the period rules above |
+| `RedmineReporting::SpentTime` | hours per issue, in total or up to a date |
+| `RedmineReporting::CreditLedger` | monthly credit balance |
+| `ReportingCreditPolicy`, `ReportingCreditRefill` | credit rules (grants, refills, validity) |
+| `RedmineReporting::Drilldown` | turns a chart selection into native `IssueQuery` / `TimeEntryQuery` parameters, never ID lists |
+| `RedmineReporting::Sections`, `Capabilities` | report families and tabs; what modules and permissions allow |
+| `ReportingProjectSetting`, `RedmineReporting::ProjectSettings` | per-project settings and the settings tab |
+| `RedmineReporting::SlaSource` | read-only access to redmine_sla |
+
+Two query extensions add the predicates Redmine lacks, as editable native filters:
+*Closed on (or not closed)* for the historical backlog and *Created or closed on* for
+period clicks. The page script is `assets/javascripts/reporting.js`; like Chart.js and
+the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
+
+### Tests
+
+Unit, integration and browser (system) tests use Redmine's test runner, its core
+fixtures and the plugin's fixtures (`test/fixtures`, credit policies and refills on
+Redmine's eCookbook projects). With a test database and the plugin migrated:
+
+```sh
+export GOOGLE_CHROME_OPTS_ARGS=headless,disable-gpu,no-sandbox,disable-dev-shm-usage
+RAILS_ENV=test bundle exec rake redmine:plugins:test NAME=redmine_reporting
+```
+
+System tests need Chrome or Chromium and its driver; `redmine:plugins:test:system`
+runs them alone. They check what request tests cannot see: every chart is drawn
+without a script error inside Redmine's content area, clicks open the matching lists,
+and labels follow the user's language.
+
+### Cross-version validation
+
+```sh
+bash test/compatibility/run.sh
+```
+
+This runs migrations, uninstall/reinstall, unit, integration and Chromium tests in
+isolated Docker containers with SQLite. It uses a read-only source snapshot and
+prints the directory containing logs and source checksums. See the
+[compatibility matrix](test/compatibility/README.md) for scope and limitations.
+
+## License
+
+To be defined. Bundled third-party code: Chart.js 4.4.0, MIT License
+(`assets/javascripts/chart.umd.min.js`).

@@ -1,0 +1,6 @@
+<h2><%= link_to l(:label_reporting), settings_project_path(@project, tab: "reporting") %> » <%= l(:"reporting.settings.new_policy") %></h2>
+
+<%= labelled_form_for :reporting_credit_policy, @policy, url: project_reporting_credit_policies_path(project_id: @project), html: {method: :post} do |f| %>
+  <%= render partial: "form", locals: {f: f} %>
+  <%= submit_tag l(:button_create) %>
+<% end %>

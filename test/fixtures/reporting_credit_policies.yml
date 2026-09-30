@@ -1,0 +1,68 @@
+# Credit policies on Redmine's core eCookbook projects (trackers 1 Bug, 2 Feature request, 3 Support request).
+ecookbook_feature:
+  id: 1
+  project_id: 1
+  tracker_id: 2
+  name: Feature request
+  initial_credit_days: 20
+  anniversary_month: 1
+  anniversary_day: 1
+  active_from: 2026-01-01
+  enabled: true
+
+ecookbook_support:
+  id: 2
+  project_id: 1
+  tracker_id: 3
+  name: Support request
+  initial_credit_days: 20
+  anniversary_month: 1
+  anniversary_day: 1
+  active_from: 2026-01-01
+  enabled: true
+
+# Ends with 2026: no grant in 2027.
+ecookbook_bug:
+  id: 3
+  project_id: 1
+  tracker_id: 1
+  name: Bug
+  initial_credit_days: 10
+  anniversary_month: 1
+  anniversary_day: 1
+  active_from: 2026-01-01
+  active_until: 2026-12-31
+  enabled: true
+
+# Subproject with its own contract year, starting in April.
+subproject_feature:
+  id: 4
+  project_id: 3
+  tracker_id: 2
+  name: Subproject features
+  initial_credit_days: 12
+  anniversary_month: 4
+  anniversary_day: 1
+  active_from: 2026-04-01
+  enabled: true
+
+# February 29 anniversary, granted on February 28 in non-leap years.
+leap_day:
+  id: 5
+  project_id: 4
+  tracker_id: 1
+  name: Leap day
+  initial_credit_days: 5
+  anniversary_month: 2
+  anniversary_day: 29
+  enabled: true
+
+disabled:
+  id: 6
+  project_id: 4
+  tracker_id: 2
+  name: Disabled
+  initial_credit_days: 30
+  anniversary_month: 1
+  anniversary_day: 1
+  enabled: false

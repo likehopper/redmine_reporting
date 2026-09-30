@@ -1,0 +1,25 @@
+feature_july:
+  id: 1
+  reporting_credit_policy_id: 1
+  month: 7
+  day: 1
+  credit_days: 5
+  starts_on: 2026-01-01
+
+# Only in 2026.
+support_july:
+  id: 2
+  reporting_credit_policy_id: 2
+  month: 7
+  day: 1
+  credit_days: 5
+  starts_on: 2026-01-01
+  ends_on: 2026-12-31
+
+# Day 31 of a 30-day month falls on its last day.
+subproject_september:
+  id: 3
+  reporting_credit_policy_id: 4
+  month: 9
+  day: 31
+  credit_days: 3

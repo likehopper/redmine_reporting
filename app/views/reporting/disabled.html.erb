@@ -1,0 +1,6 @@
+<h2><%= l(:"reporting.title", project: @project.name) %></h2>
+
+<p class="nodata"><%= l(@disabled_reason == "modules" ? :"reporting.no_module" : :"reporting.no_section") %></p>
+<% if User.current.allowed_to?(:manage_reporting, @project) %>
+  <p><%= link_to l(:"reporting.no_section_settings"), settings_project_path(@project, tab: "reporting") %></p>
+<% end %>

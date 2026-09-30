@@ -1,0 +1,45 @@
+<%= error_messages_for "policy" %>
+<% trackers = @settings_page.trackers_for_policy(@policy) %>
+<div class="box tabular">
+  <p><%= f.select :tracker_id, trackers.map { |tracker| [tracker.name, tracker.id] }, required: true %></p>
+  <p><%= f.text_field :name, required: true, size: 40 %></p>
+  <p><%= f.number_field :initial_credit_days, min: 0, step: 0.25, required: true %>
+    <em class="info"><%= l(:"reporting.settings.days_hint", hours: reporting_hours(@settings_page.setting.hours_per_day)) %></em></p>
+  <p>
+    <label><%= l(:"reporting.settings.anniversary") %> <span class="required">*</span></label>
+    <%= f.select :anniversary_day, (1..31).to_a, {no_label: true}, aria: {label: l(:field_anniversary_day)} %>
+    <%= f.select :anniversary_month, (1..12).map { |month| [month_name(month), month] }, {no_label: true}, aria: {label: l(:field_anniversary_month)} %>
+    <em class="info"><%= l(:"reporting.settings.anniversary_hint") %></em>
+  </p>
+  <p><%= f.date_field :active_from %><%= calendar_for "reporting_credit_policy_active_from" %></p>
+  <p><%= f.date_field :active_until %><%= calendar_for "reporting_credit_policy_active_until" %></p>
+  <p><%= f.check_box :enabled %></p>
+</div>
+
+<fieldset class="box">
+  <legend><%= l(:"reporting.settings.refills") %></legend>
+  <p class="info"><%= l(:"reporting.settings.refills_hint") %></p>
+  <table class="list reporting-refills">
+    <thead>
+      <tr>
+        <th><%= l(:field_day) %></th><th><%= l(:field_month) %></th><th><%= l(:field_credit_days) %></th>
+        <th><%= l(:field_starts_on) %></th><th><%= l(:field_ends_on) %></th><th><%= l(:button_delete) %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% (@policy.reporting_credit_refills.to_a + Array.new(2) { ReportingCreditRefill.new }).each_with_index do |refill, index| %>
+        <%= fields_for "reporting_credit_policy[reporting_credit_refills_attributes][#{index}]", refill do |refill_fields| %>
+          <tr>
+            <td><%= refill_fields.hidden_field :id if refill.persisted? %>
+              <%= refill_fields.select :day, (1..31).to_a, {include_blank: true}, aria: {label: l(:field_day)} %></td>
+            <td><%= refill_fields.select :month, (1..12).map { |month| [month_name(month), month] }, {include_blank: true}, aria: {label: l(:field_month)} %></td>
+            <td><%= refill_fields.number_field :credit_days, min: 0, step: 0.25, size: 6, aria: {label: l(:field_credit_days)} %></td>
+            <td><%= refill_fields.date_field :starts_on, aria: {label: l(:field_starts_on)} %></td>
+            <td><%= refill_fields.date_field :ends_on, aria: {label: l(:field_ends_on)} %></td>
+            <td><%= refill_fields.check_box :_destroy, aria: {label: l(:button_delete)} if refill.persisted? %></td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</fieldset>

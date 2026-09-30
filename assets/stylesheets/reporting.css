@@ -1,0 +1,280 @@
+/* Visual language shared with ReportingTMA-Django: orange headers, numbered sub-titles, stat cards. */
+.reporting-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  border-bottom: 3px solid #F7941D;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Keep every tab reachable without a horizontal scrollbar, including on mobile. */
+#content .tabs.reporting-tabs {
+  height: auto;
+  overflow: visible;
+  margin: 0;
+  padding: 8px 14px 0;
+}
+
+#content .tabs.reporting-tabs ul {
+  position: static;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+  width: auto;
+  padding: 0;
+}
+
+#content .tabs.reporting-tabs ul li {
+  float: none;
+  margin: 0;
+}
+
+[data-reporting-panel][hidden] {
+  display: none !important;
+}
+
+/* ── Banner: scope of the active tab, then issue and time figures ── */
+.reporting-banner {
+  padding: 8px 14px 10px;
+}
+
+.reporting-scope p {
+  margin: 0 0 2px;
+  font-size: 0.85em;
+  color: #555;
+}
+
+.reporting-scope strong {
+  color: #E65100;
+}
+
+.reporting-scope .reporting-scope-filters {
+  color: #999;
+  font-size: 0.8em;
+}
+
+.reporting-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.reporting-kpi-group,
+.reporting-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.reporting-stats {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  margin-bottom: 16px;
+}
+
+.reporting-stat {
+  display: block;
+  min-width: 0;
+  background: linear-gradient(135deg, #fff8f0, #fff);
+  border: 1px solid #fde0b5;
+  border-radius: 6px;
+  padding: 6px 8px;
+  text-align: center;
+  color: inherit;
+}
+
+a.reporting-stat:hover {
+  text-decoration: none;
+  border-color: #F7941D;
+}
+
+.reporting-stat .value {
+  display: block;
+  font-size: 1.45em;
+  font-weight: 800;
+  color: #F7941D;
+  line-height: 1.2;
+}
+
+.reporting-stats .reporting-stat .value {
+  font-size: 1.7em;
+}
+
+.reporting-stat .label {
+  display: block;
+  font-size: 0.75em;
+  color: #999;
+  margin-top: 2px;
+}
+
+.reporting-stat .value.reporting-red {
+  color: #E74C3C;
+}
+
+.reporting-stat .value.reporting-green {
+  color: #27AE60;
+}
+
+.reporting-progress {
+  display: block;
+  height: 5px;
+  margin-top: 4px;
+  overflow: hidden;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+
+.reporting-progress > * {
+  display: block;
+  height: 100%;
+  background: #F7941D;
+  border-radius: 4px;
+}
+
+/* ── Sections ── */
+.reporting-section {
+  margin: 20px 0;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+.reporting-section > h3.reporting-section-hdr {
+  margin: 0;
+  padding: 10px 16px;
+  background: #F7941D;
+  color: #fff;
+  font-size: 0.88em;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  border: 0;
+}
+
+.reporting-section-body {
+  background: #fff;
+  padding: 20px;
+}
+
+.reporting-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px 18px;
+}
+
+.reporting-chart-grid article {
+  min-width: 0;
+}
+
+.reporting-chart-grid article h4 {
+  margin: 0 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #fce8d0;
+  color: #E65100;
+  font-size: 0.95em;
+  font-weight: 700;
+}
+
+.reporting-desc {
+  margin: 0 0 12px;
+  color: #999;
+  font-size: 0.85em;
+}
+
+.reporting-hint {
+  margin: 4px 0 0;
+  color: #bbb;
+  font-size: 0.75em;
+  text-align: right;
+}
+
+.reporting-chart {
+  position: relative;
+  height: 270px;
+}
+
+.reporting-chart.tall {
+  height: 320px;
+}
+
+.reporting-chart.short {
+  height: 220px;
+}
+
+.reporting-chart canvas {
+  cursor: pointer;
+}
+
+.reporting-empty {
+  padding: 30px;
+  color: #bbb;
+  font-style: italic;
+  text-align: center;
+}
+
+.reporting-consumption-projects {
+  margin-bottom: 22px;
+}
+
+.reporting-consumption-projects h4 {
+  margin: 0 0 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #fce8d0;
+  color: #E65100;
+  font-size: 0.95em;
+  font-weight: 700;
+}
+
+.reporting-consumption-projects td {
+  text-align: right;
+}
+
+.reporting-consumption-projects td.name {
+  text-align: left;
+}
+
+.reporting-progress-cell {
+  min-width: 90px;
+}
+
+td.reporting-red {
+  color: #E74C3C;
+  font-weight: 700;
+}
+
+.reporting-chart-grid .reporting-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 1100px) {
+  .reporting-kpis {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}
+
+@media (max-width: 700px) {
+  /* Eight cards would cover most of a phone screen if they stayed pinned. */
+  .reporting-sticky {
+    position: static;
+  }
+
+  .reporting-kpi-group {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .reporting-stat .value {
+    font-size: 1.15em;
+  }
+
+  .reporting-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reporting-chart-grid .reporting-wide {
+    grid-column: auto;
+  }
+}

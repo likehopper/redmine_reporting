@@ -1,0 +1,37 @@
+<% rows = @report_data.dig(:consumption, :projects) %>
+<% if rows.length > 1 %>
+  <article class="reporting-consumption-projects">
+    <h4><%= l(:"reporting.charts.consumption_projects") %></h4>
+    <p class="reporting-desc"><%= l(:"reporting.charts.consumption_projects_desc") %></p>
+    <table class="list">
+      <thead>
+        <tr>
+          <th><%= l(:label_project) %></th><th><%= l(:"reporting.summary.initial_credit") %></th><th><%= l(:"reporting.js.refills") %></th>
+          <th><%= l(:"reporting.js.consumed") %></th><th><%= l(:"reporting.js.remaining_credit") %></th><th><%= l(:"reporting.js.progress") %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.each do |row| %>
+          <tr>
+            <td class="name">
+              <% if row[:own] %>
+                <%= row[:name] %> <em class="info"><%= l(:"reporting.charts.consumption_own") %></em>
+              <% else %>
+                <%= link_to row[:name], project_reporting_path(project_id: row[:identifier], from: @date_from, to: @date_to,
+                                                                grouping: @grouping, tab: "consumption") %>
+              <% end %>
+            </td>
+            <td><%= reporting_days(row[:granted]) %></td>
+            <td><%= reporting_days(row[:refilled]) %></td>
+            <td><%= reporting_days(row[:consumed]) %></td>
+            <td class="<%= "reporting-red" if row[:remaining].zero? && row[:consumed].positive? %>"><%= reporting_days(row[:remaining]) %></td>
+            <td class="reporting-progress-cell">
+              <%= row[:progress] %>%
+              <span class="reporting-progress"><span style="width: <%= [row[:progress], 100].min %>%<%= "; background: #E74C3C" if row[:progress] > 100 %>"></span></span>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </article>
+<% end %>

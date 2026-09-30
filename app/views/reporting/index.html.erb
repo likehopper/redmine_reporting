@@ -1,0 +1,171 @@
+<%= stylesheet_link_tag "reporting", plugin: "redmine_reporting" %>
+
+<h2><%= l(:"reporting.title", project: @project.name) %></h2>
+<%= render "filters" %>
+
+<div class="reporting-sticky">
+  <div class="tabs reporting-tabs" role="tablist" aria-label="<%= l(:"reporting.sections_label") %>">
+    <ul>
+    <% @tabs.each do |tab_id| %>
+      <li><%= link_to l(:"reporting.tabs.#{tab_id}"),
+        project_reporting_path(project_id: @project, from: @date_from, to: @date_to, **@report_query_params, tab: tab_id),
+        id: "tab-#{tab_id}",
+        class: (@active_tab == tab_id ? "selected" : nil),
+        role: "tab",
+        aria: { controls: "panel-#{tab_id}", selected: (@active_tab == tab_id) } %></li>
+    <% end %>
+    </ul>
+  </div>
+  <%= render "summary" %>
+</div>
+
+<script type="application/json" id="report-data"><%= raw json_escape(@report_data.to_json) %></script>
+<script type="application/json" id="report-i18n"><%= raw json_escape(l(:"reporting.js").to_json) %></script>
+
+<main class="reporting-sections" data-report-details-url="<%= project_reporting_details_path(project_id: @project) %>">
+  <% if @tabs.include?("flow") %>
+  <section class="reporting-section" role="tabpanel" id="panel-flow" aria-labelledby="tab-flow" data-reporting-panel="flow" <%= "hidden" unless @active_tab == "flow" %>>
+    <h3 class="reporting-section-hdr">📈 <%= l(:"reporting.sections.flow") %></h3>
+    <div class="reporting-section-body">
+      <div class="reporting-chart-grid">
+        <article>
+          <h4><%= l(:"reporting.charts.flow_tracker") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.flow_mirrored_desc") %></p>
+          <div class="reporting-chart"><canvas id="flow-tracker"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.bar_issues") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.flow_priority") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.flow_mirrored_desc") %></p>
+          <div class="reporting-chart"><canvas id="flow-priority"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.bar_issues") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.flow_period") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.flow_period_desc") %></p>
+          <div class="reporting-chart"><canvas id="flow-monthly"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.flow_cumulative") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.flow_cumulative_desc") %></p>
+          <div class="reporting-chart"><canvas id="flow-cumulative"></canvas></div>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.status_open") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.status_open_desc") %></p>
+          <div class="reporting-chart short"><canvas id="status-open"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.status_closed") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.status_closed_desc") %></p>
+          <div class="reporting-chart short"><canvas id="status-closed"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <% end %>
+
+  <% if @tabs.include?("activity") %>
+  <section class="reporting-section" role="tabpanel" id="panel-activity" aria-labelledby="tab-activity" data-reporting-panel="activity" <%= "hidden" unless @active_tab == "activity" %>>
+    <h3 class="reporting-section-hdr">🗂 <%= l(:"reporting.sections.activity") %></h3>
+    <div class="reporting-section-body">
+      <div class="reporting-chart-grid">
+        <article>
+          <h4><%= l(:"reporting.charts.time_user") %></h4>
+          <div class="reporting-chart short"><canvas id="time-user"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.detail") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.time_activity") %></h4>
+          <div class="reporting-chart short"><canvas id="time-activity"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.detail") %></p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <% end %>
+
+  <% if @tabs.include?("consumption") %>
+  <section class="reporting-section" role="tabpanel" id="panel-consumption" aria-labelledby="tab-consumption" data-reporting-panel="consumption" <%= "hidden" unless @active_tab == "consumption" %>>
+    <h3 class="reporting-section-hdr">💰 <%= l(:"reporting.sections.consumption") %></h3>
+    <div class="reporting-section-body">
+      <p class="reporting-desc"><%= l(:"reporting.charts.consumption_desc", hours: reporting_hours_per_day) %></p>
+      <div class="reporting-stats" id="consumption-stats"></div>
+      <%= render "consumption_projects" %>
+      <div class="reporting-chart-grid">
+        <article class="reporting-wide">
+          <h4><%= l(:"reporting.charts.consumption_12m") %></h4>
+          <div class="reporting-chart tall"><canvas id="consumption-12m"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.bar_time_entries") %></p>
+        </article>
+        <article class="reporting-wide">
+          <h4><%= l(:"reporting.charts.consumption_contract") %></h4>
+          <div class="reporting-chart tall"><canvas id="consumption-contract"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.bar_time_entries") %></p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <% end %>
+
+  <% if @tabs.include?("backlog") %>
+  <section class="reporting-section" role="tabpanel" id="panel-backlog" aria-labelledby="tab-backlog" data-reporting-panel="backlog" <%= "hidden" unless @active_tab == "backlog" %>>
+    <h3 class="reporting-section-hdr">📦 <%= l(:"reporting.sections.backlog") %></h3>
+    <div class="reporting-section-body">
+      <p class="reporting-desc"><%= l(:"reporting.charts.backlog_desc") %></p>
+      <div class="reporting-chart-grid">
+        <article>
+          <h4><%= l(:"reporting.charts.backlog_tracker") %></h4>
+          <div class="reporting-chart"><canvas id="backlog-tracker"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.backlog_issues") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.backlog_priority") %></h4>
+          <div class="reporting-chart"><canvas id="backlog-priority"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+        </article>
+        <% if @capabilities.time? %>
+        <article class="reporting-wide">
+          <h4><%= l(:"reporting.charts.remaining") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.remaining_desc") %></p>
+          <div class="reporting-chart"><canvas id="estimated-remaining"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.remaining") %></p>
+        </article>
+        <% end %>
+      </div>
+    </div>
+  </section>
+  <% end %>
+
+  <% if @tabs.include?("performance") %>
+  <section class="reporting-section" role="tabpanel" id="panel-performance" aria-labelledby="tab-performance" data-reporting-panel="performance" <%= "hidden" unless @active_tab == "performance" %>>
+    <h3 class="reporting-section-hdr">⚡ <%= l(:"reporting.sections.performance") %></h3>
+    <div class="reporting-section-body">
+      <div class="reporting-chart-grid">
+        <article>
+          <h4><%= l(:"reporting.charts.velocity") %></h4>
+          <div class="reporting-chart"><canvas id="velocity"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.closed_issues") %></p>
+        </article>
+        <article>
+          <h4><%= l(:"reporting.charts.resolution") %></h4>
+          <div class="reporting-chart"><canvas id="resolution"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.closed_issues") %></p>
+        </article>
+        <article class="reporting-wide">
+          <h4><%= l(:"reporting.charts.aging") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.aging_desc") %></p>
+          <div class="reporting-chart short"><canvas id="aging"></canvas></div>
+          <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+        </article>
+      </div>
+    </div>
+  </section>
+  <% end %>
+</main>
+
+<%# Plugin assets are fingerprinted, so browsers cache them; Chart.js is bundled for offline or strict-CSP sites. %>
+<%= javascript_include_tag "chart.umd.min", "reporting", plugin: "redmine_reporting" %>

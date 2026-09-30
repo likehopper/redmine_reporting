@@ -1,0 +1,30 @@
+# frozen_string_literal: true
+
+require_relative "redmine_reporting/yearly_date"
+require_relative "redmine_reporting/period_grid"
+require_relative "redmine_reporting/issue_timeline"
+require_relative "redmine_reporting/spent_time"
+require_relative "redmine_reporting/credit_ledger"
+require_relative "redmine_reporting/report_data"
+require_relative "redmine_reporting/reports/base"
+require_relative "redmine_reporting/reports/summary"
+require_relative "redmine_reporting/reports/flow"
+require_relative "redmine_reporting/reports/activity"
+require_relative "redmine_reporting/reports/consumption"
+require_relative "redmine_reporting/reports/backlog"
+require_relative "redmine_reporting/reports/performance"
+require_relative "redmine_reporting/report_builder"
+require_relative "redmine_reporting/drilldown"
+require_relative "redmine_reporting/issue_query_extensions"
+require_relative "redmine_reporting/time_entry_query_extensions"
+require_relative "redmine_reporting/sections"
+require_relative "redmine_reporting/sla_source"
+require_relative "redmine_reporting/capabilities"
+require_relative "redmine_reporting/project_settings"
+require_relative "redmine_reporting/project_patch"
+require_relative "redmine_reporting/projects_helper_patch"
+require_relative "redmine_reporting/hooks"
+
+module RedmineReporting
+  VERSION = "1.0.0"
+end
