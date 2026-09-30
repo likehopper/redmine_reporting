@@ -195,6 +195,7 @@ the current date.
 | `RedmineReporting::Reports::{Summary, Flow, Activity, Consumption, Backlog, Performance}` | one tab each |
 | `RedmineReporting::PeriodGrid`, `Period` | report periods: bounds, labels |
 | `RedmineReporting::IssueHistory` | historical status transitions and matching native query predicate |
+| `RedmineReporting::DashboardPresenter` | localized dashboard scope, units and links using explicit report/query/period dependencies |
 | `RedmineReporting::QueryDescription` | localized presentation of selected filters and projects |
 | `RedmineReporting::IssueTimeline` | an issue's dates in the viewer's time zone, and the period rules above |
 | `RedmineReporting::SpentTime` | hours per issue, in total or up to a date |
@@ -210,8 +211,9 @@ backlog and creation/closure dates. The page script is `assets/javascripts/repor
 the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 
 The controllers coordinate authorization, parameter handling and responses. Report
-calculations live in the objects above. `ReportingHelper` contains seven view
-formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
+calculations live in the objects above. `DashboardPresenter` owns dashboard descriptions and detail links, using explicit
+dependencies instead of helper access to controller instance variables.
+`ReportingHelper` contains five view formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
 The browser script uses small functions for chart rendering and interactions.
 Comments and identifiers are written in English; translations and demo content
 may contain French. Small Rails callbacks and similar model validations remain

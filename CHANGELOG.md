@@ -18,6 +18,8 @@ Release hardening:
   development/test usage, reject unrelated projects and account collisions.
 - Use right-hand legends on wide multi-series charts and bottom legends on small
   screens, preserving legend toggles and chart drilldowns.
+- Move dashboard descriptions and links into DashboardPresenter with explicit
+  dependencies; keep only five stateless formatting/icon helpers.
 - Keep date boundaries in Ruby, presentation outside ReportingQuery, and inherited
   settings writes in the model; use prefix sums for historical spent time.
 - Add regression/security/browser tests and a Docker/GitHub Actions matrix for

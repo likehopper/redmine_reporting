@@ -1,12 +1,11 @@
 <% summary = @report_data[:summary] %>
-<% details = ->(**selection) { project_reporting_details_path(project_id: @project, from: @date_from, to: @date_to, **@query.as_params, **selection) } %>
-<% active_issues = { records: "issues", created_to: @date_to, closed_before: @date_from - 1 } %>
-<% description = RedmineReporting::QueryDescription.new(@query) %>
+<% active_issues = @dashboard.active_issue_parameters %>
+<% description = @dashboard.description %>
 <% filters = description.readable_filters %>
-<% from, to = format_date(@date_from), format_date(@date_to) %>
+<% from, to = @dashboard.date_from, @dashboard.date_to %>
 <div class="reporting-banner">
   <div class="reporting-scope">
-    <p><strong><%= l(:"reporting.tabs.#{@active_tab}") %></strong> — <%= reporting_tab_scope(@active_tab, @report_data) %></p>
+    <p><strong><%= l(:"reporting.tabs.#{@active_tab}") %></strong> — <%= @dashboard.scope(@active_tab) %></p>
     <p class="reporting-scope-filters">
       <%= l(:"reporting.scope.projects", projects: description.readable_projects) %>
       · <%= l(:"reporting.scope.filters", filters: filters.any? ? filters.join(" ; ") : l(:"reporting.scope.no_filter")) %>
@@ -15,13 +14,13 @@
   <div class="reporting-kpis">
     <% if @capabilities.issues? %>
     <div class="reporting-kpi-group" aria-label="<%= l(:"reporting.summary.issues") %>">
-      <%= link_to details.call(**active_issues), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.total_title", from: from, to: to) do %>
+      <%= link_to @dashboard.details_path(**active_issues), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.total_title", from: from, to: to) do %>
         <span class="value"><%= summary[:issues] %></span><span class="label"><%= l(:"reporting.summary.total") %></span>
       <% end %>
-      <%= link_to details.call(**active_issues, open: "true"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.open_title") do %>
+      <%= link_to @dashboard.details_path(**active_issues, open: "true"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.open_title") do %>
         <span class="value reporting-red"><%= summary[:openIssues] %></span><span class="label"><%= l(:"reporting.summary.open") %></span>
       <% end %>
-      <%= link_to details.call(records: "issues", created_to: @date_to, closed_from: @date_from, closed: "true"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.closed_title") do %>
+      <%= link_to @dashboard.details_path(records: "issues", created_to: @date_to, closed_from: @date_from, closed: "true"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.closed_title") do %>
         <span class="value reporting-green"><%= summary[:closedIssues] %></span><span class="label"><%= l(:"reporting.summary.closed") %></span>
       <% end %>
       <div class="reporting-stat" title="<%= l(:"reporting.summary.closed_ratio_title") %>">
@@ -35,12 +34,12 @@
       <div class="reporting-stat" title="<%= l(:"reporting.summary.initial_credit_title") %>">
         <span class="value"><%= reporting_days(@report_data.dig(:consumption, :initialCredit)) %></span><span class="label"><%= l(:"reporting.summary.initial_credit") %></span>
       </div>
-      <%= link_to details.call(records: "time_entries"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.spent_title", from: from, to: to, hours: reporting_hours_per_day) do %>
+      <%= link_to @dashboard.details_path(records: "time_entries"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.spent_title", from: from, to: to, hours: @dashboard.hours_per_day) do %>
         <span class="value"><%= reporting_days(summary[:spentDays]) %></span><span class="label"><%= l(:"reporting.summary.spent") %></span>
       <% end %>
       <% if @capabilities.issues? %>
-      <%= link_to details.call(**active_issues, open: "true", times: "true"), class: "reporting-stat", target: "_blank", rel: "noopener",
-            title: l(:"reporting.summary.remaining_title", estimated: format_hours(summary[:estimatedHours]), spent: format_hours(summary[:issueSpentHours]), count: summary[:openIssues], hours: reporting_hours_per_day) do %>
+      <%= link_to @dashboard.details_path(**active_issues, open: "true", times: "true"), class: "reporting-stat", target: "_blank", rel: "noopener",
+            title: l(:"reporting.summary.remaining_title", estimated: format_hours(summary[:estimatedHours]), spent: format_hours(summary[:issueSpentHours]), count: summary[:openIssues], hours: @dashboard.hours_per_day) do %>
         <span class="value<%= " reporting-red" if summary[:remainingDays].negative? %>"><%= reporting_days(summary[:remainingDays]) %></span><span class="label"><%= l(:"reporting.summary.remaining") %></span>
       <% end %>
       <div class="reporting-stat" title="<%= l(:"reporting.summary.progress_title") %>">

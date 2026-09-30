@@ -2,6 +2,7 @@
 
 require "delegate"
 require_relative "redmine_reporting/query_description"
+require_relative "redmine_reporting/dashboard_presenter"
 require_relative "redmine_reporting/yearly_date"
 require_relative "redmine_reporting/period_grid"
 require_relative "redmine_reporting/issue_history"

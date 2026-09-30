@@ -14,10 +14,11 @@ The tested application files are recorded in [runtime.sha256](runtime.sha256).
 Verify them from the plugin directory with
 `sha256sum -c test/compatibility/runtime.sha256`.
 Results apply to this code snapshot, not a previously packaged or deployed copy.
-The version-matrix snapshot differs only in indentation of `QueryDescription`;
-the final SLA/PostgreSQL run matches every application checksum exactly.
+The initial hardening results below describe commit `1fbc347`.
+The subsequent DashboardPresenter refactor changes presentation only; its
+verification is recorded separately below.
 
-## Verified results — 2026-09-30
+## Initial hardening results — 2026-09-30
 
 All runs below passed installation, rollback/reinstallation and the complete suite,
 including seven Chromium system tests, with no failures, errors or skips.
@@ -42,6 +43,23 @@ Additional Redmine 6.1.4 checks:
 The demo smoke check passed twice with stable counts: 3 projects, 355 issues and
 894 time entries, with all generated accounts locked. The optional volume check
 also passed (5,000 issues and 60,000 entries; see measurements below).
+
+## DashboardPresenter verification — 2026-09-30
+
+After extracting dashboard descriptions, units and links into an object with
+explicit dependencies, the complete suite was rerun on these representative
+Redmine/Rails generations, using SQLite and Chromium:
+
+| Redmine | Tests | Assertions | Result |
+|---|---:|---:|---|
+| 5.0.14 | 90 | 721 | PASS |
+| 6.1.4 | 90 | 723 | PASS |
+| 7.0.1 | 90 | 729 | PASS |
+
+No failures, errors or skips. Every application file matches `runtime.sha256`
+and the tested snapshot. Redmine 5.1/6.0 and the external database/SLA configurations
+were validated before this presentation-only refactor, as recorded above; they
+were not rerun for this change. No database, query or report-calculation code changed.
 
 ## Reproduce
 

@@ -92,7 +92,7 @@
   <section class="reporting-section" role="tabpanel" id="panel-consumption" aria-labelledby="tab-consumption" data-reporting-panel="consumption" <%= "hidden" unless @active_tab == "consumption" %>>
     <h3 class="reporting-section-hdr">💰 <%= l(:"reporting.sections.consumption") %></h3>
     <div class="reporting-section-body">
-      <p class="reporting-desc"><%= l(:"reporting.charts.consumption_desc", hours: reporting_hours_per_day) %></p>
+      <p class="reporting-desc"><%= l(:"reporting.charts.consumption_desc", hours: @dashboard.hours_per_day) %></p>
       <div class="reporting-stats" id="consumption-stats"></div>
       <%= render "consumption_projects" %>
       <div class="reporting-chart-grid">

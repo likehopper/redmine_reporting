@@ -25,6 +25,8 @@ class ReportingController < ApplicationController
     @report_query_params = @query.as_params.merge(grouping: @grouping)
     @report_data = RedmineReporting::ReportBuilder.new(query: @query, first_day: @date_from, last_day: @date_to,
                                                       grouping: @grouping, hours_per_day: @reporting_setting.hours_per_day).build
+    @dashboard = RedmineReporting::DashboardPresenter.new(view: view_context, query: @query, grid: grid,
+      report: @report_data, hours_per_day: @reporting_setting.hours_per_day)
   rescue RedmineReporting::PeriodGrid::InvalidRange
     flash.now[:error] = l(:label_reporting_invalid_range, count: RedmineReporting::PeriodGrid::MAX_PERIODS)
     render :invalid, status: :unprocessable_entity
