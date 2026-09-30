@@ -15,6 +15,7 @@ module RedmineReporting
         {
           periodLabels: grid.labels,
           periodStarts: grid.starts,
+          periodRanges: grid.ranges,
           velocity: counts_per_period(closed, &:closed_on),
           resolutionLabels: by_priority.keys.map(&:name),
           resolutionDays: by_priority.values.map { |items| round(items.sum(&:resolution_days).to_f / items.length) },

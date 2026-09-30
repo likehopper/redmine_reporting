@@ -72,7 +72,57 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     end
   end
 
+  def test_legends_use_the_right_on_wide_charts_and_bottom_on_small_screens
+    page.current_window.resize_to(1600, 1000)
+    open_dashboard
+    %w[flow-tracker flow-priority].each do |id|
+      assert_equal "right", chart_value(id, "chart.legend.position")
+      assert_operator chart_value(id, "chart.legend.left"), :>=, chart_value(id, "chart.chartArea.right")
+    end
+    # The paired opened/closed datasets still toggle together from the legend.
+    entry = chart_value("flow-tracker", "chart.legend.legendHitBoxes[0]")
+    click_chart("flow-tracker", {"x" => entry["left"] + 5, "y" => entry["top"] + 5})
+    assert_equal [false, false], chart_value("flow-tracker", "[chart.isDatasetVisible(0), chart.isDatasetVisible(1)]")
+    click_chart("flow-tracker", {"x" => entry["left"] + 5, "y" => entry["top"] + 5})
+    wait_for_charts
+    page.save_screenshot("/artifacts/legends-desktop.png") if File.directory?("/artifacts")
+    page.current_window.resize_to(390, 844)
+    Timeout.timeout(Capybara.default_max_wait_time) do
+      sleep 0.1 until chart_value("flow-tracker", "chart.options.plugins.legend.position") == "bottom"
+    end
+    page.save_screenshot("/artifacts/legends-mobile.png") if File.directory?("/artifacts")
+    assert_equal "bottom", chart_value("flow-tracker", "chart.options.plugins.legend.position")
+    content, panel = bounds("content"), bounds("panel-flow")
+    assert_operator panel["right"], :<=, content["right"] + 1
+  ensure
+    page.current_window.resize_to(1024, 900)
+  end
+
+  def test_time_only_dashboard_renders_without_issue_data
+    [@project, @child].each { |project| project.disable_module!(:issue_tracking) }
+    log_user(@administrator.login, "Reporting-test-123!")
+    visit "/projects/#{@project.identifier}/reporting"
+    assert_selector "#time-user"
+    wait_for_charts
+    assert page.evaluate_script("!!Chart.getChart(document.getElementById('consumption-contract'))")
+    data = JSON.parse(find("#report-data", visible: false).text(:all))
+    refute data.key?("issueFlow")
+    refute data["summary"].key?("estimatedHours")
+  end
+
   private
+
+  # Redmine 5.0's helper compares current_path without waiting for navigation.
+  def log_user(login, password)
+    visit "/my/page"
+    assert_current_path "/login", ignore_query: true
+    within("#login-form form") do
+      fill_in "username", with: login
+      fill_in "password", with: password
+      find('input[name="login"]').click
+    end
+    assert_current_path "/my/page", ignore_query: true
+  end
 
   def open_dashboard(login: true)
     log_user(@administrator.login, "Reporting-test-123!") if login

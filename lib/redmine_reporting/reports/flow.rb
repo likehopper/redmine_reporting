@@ -15,6 +15,7 @@ module RedmineReporting
         {
           periodLabels: grid.labels,
           periodStarts: grid.starts,
+          periodRanges: grid.ranges,
           opened: opened_counts,
           closed: closed_counts,
           # Cumulated over the period only; earlier history is never included.

@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
+require "delegate"
+require_relative "redmine_reporting/query_description"
 require_relative "redmine_reporting/yearly_date"
 require_relative "redmine_reporting/period_grid"
+require_relative "redmine_reporting/issue_history"
 require_relative "redmine_reporting/issue_timeline"
 require_relative "redmine_reporting/spent_time"
 require_relative "redmine_reporting/credit_ledger"

@@ -29,7 +29,7 @@ class ReportingDrilldownTest < ActiveSupport::TestCase
 
   def test_historical_backlog_includes_open_issues_and_later_closures
     @parent_issue.update_columns(created_on: Time.utc(2026, 1, 1), closed_on: nil)
-    @child_issue.update_columns(created_on: Time.utc(2026, 1, 1), closed_on: Time.utc(2026, 2, 1))
+    @child_issue.update_columns(created_on: Time.utc(2026, 1, 1), closed_on: Time.utc(2026, 2, 1), status_id: IssueStatus.where(is_closed: true).first!.id)
     query = native_query(backlog_at: "2026-01-15")
     assert_equal [@parent_issue.id, @child_issue.id].sort, query.issue_ids.sort
     @child_issue.update_columns(closed_on: Time.utc(2026, 1, 15, 23, 59))

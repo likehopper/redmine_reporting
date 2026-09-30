@@ -18,9 +18,8 @@ Version 1.0.0 covers the **Run** reports. Run & Support (SLA) reports are planne
 ## Installation
 
 ```sh
-cd /path/to/redmine/plugins
-git clone <repository-url> redmine_reporting
-cd ..
+# Extract the plugin into /path/to/redmine/plugins/redmine_reporting first.
+cd /path/to/redmine
 RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_reporting
 ```
 
@@ -55,6 +54,9 @@ credit, time spent, time left, progress). A click on a bar, a point, anywhere in
 period's column or on a period label opens the native issue or time entry list;
 the banner figures open theirs too.
 
+Legends for multi-series charts and status charts appear on the right when space
+allows, and below on narrow screens. Legend toggles remain interactive.
+
 Texts follow the user's language (French or English). Dates follow the user's time
 zone, as Redmine's date filters do.
 
@@ -65,7 +67,8 @@ visibility, private issues and projects. On the reporting subtree, issue charts
 (flow, backlog, performance) need *View issues*, which Redmine only grants where
 *Issue tracking* is enabled; time charts (activity, consumption) need *View spent
 time* and *Time tracking*; the time left chart and banner cards need both. A tab
-without its data is not shown.
+without its data is not shown, and its payload is omitted from the page JSON.
+Credits additionally require reporting and time visibility on each contributing project.
 
 ## How figures are computed
 
@@ -74,13 +77,19 @@ without its data is not shown.
   as a closure of its period in the flow charts, but as open wherever the current
   status matters (status charts, resolution time, velocity, banner).
 - **Issues of the period** (banner): created before the end of the period and not
-  closed before its start.
-- **Backlog at a date**: created by that date and not closed at that date.
+  closed before its start, with currently reopened issues included.
+- **Backlog at a date**: created by that date and open according to the status
+  transitions in its journals. Without usable history, the current status and last
+  closure date are the fallback; deleted history cannot be reconstructed.
 - **Time left**: estimated minus spent time, globally over the issues still open, as
   the totals of their native list (negative on overruns). In the backlog tab, the
   same balance at each period end, from the time logged by that date.
 - **Resolution time and velocity**: issues closed over the period and still closed.
-- **Days**: logged hours divided by the project's hours per day (8 by default).
+- **Days**: activity and estimated time use the reporting project's hours per day
+  (8 by default). Consumption converts each project's hours using its own inherited
+  settings before aggregating credit days.
+- **Limits**: dates must be between 1900 and 2200, with at most 600 periods per
+  report or credit ledger. Invalid ranges return a visible validation error.
 
 ## Time credits
 
@@ -91,13 +100,15 @@ in non-leap years, and day 31 on the last day of shorter months.
 
 The consumption tab balances credits against time logged month by month. An overrun
 carries over and is paid back by later grants, while the displayed credit never
-goes below zero. The horizon spreads the remaining credit over the months left.
+goes below zero. The rolling twelve-month view retains the opening balance from
+contract history. With no policy start date, the contract defaults to twelve months.
+The horizon spreads the remaining credit over the months left.
 
 A project's report cumulates the credits and time of all its subprojects in scope.
 Below the global figures, **Summary by project** lists the displayed project
 (its own credits and time) and each subproject with its whole subtree, over the
-contract; a click opens that subproject's own reporting, which shows the same
-figures.
+contract; a click opens that subproject's own reporting. Its own filters, tracker
+scope and contract dates can differ from the parent report.
 
 ## Project settings
 
@@ -124,11 +135,19 @@ credits; deleting a project removes them.
 ## Demo data
 
 ```sh
-RAILS_ENV=production bundle exec rake redmine:plugins:redmine_reporting:seed_demo
+RAILS_ENV=development REPORTING_DEMO_DATABASE=disposable \
+  bundle exec rake redmine:plugins:redmine_reporting:seed_demo
 ```
 
+Use only a disposable development/test database with Redmine default data and an
+active administrator. Production and databases containing unrelated projects are
+refused. The generator changes global dictionaries and workflows; all changes are
+transactional and mail delivery is disabled. Generated accounts have random
+passwords and are locked when generation finishes; use the existing administrator
+to view the reports.
+
 Creates or refreshes a *Reporting Demo* project and two subprojects over the last 12
-months: about 390 issues with realistic workflow histories (status, assignee, done
+months: several hundred issues with realistic workflow histories (status, assignee, done
 ratio and version changes, reopenings, postponed versions), time entries, five
 collaborators, two roles with their workflows, and credits on each project. It can be
 run again without duplicating anything: a later run replays the same stories up to
@@ -145,6 +164,8 @@ the current date.
 | `RedmineReporting::ReportData` | records loaded once per request: issue timelines, time entries, spent time, credit policies |
 | `RedmineReporting::Reports::{Summary, Flow, Activity, Consumption, Backlog, Performance}` | one tab each |
 | `RedmineReporting::PeriodGrid`, `Period` | report periods: bounds, labels |
+| `RedmineReporting::IssueHistory` | historical status transitions and matching native query predicate |
+| `RedmineReporting::QueryDescription` | localized presentation of selected filters and projects |
 | `RedmineReporting::IssueTimeline` | an issue's dates in the viewer's time zone, and the period rules above |
 | `RedmineReporting::SpentTime` | hours per issue, in total or up to a date |
 | `RedmineReporting::CreditLedger` | monthly credit balance |
@@ -154,9 +175,8 @@ the current date.
 | `ReportingProjectSetting`, `RedmineReporting::ProjectSettings` | per-project settings and the settings tab |
 | `RedmineReporting::SlaSource` | read-only access to redmine_sla |
 
-Two query extensions add the predicates Redmine lacks, as editable native filters:
-*Closed on (or not closed)* for the historical backlog and *Created or closed on* for
-period clicks. The page script is `assets/javascripts/reporting.js`; like Chart.js and
+Query extensions add editable native filters for period membership, historical
+backlog and creation/closure dates. The page script is `assets/javascripts/reporting.js`; like Chart.js and
 the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 
 ### Tests
@@ -188,5 +208,7 @@ prints the directory containing logs and source checksums. See the
 
 ## License
 
-To be defined. Bundled third-party code: Chart.js 4.4.0, MIT License
-(`assets/javascripts/chart.umd.min.js`).
+Redmine Reporting is licensed under the GNU General Public License, version 2
+or (at your option) any later version (GPL-2.0-or-later). See [LICENSE](LICENSE)
+and the [publication steps](RELEASING.md). Bundled Chart.js 4.4.0 is covered by the
+[MIT license](assets/javascripts/Chart.js.LICENSE.md).

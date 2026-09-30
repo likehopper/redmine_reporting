@@ -117,10 +117,25 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     }}
     assert_equal [30, []], [policy.reload.initial_credit_days, policy.reporting_credit_refills.to_a]
 
+    # A live policy from another project must remain inaccessible and unchanged.
+    viewer = create_viewer
+    viewer.members.first.roles.first.update!(permissions: [:view_reporting, :manage_reporting, :view_issues])
+    restricted = authenticated_session(viewer)
+    foreign = @outside.reporting_credit_policies.create!(tracker: @tracker, name: "Other budget", initial_credit_days: 42,
+                                                        anniversary_month: 1, anniversary_day: 1)
+    path = "/projects/#{@project.identifier}/reporting/credit_policies/#{foreign.id}"
+    restricted.get "#{path}/edit"
+    assert_equal 404, restricted.response.status
+    restricted.patch path, params: {reporting_credit_policy: {initial_credit_days: 999}}
+    assert_equal 404, restricted.response.status
+    restricted.delete path
+    assert_equal 404, restricted.response.status
+    assert_equal 42, foreign.reload.initial_credit_days
+    restricted.get "/projects/#{@outside.identifier}/reporting/credit_policies/#{foreign.id}/edit"
+    assert_equal 403, restricted.response.status
+
     session.delete "/projects/#{@project.identifier}/reporting/credit_policies/#{policy.id}"
     refute ReportingCreditPolicy.exists?(policy.id)
-    session.get "/projects/#{@outside.identifier}/reporting/credit_policies/#{policy.id}/edit"
-    assert_equal 404, session.response.status
   end
 
   private

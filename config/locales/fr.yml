@@ -1,4 +1,6 @@
 fr:
+  label_reporting_backlog_on: "Ouvert à la date (historique des statuts)"
+  label_reporting_invalid_range: "Période invalide : utilisez des dates entre 1900 et 2200 et au plus %{count} périodes."
   label_reporting: Reporting
   project_module_reporting: Reporting
   permission_view_reporting: Voir le reporting

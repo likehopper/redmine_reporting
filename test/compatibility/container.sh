@@ -14,14 +14,42 @@ case "$REDMINE_VERSION" in
     cd "redmine-$REDMINE_VERSION"
     ;;
 esac
-# The image is disposable; no existing database or writable host mount is used.
+# The image is disposable; only the screenshot artifact directory is writable on the host.
 rm -rf plugins/redmine_sla plugins/redmine_reporting
 cp -a /plugin plugins/redmine_reporting
-cat > config/database.yml <<'YAML'
+if [ -d /sla ]; then cp -a /sla plugins/redmine_sla; fi
+if [ "${COMPAT_DB:-sqlite}" = sqlite ]; then
+  cat > config/database.yml <<'YAML'
 test:
   adapter: sqlite3
   database: db/reporting_compat.sqlite3
 YAML
+else
+  case "$COMPAT_DB" in
+    postgres) adapter=postgresql ;;
+    mariadb|mysql) adapter=mysql2 ;;
+    *) exit 2 ;;
+  esac
+  cat > config/database.yml <<YAML
+test:
+  adapter: $adapter
+  host: db
+  database: redmine_test
+  username: redmine
+  password: reporting-test-only
+  encoding: utf8
+YAML
+  if [ "$adapter" = mysql2 ]; then
+    cat >> config/database.yml <<'YAML'
+  variables:
+    sql_mode: STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+YAML
+  fi
+fi
+# Schema loading avoids requiring host-specific pg_dump/mysqldump executables.
+cat > config/initializers/reporting_test_schema.rb <<'RUBY'
+Rails.application.config.active_record.schema_format = :ruby
+RUBY
 export RAILS_ENV=test
 export CHROMEDRIVER_PATH=/usr/bin/chromedriver
 export GOOGLE_CHROME_OPTS_ARGS=headless,disable-gpu,no-sandbox,disable-dev-shm-usage
@@ -31,4 +59,10 @@ bundle exec rails runner 'abort "Wrong Redmine version" unless Redmine::VERSION.
 # Verify uninstall/reinstall before fixtures reset Redmine's plugin migration registry.
 bundle exec rake redmine:plugins:migrate NAME=redmine_reporting VERSION=0
 bundle exec rake redmine:plugins:migrate NAME=redmine_reporting
-bundle exec rake redmine:plugins:test NAME=redmine_reporting
+if [ "${REPORTING_DEMO_SMOKE:-}" = 1 ]; then
+  REDMINE_LANG=en bundle exec rake redmine:load_default_data
+  REPORTING_DEMO_DATABASE=disposable bundle exec rails runner plugins/redmine_reporting/test/compatibility/demo_smoke.rb
+else
+  bundle exec rake redmine:plugins:test NAME=redmine_reporting
+fi
+if [ -n "${REPORTING_BENCHMARK:-}" ]; then bundle exec ruby -Itest plugins/redmine_reporting/test/compatibility/benchmark.rb; fi

@@ -25,6 +25,15 @@ class ReportingProjectSetting < (defined?(ApplicationRecord) ? ApplicationRecord
 
   after_initialize :apply_defaults, if: :new_record?
 
+  def self.update_for(project, attributes)
+    setting = find_or_initialize_by(project_id: project.id)
+    if setting.new_record?
+      setting.assign_attributes(self.for(project).attributes.slice("section_ids", "hours_per_day", "run_tracker_ids", "build_tracker_ids"))
+    end
+    setting.update(attributes)
+    setting
+  end
+
   def self.for(project)
     where(project_id: project.self_and_ancestors.select(:id)).joins(:project).
       order("#{Project.table_name}.lft DESC").first || new(project: project)

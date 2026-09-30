@@ -41,21 +41,8 @@ const detailWindow = (title, filters) => {
   Object.entries({ title, from: report.dateFrom, to: report.dateTo, ...filters }).forEach(([key, value]) => params.set(key, value));
   window.open(`${detailsUrl}?${params}`, "_blank", "noopener,noreferrer");
 };
-const monthRange = (periods, index) => {
-  const [year, month] = periods[index].split("-").map(Number);
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return { from: periods[index], to: `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}` };
-};
-const reportRange = (periods, index) => {
-  const [year, month, day] = periods[index].split("-").map(Number);
-  const start = Date.UTC(year, month - 1, day);
-  const end = report.grouping === "day" ? start : report.grouping === "week" ? start + 6 * 86400000 : report.grouping === "quarter" ? Date.UTC(year, month + 2, 0) : Date.UTC(year, month, 0);
-  const iso = value => new Date(value).toISOString().slice(0, 10);
-  return {
-    from: iso(Math.max(start, Date.parse(`${report.dateFrom}T00:00:00Z`))),
-    to: iso(Math.min(end, Date.parse(`${report.dateTo}T00:00:00Z`)))
-  };
-};
+// Calendar boundaries come from PeriodGrid, including partial periods and time zones.
+const periodRange = (ranges, index) => ranges[index];
 // A click on an element wins; otherwise the nearest point or bar of the clicked period is used,
 // so a period can be opened from anywhere in its column, not only on a 4px point.
 // Charts over periods also accept a click on the period label below the x axis.
@@ -82,18 +69,34 @@ Chart.register({
     if (request) detailWindow(request.title, request.filters);
   }
 });
+window.matchMedia("(min-width: 700px)").addEventListener("change", () => {
+  Object.values(Chart.instances).forEach(chart => {
+    positionLegend(chart.config.options, chart.canvas.id, chart.width);
+    chart.update("none");
+  });
+});
 // Issues created or closed during a period, whatever the dataset.
 const flowPeriod = (index) => {
-  const range = reportRange(flow.periodStarts, index);
+  const range = periodRange(flow.periodRanges, index);
   return { title: t("created_or_closed", { period: flow.periodLabels[index] }), filters: { records: "issues", flow_from: range.from, flow_to: range.to } };
 };
 const backlogPeriod = (labels, starts) => (index) => ({
-  title: t("backlog_at", { period: labels[index] }), filters: { records: "issues", backlog_at: reportRange(starts, index).to }
+  title: t("backlog_at", { period: labels[index] }), filters: { records: "issues", backlog_at: periodRange(starts, index).to }
 });
 // Tabs and charts hidden by project modules or permissions have no canvas and are skipped.
+const positionLegend = (options, id, width) => {
+  if (!/^(flow-tracker|flow-priority|backlog-|estimated-remaining|consumption-|status-|time-activity)/.test(id)) return;
+  const side = window.innerWidth >= 700 && width >= 480;
+  options.plugins.legend.position = side ? "right" : "bottom";
+  options.plugins.legend.maxWidth = side ? 180 : width;
+};
 const draw = (id, config) => {
   const canvas = document.getElementById(id);
-  return canvas && new Chart(canvas, { ...config, options: { responsive: true, maintainAspectRatio: false, ...config.options } });
+  if (!canvas) return;
+  const options = { responsive: true, maintainAspectRatio: false, ...config.options };
+  positionLegend(options, id, canvas.parentElement.clientWidth);
+  options.onResize = (chart, size) => positionLegend(chart.config.options, id, size.width);
+  return new Chart(canvas, { ...config, options });
 };
 const drawDonut = (id, labels, values, resolve) => {
   const canvas = document.getElementById(id);
@@ -118,6 +121,7 @@ const statCards = (id, cards) => {
 const lineSeries = (label, data, color, fill) => ({ label, data, borderColor: color, backgroundColor: fill, fill: true, tension: 0.3, pointRadius: 4 });
 
 const flow = report.issueFlow;
+if (flow) {
 // Each group has two signed datasets on the same stack; equal counts never cancel.
 const mirroredFlowChart = (id, groups, colorMap, dimension) => draw(id, {
   type: "bar",
@@ -151,7 +155,7 @@ const mirroredFlowChart = (id, groups, colorMap, dimension) => draw(id, {
     scales: axes({ x: { stacked: true }, y: { stacked: true, ticks: { precision: 0 } } }),
     ...clickable((element, chart) => {
       const dataset = chart.data.datasets[element.datasetIndex];
-      const range = reportRange(flow.periodStarts, element.index);
+      const range = periodRange(flow.periodRanges, element.index);
       const isClosed = dataset.flowEvent === "closed";
       return {
         title: `${dataset.label} — ${t(isClosed ? "closures" : "created")} — ${flow.periodLabels[element.index]}`,
@@ -170,7 +174,7 @@ draw("flow-monthly", {
     plugins: { legend: legend() },
     scales: axes({ y: { beginAtZero: true, ticks: { precision: 0 } } }),
     ...clickable((element) => {
-      const range = reportRange(flow.periodStarts, element.index);
+      const range = periodRange(flow.periodRanges, element.index);
       const isClosed = element.datasetIndex === 1;
       return {
         title: `${t(isClosed ? "closed" : "opened")} — ${flow.periodLabels[element.index]}`,
@@ -186,12 +190,12 @@ draw("flow-cumulative", {
     plugins: { legend: legend() },
     scales: axes({ y: { beginAtZero: true, ticks: { precision: 0 } } }),
     ...clickable((element) => {
-      const date = reportRange(flow.periodStarts, element.index).to;
+      const date = periodRange(flow.periodRanges, element.index).to;
       return element.datasetIndex
         ? { title: t("closed_between", { from: report.dateFrom, to: date }), filters: { records: "issues", closed_from: report.dateFrom, closed_to: date } }
         : { title: t("created_between", { from: report.dateFrom, to: date }), filters: { records: "issues", created_from: report.dateFrom, created_to: date } };
     }, (index) => {
-      const date = reportRange(flow.periodStarts, index).to;
+      const date = periodRange(flow.periodRanges, index).to;
       return { title: t("created_or_closed_between", { from: report.dateFrom, to: date }),
         filters: { records: "issues", flow_from: report.dateFrom, flow_to: date } };
     })
@@ -200,7 +204,10 @@ draw("flow-cumulative", {
 drawDonut("status-open", flow.openStatusLabels, flow.openStatusValues, (element) => ({ title: `${t("opened")} — ${flow.openStatusLabels[element.index]}`, filters: { records: "issues", status: flow.openStatusLabels[element.index], open: "true" } }));
 drawDonut("status-closed", flow.closedStatusLabels, flow.closedStatusValues, (element) => ({ title: `${t("closed")} — ${flow.closedStatusLabels[element.index]}`, filters: { records: "issues", status: flow.closedStatusLabels[element.index], closed_from: report.dateFrom, closed_to: report.dateTo } }));
 
+}
+
 const activity = report.activity;
+if (activity) {
 const users = activity.userLabels.map((label, index) => [label, activity.userHours[index]]).sort((a, b) => b[1] - a[1]);
 draw("time-user", {
   type: "bar",
@@ -214,7 +221,10 @@ draw("time-user", {
 });
 drawDonut("time-activity", activity.activityLabels, activity.activityHours, (element) => ({ title: `${t("activity")} — ${activity.activityLabels[element.index]}`, filters: { records: "time_entries", activity: activity.activityLabels[element.index] } }));
 
+}
+
 const consumption = report.consumption;
+if (consumption) {
 const contract = consumption.contract;
 const granted = sum(contract.grants);
 const refilled = sum(contract.refills);
@@ -232,7 +242,7 @@ statCards("consumption-stats", [
 const progressCard = document.querySelector("#consumption-stats .reporting-stat:last-child");
 progressCard?.insertAdjacentHTML("beforeend", `<div class="reporting-progress"><div style="width:${Math.min(progress, 100)}%;background:${progress > 90 ? "#E74C3C" : progress > 70 ? "#F7941D" : "#27AE60"}"></div></div>`);
 const consumptionChart = (id, data, monthEntries = (index) => ({
-  title: `${t("spent")} — ${data.labels[index]}`, filters: { records: "time_entries", ...monthRange(data.periodStarts, index) }
+  title: `${t("spent")} — ${data.labels[index]}`, filters: { records: "time_entries", ...periodRange(data.periodRanges, index) }
 })) => draw(id, {
   type: "bar",
   data: {
@@ -260,7 +270,10 @@ const consumptionChart = (id, data, monthEntries = (index) => ({
 consumptionChart("consumption-12m", consumption.last12);
 consumptionChart("consumption-contract", contract);
 
+}
+
 const backlog = report.backlog;
+if (backlog) {
 const stackedBacklog = (id, items, colorMap, dimension) => draw(id, {
   type: "bar",
   data: { labels: backlog.periodLabels, datasets: items.map(item => ({ label: item.label, data: item.data, backgroundColor: colorFor(item.label, colorMap), stack: "backlog" })) },
@@ -269,17 +282,17 @@ const stackedBacklog = (id, items, colorMap, dimension) => draw(id, {
     scales: axes({ x: { stacked: true }, y: { stacked: true, ticks: { precision: 0 } } }),
     ...clickable((element, chart) => {
       const label = chart.data.datasets[element.datasetIndex].label;
-      return { title: t("backlog_group", { group: label, period: backlog.periodLabels[element.index] }), filters: { records: "issues", backlog_at: reportRange(backlog.periodStarts, element.index).to, [dimension]: label } };
-    }, backlogPeriod(backlog.periodLabels, backlog.periodStarts))
+      return { title: t("backlog_group", { group: label, period: backlog.periodLabels[element.index] }), filters: { records: "issues", backlog_at: periodRange(backlog.periodRanges, element.index).to, [dimension]: label } };
+    }, backlogPeriod(backlog.periodLabels, backlog.periodRanges))
   }
 });
 stackedBacklog("backlog-tracker", backlog.trackerSeries, TRACKER_COLORS, "tracker");
 stackedBacklog("backlog-priority", backlog.prioritySeries, PRIORITY_COLORS, "priority");
 const remainingPeriod = (index, tracker) => ({
   title: `${t("remaining")}${tracker ? ` ${tracker}` : ""} — ${backlog.periodLabels[index]}`,
-  filters: { records: "issues", backlog_at: reportRange(backlog.periodStarts, index).to, times: "true", ...(tracker ? { tracker } : {}) }
+  filters: { records: "issues", backlog_at: periodRange(backlog.periodRanges, index).to, times: "true", ...(tracker ? { tracker } : {}) }
 });
-draw("estimated-remaining", {
+if (backlog.remainingSeries) draw("estimated-remaining", {
   type: "bar",
   data: {
     labels: backlog.periodLabels,
@@ -295,9 +308,12 @@ draw("estimated-remaining", {
   }
 });
 
+}
+
 const performance = report.performance;
+if (performance) {
 const velocityPeriod = (index) => {
-  const range = reportRange(performance.periodStarts, index);
+  const range = periodRange(performance.periodRanges, index);
   return { title: `${t("closed_issues")} — ${performance.periodLabels[index]}`, filters: { records: "issues", closed: "true", closed_from: range.from, closed_to: range.to } };
 };
 draw("velocity", {
@@ -328,4 +344,5 @@ draw("aging", {
     ...clickable((element) => ({ title: `${t("aging")} — ${performance.agingLabels[element.index]}`, filters: { records: "issues", open: "true", age: performance.agingKeys[element.index], as_of: report.dateTo } }))
   }
 });
+}
 })();

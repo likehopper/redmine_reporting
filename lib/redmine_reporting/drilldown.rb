@@ -101,8 +101,9 @@ module RedmineReporting
       date_filter("reporting_flow_on", date_parameter(:flow_from), date_parameter(:flow_to))
       if (snapshot_date = date_parameter(:backlog_at))
         date_filter("created_on", nil, snapshot_date)
+        @query.add_filter("reporting_backlog_on", "=", [snapshot_date.iso8601])
       end
-      if (open_date = snapshot_date || date_parameter(:closed_before))
+      if !snapshot_date && (open_date = date_parameter(:closed_before))
         date_filter("reporting_closed_on", open_date + 1, nil)
       end
       # Redmine keeps closed_on on reopened issues: charts counting closed issues check the status too.

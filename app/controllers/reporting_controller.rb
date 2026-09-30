@@ -20,14 +20,14 @@ class ReportingController < ApplicationController
 
     @tabs = @capabilities.tabs(run)
     @active_tab = @tabs.include?(params[:tab]) ? params[:tab] : @tabs.first
-    # Dates follow the viewer's time zone, as Redmine's own date filters do.
-    @date_to = parse_date(params[:to]) || User.current.today
-    @date_from = parse_date(params[:from]) || (@date_to << 11).beginning_of_month
-    @date_from, @date_to = [@date_from, @date_to].minmax
-    @grouping = RedmineReporting::PeriodGrid::GROUPINGS.include?(params[:grouping]) ? params[:grouping] : "month"
+    grid = RedmineReporting::PeriodGrid.from_params(from: params[:from], to: params[:to], grouping: params[:grouping], today: User.current.today)
+    @date_from, @date_to, @grouping = grid.first_day, grid.last_day, grid.grouping
     @report_query_params = @query.as_params.merge(grouping: @grouping)
     @report_data = RedmineReporting::ReportBuilder.new(query: @query, first_day: @date_from, last_day: @date_to,
                                                       grouping: @grouping, hours_per_day: @reporting_setting.hours_per_day).build
+  rescue RedmineReporting::PeriodGrid::InvalidRange
+    flash.now[:error] = l(:label_reporting_invalid_range, count: RedmineReporting::PeriodGrid::MAX_PERIODS)
+    render :invalid, status: :unprocessable_entity
   end
 
   def details
@@ -36,12 +36,6 @@ class ReportingController < ApplicationController
   end
 
   private
-
-  def parse_date(value)
-    Date.parse(value.to_s) if value.present?
-  rescue Date::Error
-    nil
-  end
 
   def load_reporting_setting
     @reporting_setting = ReportingProjectSetting.for(@project)

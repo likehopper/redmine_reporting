@@ -25,7 +25,8 @@ module RedmineReporting
       end
 
       def counts_per_period(items, &date)
-        grid.map { |period| items.count { |item| period.include?(date.call(item)) } }
+        counts = items.each_with_object(Hash.new(0)) { |item, totals| totals[date.call(item)] += 1 }
+        grid.map { |period| (period.first_day..period.last_day).sum { |day| counts[day] } }
       end
 
       def round(value)

@@ -1,0 +1,69 @@
+name: Compatibility
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  redmine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['5.0.14', '5.1.13', '6.0.11', '6.1.4', '7.0.1']
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash test/compatibility/run.sh '${{ matrix.version }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: redmine-${{ matrix.version }}
+          path: /tmp/redmine-reporting-compat.*
+  databases:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        database: [postgres, mariadb, mysql]
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash test/compatibility/run.sh 6.1.4
+        env:
+          COMPAT_DB: '${{ matrix.database }}'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: database-${{ matrix.database }}
+          path: /tmp/redmine-reporting-compat.*
+  sla:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: likehopper/redmine_sla
+          ref: v3.0.5
+          path: .compat-sla
+      - run: bash test/compatibility/run.sh 6.1.4
+        env:
+          COMPAT_DB: postgres
+          COMPAT_SLA_PATH: .compat-sla
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sla-postgres
+          path: /tmp/redmine-reporting-compat.*
+  demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash test/compatibility/run.sh 6.1.4
+        env:
+          REPORTING_DEMO_SMOKE: '1'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: demo
+          path: /tmp/redmine-reporting-compat.*

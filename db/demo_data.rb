@@ -106,7 +106,16 @@ module RedmineReporting
     end
 
     def load
-      Mailer.with_deliveries(false) { seed }
+      unless (Rails.env.development? || Rails.env.test?) && ENV["REPORTING_DEMO_DATABASE"] == "disposable"
+        raise "Demo data requires a disposable development/test database (REPORTING_DEMO_DATABASE=disposable)"
+      end
+      # An empty instance is the only safe target: this seed configures global dictionaries.
+      if Project.exists? && !Project.exists?(identifier: PROJECT_IDENTIFIER)
+        raise "Refusing to seed an existing business database"
+      end
+      allowed = [PROJECT_IDENTIFIER, *SUBPROJECTS.map { |definition| definition.fetch(:identifier) }]
+      raise "Refusing unrelated projects" if Project.where.not(identifier: allowed).exists?
+      Mailer.with_deliveries(false) { ActiveRecord::Base.transaction { seed } }
     end
 
     private
@@ -122,6 +131,9 @@ module RedmineReporting
       trackers = ensure_trackers(statuses.fetch("New"))
       priorities = ensure_priorities
       users = ensure_collaborators
+      # Redmine validates assignees as active. Activation is only visible inside
+      # this transaction; accounts are locked again before anything is committed.
+      users.each { |collaborator| collaborator.update!(status: User::STATUS_ACTIVE) }
       activities = ensure_activities
       roles = ensure_roles
       ensure_workflows(roles, trackers, statuses)
@@ -156,6 +168,7 @@ module RedmineReporting
         create_credit_policies(subproject, trackers)
       end
       create_credit_policies(project, trackers)
+      users.each { |collaborator| collaborator.update!(status: User::STATUS_LOCKED) }
       project
     end
 
@@ -193,16 +206,19 @@ module RedmineReporting
     def ensure_collaborators
       COLLABORATORS.map do |login, first_name, last_name|
         user = User.find_or_initialize_by(login: login)
+        if user.persisted? && (user.admin? || user.mail != "#{login}@example.invalid")
+          raise "Demo user collision: #{login}"
+        end
         user.assign_attributes(
           firstname: first_name,
           lastname: last_name,
           mail: "#{login}@example.invalid",
           language: "fr",
-          status: User::STATUS_ACTIVE,
+          status: User::STATUS_LOCKED,
           admin: false
         )
         if user.new_record?
-          password = "ReportingDemo##{login}2026"
+          password = SecureRandom.base64(36)
           user.password = password
           user.password_confirmation = password
         end

@@ -5,11 +5,12 @@ module RedmineReporting
   # timelines, time entries of the period, spent time per issue and the credit policies of
   # every project in scope (subprojects included).
   class ReportData
-    attr_reader :query, :user, :grid, :hours_per_day
+    attr_reader :query, :user, :grid, :hours_per_day, :capabilities
 
     def initialize(query:, first_day:, last_day:, grouping:, hours_per_day:)
       @query = query
       @user = query.user || User.current
+      @capabilities = Capabilities.new(@user, query.visible_projects)
       @grid = PeriodGrid.new(first_day, last_day, grouping)
       @hours_per_day = hours_per_day.to_f.positive? ? hours_per_day.to_f : ReportingProjectSetting::DEFAULT_HOURS_PER_DAY
     end
@@ -17,7 +18,18 @@ module RedmineReporting
     delegate :first_day, :last_day, to: :grid
 
     def timelines
-      @timelines ||= issues.map { |issue| IssueTimeline.new(issue, user) }
+      @timelines ||= begin
+        statuses = IssueStatus.all.to_a
+        closed_ids = statuses.select(&:is_closed).map(&:id)
+        events = JournalDetail.joins(:journal).where(property: "attr", prop_key: "status_id",
+          journals: {journalized_type: "Issue", journalized_id: issues.map(&:id)}).
+          order("journals.created_on", "journals.id", "journal_details.id").
+          pluck("journals.journalized_id", "journals.created_on", :old_value, :value).group_by(&:first)
+        issues.map do |issue|
+          history = IssueHistory.new(issue, user, Array(events[issue.id]).map { |row| row.drop(1) }, closed_ids, statuses.map(&:id))
+          IssueTimeline.new(issue, user, history: history)
+        end
+      end
     end
 
     def time_entries
@@ -30,10 +42,14 @@ module RedmineReporting
 
     def policies
       @policies ||= begin
-        scope = ReportingCreditPolicy.active.where(project_id: projects.map(&:id))
+        scope = ReportingCreditPolicy.active.where(project_id: credit_projects.map(&:id))
         scope = scope.where(tracker_id: query.selected_tracker_ids) if query.tracker_restricted?
         scope.includes(:reporting_credit_refills).to_a
       end
+    end
+
+    def credit_projects
+      @credit_projects ||= projects.select { |project| user.allowed_to?(:view_time_entries, project) && user.allowed_to?(:view_reporting, project) }
     end
 
     def projects
@@ -42,10 +58,20 @@ module RedmineReporting
 
     # Consumed days per project and month over a month grid: {[project_id, month start] => days}.
     def spent_days_by_project_and_month(months)
-      query.time_entry_scope.where(spent_on: months.first_day..months.last_day).group(:project_id, :spent_on).sum(:hours).
+      query.time_entry_scope.where(project_id: credit_projects.map(&:id), spent_on: months.first_day..months.last_day).group(:project_id, :spent_on).sum(:hours).
         each_with_object(Hash.new(0.0)) do |((project_id, spent_on), hours), totals|
-          totals[[project_id, spent_on.beginning_of_month]] += days(hours)
+          totals[[project_id, spent_on.beginning_of_month]] += hours.to_f / project_hours.fetch(project_id, hours_per_day)
         end
+    end
+
+    def project_hours
+      @project_hours ||= begin
+        settings = ReportingProjectSetting.joins(:project).order("projects.lft DESC").includes(:project).to_a
+        projects.to_h do |project|
+          inherited = settings.find { |setting| setting.project.lft <= project.lft && setting.project.rgt >= project.rgt }
+          [project.id, inherited ? inherited.hours_per_day.to_f : hours_per_day]
+        end
+      end
     end
 
     def days(hours)

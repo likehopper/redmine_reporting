@@ -8,14 +8,18 @@ module RedmineReporting
         snapshots = grid.map { |period| [period, timelines.select { |timeline| timeline.in_backlog_on?(period.last_day) }] }
         trackers = sorted(timelines.map(&:tracker))
 
-        {
+        result = {
           periodLabels: grid.labels,
           periodStarts: grid.starts,
+          periodRanges: grid.ranges,
           trackerSeries: series(trackers, snapshots, :tracker) { |items| items.length },
-          prioritySeries: series(sorted_priorities(timelines), snapshots, :priority) { |items| items.length },
-          remainingSeries: series(trackers, snapshots, :tracker) { |items, period| round(remaining_hours(items, period)) },
-          remainingTotal: snapshots.map { |period, items| round(remaining_hours(items, period)) }
+          prioritySeries: series(sorted_priorities(timelines), snapshots, :priority) { |items| items.length }
         }
+        if data.capabilities.time?
+          result[:remainingSeries] = series(trackers, snapshots, :tracker) { |items, period| round(remaining_hours(items, period)) }
+          result[:remainingTotal] = snapshots.map { |period, items| round(remaining_hours(items, period)) }
+        end
+        result
       end
 
       private

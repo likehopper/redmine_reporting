@@ -17,9 +17,20 @@ module RedmineReporting
   class PeriodGrid
     include Enumerable
 
+    MAX_PERIODS = 600
+    InvalidRange = Class.new(ArgumentError)
+
     GROUPINGS = %w[day week month quarter].freeze
 
     attr_reader :grouping, :first_day, :last_day
+
+    def self.from_params(from:, to:, grouping:, today:)
+      last = to.present? ? Date.iso8601(to.to_s) : today
+      first = from.present? ? Date.iso8601(from.to_s) : (last << 11).beginning_of_month
+      new(*[first, last].minmax, grouping)
+    rescue Date::Error
+      raise InvalidRange
+    end
 
     def self.months(first_day, last_day)
       new(first_day.beginning_of_month, last_day, "month")
@@ -29,6 +40,14 @@ module RedmineReporting
       @first_day = first_day.to_date
       @last_day = last_day.to_date
       @grouping = GROUPINGS.include?(grouping.to_s) ? grouping.to_s : "month"
+      raise InvalidRange unless @first_day.year.between?(1900, 2200) && @last_day.year.between?(1900, 2200) && @first_day <= @last_day
+      span = case @grouping
+             when "day" then (@last_day - @first_day).to_i + 1
+             when "week" then ((@last_day.beginning_of_week - @first_day.beginning_of_week).to_i / 7) + 1
+             when "quarter" then (@last_day.year * 4 + (@last_day.month - 1) / 3) - (@first_day.year * 4 + (@first_day.month - 1) / 3) + 1
+             else (@last_day.year * 12 + @last_day.month) - (@first_day.year * 12 + @first_day.month) + 1
+             end
+      raise InvalidRange if span > MAX_PERIODS
     end
 
     def each(&)
@@ -46,6 +65,10 @@ module RedmineReporting
         end
         list
       end
+    end
+
+    def ranges
+      map { |period| {from: period.first_day.iso8601, to: period.last_day.iso8601} }
     end
 
     def labels

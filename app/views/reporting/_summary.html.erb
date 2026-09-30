@@ -1,13 +1,14 @@
 <% summary = @report_data[:summary] %>
 <% details = ->(**selection) { project_reporting_details_path(project_id: @project, from: @date_from, to: @date_to, **@query.as_params, **selection) } %>
 <% active_issues = { records: "issues", created_to: @date_to, closed_before: @date_from - 1 } %>
-<% filters = @query.readable_filters %>
+<% description = RedmineReporting::QueryDescription.new(@query) %>
+<% filters = description.readable_filters %>
 <% from, to = format_date(@date_from), format_date(@date_to) %>
 <div class="reporting-banner">
   <div class="reporting-scope">
     <p><strong><%= l(:"reporting.tabs.#{@active_tab}") %></strong> — <%= reporting_tab_scope(@active_tab, @report_data) %></p>
     <p class="reporting-scope-filters">
-      <%= l(:"reporting.scope.projects", projects: @query.readable_projects) %>
+      <%= l(:"reporting.scope.projects", projects: description.readable_projects) %>
       · <%= l(:"reporting.scope.filters", filters: filters.any? ? filters.join(" ; ") : l(:"reporting.scope.no_filter")) %>
     </p>
   </div>

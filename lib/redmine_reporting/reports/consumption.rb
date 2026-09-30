@@ -9,9 +9,11 @@ module RedmineReporting
         last12 = PeriodGrid.months(last_day.beginning_of_month << 11, last_day)
         contract = PeriodGrid.months(contract_start || last12.first_day, last_day)
 
+        rows = ledger(contract).rows
+        prefix = last12.first_day < contract.first_day ? ledger(last12).rows.select { |row| row.period.first_day < contract.first_day } : []
         {
-          last12: series(ledger(last12)),
-          contract: series(ledger(contract)),
+          last12: series(prefix + rows.select { |row| row.period.first_day >= last12.first_day }),
+          contract: series(rows.select { |row| row.period.first_day >= contract.first_day }),
           initialCredit: round(policies.sum { |policy| policy.initial_credit_days.to_f }),
           projects: branches.filter_map { |project, project_ids| branch_row(project, project_ids, contract) }
         }
@@ -36,11 +38,11 @@ module RedmineReporting
         (@spent_by_project ||= {})[months.first_day] ||= data.spent_days_by_project_and_month(months)
       end
 
-      def series(ledger)
-        rows = ledger.rows
+      def series(rows)
         {
           labels: rows.map { |row| row.period.label },
           periodStarts: rows.map { |row| row.period.start },
+          periodRanges: rows.map { |row| {from: row.period.first_day.iso8601, to: row.period.last_day.iso8601} },
           spent: rows.map { |row| round(row.spent) },
           refills: rows.map { |row| round(row.refilled) },
           grants: rows.map { |row| round(row.granted) },
@@ -54,7 +56,7 @@ module RedmineReporting
       # The reporting project for its own time and credits, then each direct subproject with
       # its whole subtree, as its own reporting page shows it. Only listed with subprojects.
       def branches
-        projects = data.projects
+        projects = data.credit_projects
         root = data.query.project
         return [] unless root && projects.length > 1
 

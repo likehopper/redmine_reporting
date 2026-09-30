@@ -1,4 +1,6 @@
 en:
+  label_reporting_backlog_on: "Open at date (status history)"
+  label_reporting_invalid_range: "Invalid date range: use dates between 1900 and 2200 and at most %{count} periods."
   label_reporting: Reporting
   project_module_reporting: Reporting
   permission_view_reporting: View reporting

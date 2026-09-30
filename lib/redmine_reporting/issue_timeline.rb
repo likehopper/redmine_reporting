@@ -9,8 +9,9 @@ module RedmineReporting
 
     delegate :id, :tracker, :priority, :status, :estimated_hours, :closed?, to: :issue
 
-    def initialize(issue, user)
+    def initialize(issue, user, history: nil)
       @issue = issue
+      @history = history || IssueHistory.new(issue, user)
       @created_on = issue.created_on && user.time_to_date(issue.created_on)
       @closed_on = issue.closed_on && user.time_to_date(issue.closed_on)
     end
@@ -25,7 +26,7 @@ module RedmineReporting
 
     # Historical backlog: created by then and not closed yet at that date.
     def in_backlog_on?(date)
-      created_on.present? && created_on <= date && (closed_on.nil? || closed_on > date)
+      created_on.present? && created_on <= date && @history.open_on?(date)
     end
 
     # Open at some point of the range: created before its end, and not closed before its start.

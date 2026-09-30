@@ -1,17 +1,12 @@
 # frozen_string_literal: true
 
 class ReportingSettingsController < ApplicationController
-  COPIED = %w[section_ids hours_per_day run_tracker_ids build_tracker_ids].freeze
-
   before_action :find_project_by_project_id
   before_action :authorize
 
   def update
-    # Saving from a subproject that inherits its parent's settings creates its own configuration.
-    setting = ReportingProjectSetting.find_or_initialize_by(project_id: @project.id)
-    setting.assign_attributes(ReportingProjectSetting.for(@project).attributes.slice(*COPIED)) if setting.new_record?
-    setting.assign_attributes(setting_params)
-    if setting.save
+    setting = ReportingProjectSetting.update_for(@project, setting_params)
+    if setting.errors.empty?
       flash[:notice] = l(:notice_successful_update)
     else
       flash[:error] = setting.errors.full_messages.to_sentence
