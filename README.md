@@ -2,8 +2,8 @@
 
 Project reporting for Redmine: a dashboard of issue flow, activity, time-credit
 consumption, backlog and performance, computed from Redmine's own issues and time
-entries. Every figure opens the matching native Redmine list, with its filters,
-columns, sorting and exports.
+entries. Chart selections and linked summary figures open native Redmine lists,
+with their filters, columns, sorting and exports.
 
 Version 1.0.0 covers the **Run** reports. Run & Support (SLA) reports are planned for
 1.1.0; Build & Projects and Workload & Team reports will follow.
@@ -31,8 +31,38 @@ Restart Redmine, then for each project:
    - *Configure reporting* (`manage_reporting`) for the **Reporting** settings tab and
      time credits.
 
-To uninstall, roll the migrations back with
-`rake redmine:plugins:migrate NAME=redmine_reporting VERSION=0` and remove the folder.
+### Upgrading
+
+1. Back up the Redmine database and the currently installed plugin directory.
+2. Read the [changelog](CHANGELOG.md) and check the exact supported combination in
+   the [compatibility matrix](test/compatibility/README.md).
+3. Stop the Redmine application processes, replace `plugins/redmine_reporting`
+   with the new release, then run from the Redmine root:
+
+   ```sh
+   RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_reporting
+   ```
+
+4. Restart Redmine and check the dashboard and project settings with the intended
+   user roles. When upgrading a deployed application, use its normal plugin asset
+   deployment procedure as well.
+
+To return to the previous release after a schema change, restore the matching
+plugin directory and database backup together. The automated matrix checks a
+fresh install and uninstall/reinstall; it does not replace validation of an upgrade
+against your existing data.
+
+### Uninstalling
+
+Uninstalling deletes the plugin's stored settings, credit policies and refills.
+Back up the database first, stop Redmine, and run from the Redmine root while the
+plugin directory is still present:
+
+```sh
+RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_reporting VERSION=0
+```
+
+Remove `plugins/redmine_reporting`, then restart Redmine.
 
 ## The dashboard
 
@@ -179,6 +209,14 @@ Query extensions add editable native filters for period membership, historical
 backlog and creation/closure dates. The page script is `assets/javascripts/reporting.js`; like Chart.js and
 the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 
+The controllers coordinate authorization, parameter handling and responses. Report
+calculations live in the objects above. `ReportingHelper` contains seven view
+formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
+The browser script uses small functions for chart rendering and interactions.
+Comments and identifiers are written in English; translations and demo content
+may contain French. Small Rails callbacks and similar model validations remain
+local when extracting them would obscure their meaning.
+
 ### Tests
 
 Unit, integration and browser (system) tests use Redmine's test runner, its core
@@ -205,6 +243,34 @@ This runs migrations, uninstall/reinstall, unit, integration and Chromium tests 
 isolated Docker containers with SQLite. It uses a read-only source snapshot and
 prints the directory containing logs and source checksums. See the
 [compatibility matrix](test/compatibility/README.md) for scope and limitations.
+
+## Troubleshooting and known limits
+
+| Symptom | What to check |
+|---|---|
+| Reporting menu missing or access denied | Enable the Reporting module and grant `view_reporting` to a project member's role. |
+| Settings tab missing | Grant `manage_reporting` on that project. |
+| Activity or consumption missing | Check Time tracking and `view_time_entries`; credit data also requires `view_reporting` on each contributing project. |
+| Issue tabs missing | Check Issue tracking and `view_issues` within the selected project scope. |
+| No data after filtering | Check project/subproject selection, Run tracker classification, dates and native filters. |
+| Invalid date range | Use valid dates between 1900 and 2200 and at most 600 periods; credit contract history is bounded too. |
+| Graphs missing while the page loads | Check the browser console and that Chart.js and reporting plugin assets load successfully after deployment. |
+| Demo generation refused | Use a disposable development/test database with the explicit flag described above. |
+
+Historical backlog depends on retained status journals. Missing or deleted history
+uses the documented fallback. Remaining-time history uses the issue's current
+estimate and historical time entries; it does not reconstruct earlier estimates.
+
+Reports load visible records into memory. The compatibility document includes a
+volume measurement; installations with larger datasets should measure their own
+report ranges. Only the stock Redmine theme and the documented plugin/database
+combinations have been validated. SLA reports, Build & Projects and Workload & Team
+are not implemented in this release; Redmine 7.1 is not certified.
+
+For a reproducible issue report, include the plugin commit/version, Redmine, Ruby,
+Rails and database versions, enabled modules and relevant role permissions, chosen
+filters/date range, expected versus actual values, and any relevant browser/server
+error. Remove credentials and confidential project data from shared diagnostics.
 
 ## License
 
