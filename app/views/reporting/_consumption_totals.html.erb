@@ -1,0 +1,26 @@
+<% totals = @report_data.dig(:consumption, :period, :totals) %>
+<% from, to = @dashboard.date_from, @dashboard.date_to %>
+<div class="reporting-stats" id="consumption-stats">
+  <div class="reporting-stat" title="<%= l(:"reporting.consumption.opening_title", date: from) %>">
+    <span class="value<%= " reporting-red" if totals[:opening].negative? %>"><%= reporting_days(totals[:opening]) %></span>
+    <span class="label"><%= l(:"reporting.consumption.opening", date: from) %></span>
+  </div>
+  <div class="reporting-stat" title="<%= l(:"reporting.consumption.granted_title", from: from, to: to) %>">
+    <span class="value"><%= reporting_days(totals[:granted]) %></span><span class="label"><%= l(:"reporting.consumption.granted") %></span>
+  </div>
+  <div class="reporting-stat" title="<%= l(:"reporting.consumption.available_title") %>">
+    <span class="value"><%= reporting_days(totals[:available]) %></span><span class="label"><%= l(:"reporting.consumption.available") %></span>
+  </div>
+  <%= link_to @dashboard.details_path(records: "time_entries"), class: "reporting-stat", target: "_blank", rel: "noopener",
+        title: l(:"reporting.consumption.consumed_title", from: from, to: to, hours: @dashboard.hours_per_day) do %>
+    <span class="value reporting-red"><%= reporting_days(totals[:consumed]) %></span><span class="label"><%= l(:"reporting.consumption.consumed") %></span>
+  <% end %>
+  <div class="reporting-stat" title="<%= l(:"reporting.consumption.remaining_title") %>">
+    <span class="value reporting-green"><%= reporting_days(totals[:remaining]) %></span>
+    <span class="label"><%= l(:"reporting.consumption.remaining", date: to) %></span>
+  </div>
+  <div class="reporting-stat" title="<%= l(:"reporting.consumption.progress_title") %>">
+    <span class="value"><%= totals[:progress] %>%</span><span class="label"><%= l(:"reporting.consumption.progress") %></span>
+    <span class="reporting-progress"><span style="width: <%= [totals[:progress], 100].min %>%<%= "; background: #E74C3C" if totals[:progress] > 90 %>"></span></span>
+  </div>
+</div>

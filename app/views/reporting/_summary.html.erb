@@ -31,21 +31,32 @@
     <% end %>
     <% if @capabilities.time? %>
     <div class="reporting-kpi-group" aria-label="<%= l(:"reporting.summary.time") %>">
-      <div class="reporting-stat" title="<%= l(:"reporting.summary.initial_credit_title") %>">
-        <span class="value"><%= reporting_days(@report_data.dig(:consumption, :initialCredit)) %></span><span class="label"><%= l(:"reporting.summary.initial_credit") %></span>
+      <% if @capabilities.issues? %>
+      <%# Estimated − done = left to do + gap on closed issues, over the same issues. %>
+      <% period_times = @dashboard.details_path(**active_issues, times: "true") %>
+      <%= link_to period_times, class: "reporting-stat", target: "_blank", rel: "noopener",
+            title: l(:"reporting.summary.estimated_title", count: summary[:issues], unestimated: summary[:unestimatedIssues]) do %>
+        <span class="value"><%= reporting_days(summary[:estimatedDays]) %></span><span class="label"><%= l(:"reporting.summary.estimated") %></span>
+      <% end %>
+      <%= link_to period_times, class: "reporting-stat", target: "_blank", rel: "noopener",
+            title: l(:"reporting.summary.done_title", count: summary[:issues], hours: @dashboard.hours_per_day) do %>
+        <span class="value"><%= reporting_days(summary[:doneDays]) %></span><span class="label"><%= l(:"reporting.summary.done") %></span>
+      <% end %>
+      <%= link_to @dashboard.details_path(**active_issues, open: "true", times: "true"), class: "reporting-stat", target: "_blank", rel: "noopener",
+            title: l(:"reporting.summary.remaining_title", count: summary[:openIssues], estimated: format_hours(summary[:openEstimatedHours]),
+                     done: format_hours(summary[:openDoneHours]), closed: summary[:closedIssues], hours: @dashboard.hours_per_day) do %>
+        <span class="value<%= " reporting-red" if summary[:remainingDays].negative? %>"><%= reporting_days(summary[:remainingDays]) %></span>
+        <span class="label"><%= l(:"reporting.summary.remaining") %></span>
+        <span class="detail"><%= l(:"reporting.summary.closed_gap", gap: reporting_signed_days(summary[:closedGapDays])) %></span>
+      <% end %>
+      <div class="reporting-stat" title="<%= l(:"reporting.summary.progress_title") %>">
+        <span class="value"><%= summary[:progress] %>%</span><span class="label"><%= l(:"reporting.summary.progress") %></span>
+        <span class="reporting-progress"><span style="width: <%= [summary[:progress], 100].min %>%"></span></span>
       </div>
+      <% else %>
       <%= link_to @dashboard.details_path(records: "time_entries"), class: "reporting-stat", target: "_blank", rel: "noopener", title: l(:"reporting.summary.spent_title", from: from, to: to, hours: @dashboard.hours_per_day) do %>
         <span class="value"><%= reporting_days(summary[:spentDays]) %></span><span class="label"><%= l(:"reporting.summary.spent") %></span>
       <% end %>
-      <% if @capabilities.issues? %>
-      <%= link_to @dashboard.details_path(**active_issues, open: "true", times: "true"), class: "reporting-stat", target: "_blank", rel: "noopener",
-            title: l(:"reporting.summary.remaining_title", estimated: format_hours(summary[:estimatedHours]), spent: format_hours(summary[:issueSpentHours]), count: summary[:openIssues], hours: @dashboard.hours_per_day) do %>
-        <span class="value<%= " reporting-red" if summary[:remainingDays].negative? %>"><%= reporting_days(summary[:remainingDays]) %></span><span class="label"><%= l(:"reporting.summary.remaining") %></span>
-      <% end %>
-      <div class="reporting-stat" title="<%= l(:"reporting.summary.progress_title") %>">
-        <span class="value"><%= summary[:spentRatio] %>%</span><span class="label"><%= l(:"reporting.summary.progress") %></span>
-        <span class="reporting-progress"><span style="width: <%= [summary[:spentRatio], 100].min %>%<%= "; background: #E74C3C" if summary[:spentRatio] > 100 %>"></span></span>
-      </div>
       <% end %>
     </div>
     <% end %>

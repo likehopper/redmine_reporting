@@ -85,7 +85,7 @@ const backlogPeriod = (labels, starts) => (index) => ({
 });
 // Tabs and charts hidden by project modules or permissions have no canvas and are skipped.
 const positionLegend = (options, id, width) => {
-  if (!/^(flow-tracker|flow-priority|backlog-|estimated-remaining|consumption-|status-|time-activity)/.test(id)) return;
+  if (!/^(consumption-|status-|time-activity)/.test(id)) return;
   const side = window.innerWidth >= 700 && width >= 480;
   options.plugins.legend.position = side ? "right" : "bottom";
   options.plugins.legend.maxWidth = side ? 180 : width;
@@ -110,13 +110,6 @@ const drawDonut = (id, labels, values, resolve) => {
     data: { labels, datasets: [{ data: values, backgroundColor: labels.map((_, index) => PALETTE[index % PALETTE.length]), borderWidth: 2 }] },
     options: { plugins: { legend: legend("right") }, ...clickable(resolve) }
   });
-};
-const statCards = (id, cards) => {
-  const container = document.getElementById(id);
-  if (!container) return;
-  container.innerHTML = cards.map(([value, label, color]) =>
-    `<div class="reporting-stat"><div class="value"${color ? ` style="color:${color}"` : ""}>${value}</div><div class="label">${label}</div></div>`
-  ).join("");
 };
 const lineSeries = (label, data, color, fill) => ({ label, data, borderColor: color, backgroundColor: fill, fill: true, tension: 0.3, pointRadius: 4 });
 
@@ -208,39 +201,62 @@ drawDonut("status-closed", flow.closedStatusLabels, flow.closedStatusValues, (el
 
 const activity = report.activity;
 if (activity) {
-const users = activity.userLabels.map((label, index) => [label, activity.userHours[index]]).sort((a, b) => b[1] - a[1]);
+const users = activity.userLabels.map((label, index) => ({ label, index, hours: activity.userHours[index] }))
+  .sort((first, second) => second.hours - first.hours);
 draw("time-user", {
   type: "bar",
-  data: { labels: users.map(([label]) => label), datasets: [{ label: t("hours"), data: users.map(([, hours]) => hours), backgroundColor: users.map((_, index) => PALETTE[index % PALETTE.length]) }] },
+  data: {
+    labels: users.map(user => user.label),
+    datasets: activity.activityLabels.map((label, activityIndex) => ({
+      label, activityId: activity.activityIds[activityIndex],
+      data: users.map(user => activity.userActivityHours[activityIndex][user.index]),
+      backgroundColor: PALETTE[activityIndex % PALETTE.length]
+    }))
+  },
   options: {
     indexAxis: "y",
-    plugins: { legend: { display: false } },
-    scales: { x: { grid: { color: "rgba(0,0,0,.05)" } }, y: { grid: { display: false } } },
-    ...clickable((element) => ({ title: `${t("time")} — ${users[element.index][0]}`, filters: { records: "time_entries", user: users[element.index][0] } }))
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: context => t("value", { label: context.dataset.label, value: t("hours_short", { value: formatHours(context.parsed.x) }) }) } }
+    },
+    scales: { x: { stacked: true, grid: { color: "rgba(0,0,0,.05)" } }, y: { stacked: true, grid: { display: false } } },
+    ...clickable((element, chart) => {
+      const user = users[element.index];
+      const dataset = chart.data.datasets[element.datasetIndex];
+      return { title: `${t("time")} — ${user.label} — ${dataset.label}`,
+        filters: { records: "time_entries", user_id: activity.userIds[user.index], activity_id: dataset.activityId } };
+    })
   }
 });
-drawDonut("time-activity", activity.activityLabels, activity.activityHours, (element) => ({ title: `${t("activity")} — ${activity.activityLabels[element.index]}`, filters: { records: "time_entries", activity: activity.activityLabels[element.index] } }));
+drawDonut("time-activity", activity.activityLabels, activity.activityHours, (element) => ({ title: `${t("activity")} — ${activity.activityLabels[element.index]}`, filters: { records: "time_entries", activity_id: activity.activityIds[element.index] } }));
 
 }
 
 const consumption = report.consumption;
 if (consumption) {
-const contract = consumption.contract;
-const granted = sum(contract.grants);
-const refilled = sum(contract.refills);
-const consumed = round2(sum(contract.spent));
-const available = granted + refilled;
-const progress = available ? Math.round(consumed / available * 100) : 0;
 const shortDays = value => t("days_short", { value: formatDays(value) });
-statCards("consumption-stats", [
-  [shortDays(round2(granted)), t("initial_credit")],
-  [shortDays(round2(refilled)), t("refills")],
-  [shortDays(consumed), t("consumed"), "#E74C3C"],
-  [shortDays(contract.credit.length ? contract.credit[contract.credit.length - 1] : 0), t("remaining_credit"), "#27AE60"],
-  [`${progress}%`, t("progress")]
-]);
-const progressCard = document.querySelector("#consumption-stats .reporting-stat:last-child");
-progressCard?.insertAdjacentHTML("beforeend", `<div class="reporting-progress"><div style="width:${Math.min(progress, 100)}%;background:${progress > 90 ? "#E74C3C" : progress > 70 ? "#F7941D" : "#27AE60"}"></div></div>`);
+// Canvas legend entries expose their interpretation without replacing the toggle behavior.
+const legendHelp = {
+  onHover: (event, item, chartLegend) => {
+    const chart = chartLegend.chart;
+    const container = chart.canvas.parentElement;
+    let tooltip = container.querySelector(".reporting-legend-tooltip");
+    if (!tooltip) {
+      tooltip = document.createElement("div");
+      tooltip.className = "reporting-legend-tooltip";
+      tooltip.setAttribute("role", "tooltip");
+      container.appendChild(tooltip);
+    }
+    tooltip.textContent = t(chart.data.datasets[item.datasetIndex].help);
+    tooltip.style.left = `${Math.max(0, Math.min(event.x + 12, container.clientWidth - 260))}px`;
+    tooltip.hidden = false;
+    tooltip.style.top = `${Math.max(0, Math.min(event.y + 16, container.clientHeight - tooltip.offsetHeight - 4))}px`;
+  },
+  onLeave: (_event, _item, chartLegend) => {
+    const tooltip = chartLegend.chart.canvas.parentElement.querySelector(".reporting-legend-tooltip");
+    if (tooltip) tooltip.hidden = true;
+  }
+};
 const consumptionChart = (id, data, monthEntries = (index) => ({
   title: `${t("spent")} — ${data.labels[index]}`, filters: { records: "time_entries", ...periodRange(data.periodRanges, index) }
 })) => draw(id, {
@@ -248,11 +264,11 @@ const consumptionChart = (id, data, monthEntries = (index) => ({
   data: {
     labels: data.labels,
     datasets: [
-      { type: "bar", label: t("refills"), data: data.refills, backgroundColor: "rgba(68,114,196,.65)", order: 3 },
-      { type: "bar", label: t("spent"), data: data.spent, backgroundColor: "rgba(247,148,29,.45)", order: 3 },
-      { type: "line", label: t("credit"), data: data.credit, borderColor: "#27AE60", borderWidth: 2.5, pointRadius: 3, tension: 0.3, fill: false, order: 1 },
-      { type: "line", label: t("balance_at_month_start"), data: data.creditBefore, borderColor: "#82E0AA", borderWidth: 1.5, borderDash: [4, 4], pointRadius: 2, tension: 0.3, fill: false, order: 1 },
-      { type: "line", label: t("horizon"), data: data.horizon, borderColor: "#2ECC71", borderWidth: 1.5, borderDash: [8, 4], pointRadius: 2, tension: 0.3, fill: false, order: 1 },
+      { type: "bar", label: t("refills"), help: "refills_help", data: data.refills, backgroundColor: "rgba(68,114,196,.65)", order: 3 },
+      { type: "bar", label: t("spent"), help: "spent_help", data: data.spent, backgroundColor: "rgba(247,148,29,.45)", order: 3 },
+      { type: "line", label: t("credit"), help: "credit_help", data: data.credit, borderColor: "#27AE60", borderWidth: 2.5, pointRadius: 3, tension: 0.3, fill: false, order: 1 },
+      { type: "line", label: t("balance_at_month_start"), help: "balance_help", data: data.creditBefore, borderColor: "#82E0AA", borderWidth: 1.5, borderDash: [4, 4], pointRadius: 2, tension: 0.3, fill: false, order: 1 },
+      { type: "line", label: t("horizon"), help: "horizon_help", data: data.horizon, borderColor: "#2ECC71", borderWidth: 1.5, borderDash: [8, 4], pointRadius: 2, tension: 0.3, fill: false, order: 1 },
       // Tooltip only: not drawn and hidden from the legend.
       { type: "line", label: t("cumulative_spent"), data: data.cumulativeSpent, borderColor: "#D5D8DC", backgroundColor: "#D5D8DC", borderWidth: 0, pointRadius: 0, pointHoverRadius: 0, fill: false, order: 4, tooltipOnly: true }
     ]
@@ -260,15 +276,15 @@ const consumptionChart = (id, data, monthEntries = (index) => ({
   options: {
     interaction: { mode: "index", intersect: false },
     plugins: {
-      legend: { ...legend("top"), labels: { ...legend().labels, filter: (item, chartData) => !chartData.datasets[item.datasetIndex]?.tooltipOnly } },
+      legend: { ...legend("top"), ...legendHelp, labels: { ...legend().labels, filter: (item, chartData) => !chartData.datasets[item.datasetIndex]?.tooltipOnly } },
       tooltip: { callbacks: { label: context => t("value", { label: context.dataset.label, value: t("days", { value: formatDays(context.parsed.y) }) }) } }
     },
     scales: axes({ y: { ticks: { callback: value => shortDays(value) } } }),
     ...clickable(({ index }) => monthEntries(index), monthEntries)
   }
 });
-consumptionChart("consumption-12m", consumption.last12);
-consumptionChart("consumption-contract", contract);
+consumptionChart("consumption-period", consumption.period);
+consumptionChart("consumption-contract", consumption.contract);
 
 }
 

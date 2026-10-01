@@ -69,7 +69,8 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     assert_equal %w[tab-activity tab-consumption], page.css(".reporting-tabs a").map { |link| link["id"] }
     refute page.at_css(".reporting-kpi-group[aria-label='Issues']")
     time_cards = page.css(".reporting-kpi-group[aria-label='Time'] .reporting-stat .label").map(&:text)
-    assert_equal ["Initial credit", "Time spent"], time_cards
+    # Without issues, only the time logged over the period is left; credits are the consumption tab's.
+    assert_equal ["Time logged over the period"], time_cards
 
     enable_modules %w[reporting]
     page = dashboard(session)

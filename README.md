@@ -17,6 +17,8 @@ Version 1.0.0 covers the **Run** reports. Run & Support (SLA) reports are planne
 
 ## Installation
 
+Source code and issue tracker: [likehopper/redmine_reporting](https://github.com/likehopper/redmine_reporting).
+
 ```sh
 # Extract the plugin into /path/to/redmine/plugins/redmine_reporting first.
 cd /path/to/redmine
@@ -74,18 +76,23 @@ priority, target version):
 |---|---|
 | Issue flow | creations and closures per tracker and priority, per period, cumulated; open and closed issues by status |
 | Activity | time logged per collaborator and per activity |
-| Consumption | credit, refills and consumption over the last 12 months and over the contract; summary per subproject |
-| Backlog | issues not closed at each period end, per tracker and priority; time left |
+| Consumption | credit on the first day, credits granted, consumption and credit left over the selected period, and over the contract; summary per subproject |
+| Backlog | issues not closed at each period end, per tracker and priority; time left to do |
 | Performance | velocity, average resolution time per priority, age of open issues |
 
 A sticky banner states what the active tab counts (dates, grouping, projects,
-filters) and sums up issues (total, open, closed, resolution rate) and time (initial
-credit, time spent, time left, progress). A click on a bar, a point, anywhere in a
-period's column or on a period label opens the native issue or time entry list;
-the banner figures open theirs too.
+filters) and gives the provider's view of the period: issues (total, open, closed,
+resolution rate) and work on those same issues (estimated, done, left to do,
+progress). The consumption tab gives the client's view: the credit on the first
+day, the credits granted, what was consumed and what is left. A click on a bar, a
+point, anywhere in a period's column or on a period label opens the native issue or
+time entry list; the banner and consumption figures open theirs too.
 
-Legends for multi-series charts and status charts appear on the right when space
-allows, and below on narrow screens. Legend toggles remain interactive.
+Flow and backlog legends stay below their charts. Status, activity and consumption
+legends appear on the right when space allows, and below on narrow screens.
+Collaborator bars are stacked by activity, sharing chart 2.2's colors; clicking a
+segment filters both collaborator and activity. Consumption legend entries show
+explanatory tooltips on hover. Every chart has an explanatory subtitle.
 
 Texts follow the user's language (French or English). Dates follow the user's time
 zone, as Redmine's date filters do.
@@ -111,9 +118,16 @@ Credits additionally require reporting and time visibility on each contributing 
 - **Backlog at a date**: created by that date and open according to the status
   transitions in its journals. Without usable history, the current status and last
   closure date are the fallback; deleted history cannot be reconstructed.
-- **Time left**: estimated minus spent time, globally over the issues still open, as
-  the totals of their native list (negative on overruns). In the backlog tab, the
-  same balance at each period end, from the time logged by that date.
+- **Estimated, done, left to do, progress** (banner): over the issues of the period
+  as filtered, open and closed, as the totals of their native list. *Done* is the time
+  spent on them whenever it was logged. *Left to do* only covers the issues still open
+  (estimated minus done, negative on overruns); the card also shows the *closed gap*,
+  estimated minus done on the closed issues, positive when they took less than planned.
+  So estimated − done = left to do + closed gap. *Progress* is done ÷ (done + left to
+  do): 100% on closed issues. Issues without an estimate count as zero; their number is
+  shown on the *Estimated* card. Without issue tracking, the banner only shows the time
+  logged over the period. In the backlog tab, left to do is computed at each period
+  end, from the time logged by that date.
 - **Resolution time and velocity**: issues closed over the period and still closed.
 - **Days**: activity and estimated time use the reporting project's hours per day
   (8 by default). Consumption converts each project's hours using its own inherited
@@ -128,17 +142,24 @@ every year on its anniversary date, within its optional validity dates; refills 
 credit every year on their own date and validity. February 29 falls on February 28
 in non-leap years, and day 31 on the last day of shorter months.
 
-The consumption tab balances credits against time logged month by month. An overrun
-carries over and is paid back by later grants, while the displayed credit never
-goes below zero. The rolling twelve-month view retains the opening balance from
-contract history. With no policy start date, the contract defaults to twelve months.
-The horizon spreads the remaining credit over the months left.
+The consumption tab follows the selected period. Credit starts on the earliest
+policy start (`active_from`); time logged before it is not charged. The period opens
+with the credit carried over to its first day, adds the grants and refills falling in
+it, and subtracts the time charged over it: for a 10-day yearly contract with 3 days
+used in the first half, a July–December report starts with 7 days. An overrun carries
+over and is paid back by later grants, while the displayed credit never goes below
+zero; the share consumed can exceed 100%. Without a policy start date, time is
+charged from the start of the selected period. The contract chart shows the whole
+contract up to the end of the period. The horizon spreads the remaining credit over
+the months left.
 
-A project's report cumulates the credits and time of all its subprojects in scope.
-Below the global figures, **Summary by project** lists the displayed project
-(its own credits and time) and each subproject with its whole subtree, over the
-contract; a click opens that subproject's own reporting. Its own filters, tracker
-scope and contract dates can differ from the parent report.
+Each subproject is a credit account of its own, with its whole subtree and its own
+contract start; the displayed project is one more account for its own credits and
+time. A project's figures add its accounts up, so an overrun on one account never
+eats another one's credit. Below the global figures, **Summary by project** lists
+each account over the same period; a click opens that subproject's own reporting,
+which shows the same values. Its own filters and tracker scope can still differ from
+the parent report.
 
 ## Project settings
 
@@ -199,7 +220,8 @@ the current date.
 | `RedmineReporting::QueryDescription` | localized presentation of selected filters and projects |
 | `RedmineReporting::IssueTimeline` | an issue's dates in the viewer's time zone, and the period rules above |
 | `RedmineReporting::SpentTime` | hours per issue, in total or up to a date |
-| `RedmineReporting::CreditLedger` | monthly credit balance |
+| `RedmineReporting::CreditAccount` | one project's or subproject's credits and charged time, from its contract start; opening balance at any date |
+| `RedmineReporting::CreditLedger` | monthly credit balance from an opening balance; accounts added up row by row |
 | `ReportingCreditPolicy`, `ReportingCreditRefill` | credit rules (grants, refills, validity) |
 | `RedmineReporting::Drilldown` | turns a chart selection into native `IssueQuery` / `TimeEntryQuery` parameters, never ID lists |
 | `RedmineReporting::Sections`, `Capabilities` | report families and tabs; what modules and permissions allow |
@@ -213,7 +235,7 @@ the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 The controllers coordinate authorization, parameter handling and responses. Report
 calculations live in the objects above. `DashboardPresenter` owns dashboard descriptions and detail links, using explicit
 dependencies instead of helper access to controller instance variables.
-`ReportingHelper` contains five view formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
+`ReportingHelper` contains six view formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
 The browser script uses small functions for chart rendering and interactions.
 Comments and identifiers are written in English; translations and demo content
 may contain French. Small Rails callbacks and similar model validations remain

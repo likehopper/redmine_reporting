@@ -8,6 +8,7 @@ Redmine::Plugin.register :redmine_reporting do
   author "Redmine Reporting contributors"
   description "Project reporting with configurable time-credit policies."
   version RedmineReporting::VERSION
+  url "https://github.com/likehopper/redmine_reporting"
 
   requires_redmine version_or_higher: "5.0"
 

@@ -109,6 +109,12 @@ a.reporting-stat:hover {
   margin-top: 2px;
 }
 
+.reporting-stat .detail {
+  display: block;
+  font-size: 0.7em;
+  color: #999;
+}
+
 .reporting-stat .value.reporting-red {
   color: #E74C3C;
 }
@@ -278,3 +284,6 @@ td.reporting-red {
     grid-column: auto;
   }
 }
+
+/* Legend explanations stay inside the chart and never intercept chart clicks. */
+.reporting-legend-tooltip { position: absolute; z-index: 20; max-width: 240px; padding: 8px 10px; border-radius: 4px; background: #263238; color: #fff; font-size: 12px; line-height: 1.4; pointer-events: none; }

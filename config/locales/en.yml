@@ -101,8 +101,8 @@ en:
     scope:
       flow: "Issues created and closed from %{from} to %{to}, by %{grouping}; statuses of issues open today and of issues closed over the period."
       activity: "Time logged from %{from} to %{to}, by collaborator and activity type."
-      consumption: "Time logged, converted to days (%{hours} h/d), over the 12 months up to %{to}%{contract}, against the trackers' credits and refills."
-      consumption_contract: " and since the start of the contract (%{date})"
+      consumption: "Credits and time charged from %{from} to %{to} (%{hours} h/d), starting from the credit carried over to %{from}%{contract}."
+      consumption_contract: "; contract started on %{date}"
       backlog: "Issues not closed at the end of each period (%{grouping}) from %{from} to %{to}, and their time left (estimated − spent at that date)."
       performance: "Issues closed from %{from} to %{to} (velocity by %{grouping}, average lead time); age of issues open on %{to}."
       projects: "Projects: %{projects}"
@@ -111,6 +111,19 @@ en:
       no_project: No project
       project_with_subprojects: "%{project} and its %{count} subprojects"
       other_projects: "%{count} others"
+    consumption:
+      opening: "Credit on %{date}"
+      opening_title: "Credit carried over to %{date}: credits granted since the contract start minus the time charged before that date. Negative on overruns."
+      granted: Credits granted over the period
+      granted_title: "Yearly grants and refills falling between %{from} and %{to}"
+      available: Available credit
+      available_title: "Carried-over credit plus the credits granted over the period"
+      consumed: Consumed
+      consumed_title: "Time charged from %{from} to %{to} (%{hours} h/d), from the contract start on"
+      remaining: "Left on %{date}"
+      remaining_title: "Available credit minus consumed; never negative, an overrun carries over"
+      progress: Share consumed
+      progress_title: "Consumed ÷ available credit"
     summary:
       issues: Issues
       time: Time
@@ -123,14 +136,17 @@ en:
       closed_title: "Issues of the period closed today"
       closed_ratio: Resolution rate
       closed_ratio_title: "Closed / total issues of the period"
-      initial_credit: Initial credit
-      initial_credit_title: "Initial credits of the project's active policies"
-      spent: Time spent
-      spent_title: "Time logged from %{from} to %{to} (%{hours} h/d)"
-      remaining: Time left
-      remaining_title: "Estimated time (%{estimated} h) − spent time (%{spent} h) of the %{count} issues of the period still open, %{hours} h/d. The list shows both columns and their totals."
+      spent: Time logged over the period
+      spent_title: "Time logged from %{from} to %{to}, all issues included (%{hours} h/d)"
+      estimated: Estimated
+      estimated_title: "Estimated time of the %{count} issues of the period, open and closed. The %{unestimated} issues without an estimate count as zero."
+      done: Done
+      done_title: "Time spent on these %{count} issues, whenever it was logged (%{hours} h/d)."
+      remaining: Left to do
+      remaining_title: "Estimated − done on the %{count} issues still open: %{estimated} h − %{done} h, %{hours} h/d. Closed gap: estimated − done on the %{closed} closed issues, positive when they took less than planned. Estimated − done = left to do + closed gap."
+      closed_gap: "closed gap: %{gap}"
       progress: Progress
-      progress_title: "Spent time / estimated time of the issues of the period still open"
+      progress_title: "Done ÷ (done + left to do): 100% once nothing is left to do."
     sections:
       flow: "1. Issue flow"
       activity: "2. Activity over the period"
@@ -138,34 +154,42 @@ en:
       backlog: "4. Backlog"
       performance: "5. Performance"
     charts:
+      resolution_desc: "Average elapsed days from creation to last closure, for issues closed in the selected period and still closed today."
+      velocity_desc: "Number of issues closed in each period and still closed today."
+      backlog_priority_desc: "Issues open at each period end, grouped by priority."
+      backlog_tracker_desc: "Issues open at each period end, grouped by tracker."
+      consumption_contract_desc: "Monthly credit balance and consumption from the contract start to the selected end date."
+      time_activity_desc: "Total hours per activity over the selected period; shared color legend for chart 2.1."
+      time_user_desc: "Hours per collaborator, split by activity. Colors match chart 2.2; each segment opens the corresponding time entries."
       flow_tracker: "1.1 Opened / Closed by Tracker"
-      flow_priority: "1.1 Opened / Closed by Priority"
+      flow_priority: "1.2 Opened / Closed by Priority"
       flow_mirrored_desc: "Creations above zero; closures below, by issue dates."
-      flow_period: "1.2 Opened vs closed issues over time"
+      flow_period: "1.3 Opened vs closed issues over time"
       flow_period_desc: "Absolute number of issues opened and closed per period"
-      flow_cumulative: "1.3 Cumulative opened vs closed issues"
+      flow_cumulative: "1.4 Cumulative opened vs closed issues"
       flow_cumulative_desc: "Creations and closures accumulated since the start of the filtered period. A click opens the counted issues."
-      status_open: "1.4 Open issues by status"
+      status_open: "1.5 Open issues by status"
       status_open_desc: "Currently open issues (all creation dates)"
-      status_closed: "1.5 Closed issues by status"
+      status_closed: "1.6 Closed issues by status"
       status_closed_desc: "Issues closed over the selected period"
       time_user: "2.1 Time spent by collaborator"
       time_activity: "2.2 Time spent by activity type"
-      consumption_desc: "Time logged converted to days (%{hours} h/day). Initial credits and refills follow the trackers' yearly rules."
-      consumption_12m: "3.1 Last 12 months"
+      consumption_desc: "What you had at the start of the period, what was granted and consumed, and what is left. Time converted to days (%{hours} h/day); time logged before the contract start is not charged."
+      consumption_period: "3.1 Over the selected period"
+      consumption_period_desc: "Monthly credit and consumption from %{from} to %{to}, starting from the credit carried over to %{from}."
       consumption_contract: "3.2 Over the contract's duration"
       consumption_projects: "Summary by project"
-      consumption_projects_desc: "Credits and time consumed by each subproject over the contract, its own subprojects included; the displayed project only counts its own credits and time. A click opens the subproject's reporting."
+      consumption_projects_desc: "Same figures for each subproject, its own subprojects included; the displayed project only counts its own credits and time. A click opens the subproject's reporting, which shows the same values."
       consumption_own: "(own credits and time)"
       backlog_desc: "Issues in progress over the period (reconstructed from creation / closing dates)"
       backlog_tracker: "4.1 Backlog by Tracker"
       backlog_priority: "4.2 Backlog by Priority"
-      remaining: "4.3 Time left by Tracker (backlog issues)"
+      remaining: "4.3 Left to do by Tracker (backlog issues)"
       remaining_desc: "At the end of each period: estimated minus spent time up to that date, for issues not closed · negative value = overrun"
       velocity: "5.1 Velocity (issues closed per period)"
       resolution: "5.2 Average resolution time by priority (days)"
       aging: "5.3 Age of open issues"
-      aging_desc: "Breakdown by age bucket (days since creation) — click a bar to see the list"
+      aging_desc: "Breakdown of currently open issues by age in days since creation, measured at the selected end date."
     hints:
       bar_issues: "↑ click a bar to see the issues"
       issues: "↑ click to see the issues"
@@ -176,6 +200,11 @@ en:
       closed_issues: "↑ click to see the closed issues"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      horizon_help: "Remaining positive balance divided by the number of months left in the displayed ledger, including this month. This is a monthly allowance, not a consumption forecast."
+      balance_help: "Balance carried forward plus grants and refills for this month, before deducting monthly consumption. It may be negative."
+      credit_help: "Balance after monthly grants, refills and consumption. Displayed at zero when overdrawn; debt carries forward."
+      spent_help: "Time logged during the month, converted to days using each project’s hours-per-day setting."
+      refills_help: "Additional credit granted by refill rules during the month, in days; annual initial grants are included in the balance, not in these bars."
       no_issue: No issue
       opened: Opened
       closed: Closed
@@ -196,17 +225,13 @@ en:
       hours: Hours
       time: Time
       activity: Activity
-      initial_credit: Initial credit
       refills: Refills
-      consumed: Consumed
-      remaining_credit: Remaining credit
-      progress: Progress
-      spent: Time spent
+      spent: Consumed
       credit: Credit
       balance_at_month_start: Balance at month start
       horizon: Horizon
       cumulative_spent: Cumulative time spent
-      remaining: Time left
+      remaining: Left to do
       total: Total
       remaining_hours: "%{label}: %{value} h left (estimated − spent)"
       closed_issues: Closed issues

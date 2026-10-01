@@ -6,7 +6,7 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
-The release-hardening suite contains 90 unit, integration and browser tests.
+The release-hardening suite contains 98 unit, integration and browser tests.
 The optional SLA coexistence case adds one test when that plugin is installed.
 See the result table below for the exact runtimes validated after the fixes.
 
@@ -56,10 +56,43 @@ Redmine/Rails generations, using SQLite and Chromium:
 | 6.1.4 | 90 | 723 | PASS |
 | 7.0.1 | 90 | 729 | PASS |
 
-No failures, errors or skips. Every application file matches `runtime.sha256`
-and the tested snapshot. Redmine 5.1/6.0 and the external database/SLA configurations
+No failures, errors or skips. These results describe the presenter snapshot before
+the later consumption and nested-account changes. Redmine 5.1/6.0 and the external database/SLA configurations
 were validated before this presentation-only refactor, as recorded above; they
 were not rerun for this change. No database, query or report-calculation code changed.
+
+## Period-based consumption and banner verification — 2026-10-01
+
+After computing consumption over the selected period (credit carried over to its
+first day, one credit account per subproject) and basing the banner's estimated,
+done and left-to-do figures on the same filtered issues, the complete suite was
+rerun on every Redmine version, using SQLite and Chromium:
+
+| Redmine | Ruby | Rails | Tests | Assertions | Result |
+|---|---|---|---:|---:|---|
+| 5.0.14 | 3.1.7 | 6.1.7.10 | 97 | 784 | PASS |
+| 5.1.13 | 3.2.11 | 6.1.7.10 | 97 | 784 | PASS |
+| 6.0.11 | 3.3.12 | 7.2.3.2 | 97 | 786 | PASS |
+| 6.1.4 | 3.4.11 | 7.2.3.2 | 97 | 786 | PASS |
+| 7.0.1 | 4.0.7 | 8.1.3.1 | 97 | 794 | PASS |
+
+No failures, errors or skips. These results describe the period-based consumption
+snapshot before the final nested-account correction. See the final verification
+below for the current application manifest.
+
+## Pre-publication verification — 2026-10-01
+
+The final review reran the complete 97-test suite on all five Redmine versions,
+PostgreSQL and SLA coexistence (98 tests), plus the disposable demo check, with
+no failures, errors or skips. It also corrected nested project credit aggregation
+and added a regression test: the final 98-test suite passed on Redmine 6.1.4 with
+SQLite, MariaDB 10.11 and MySQL 8.0. Those final snapshots match `runtime.sha256`.
+The test includes distinct collaborators with identical names and real chart clicks.
+
+The public [compatibility workflow](https://github.com/likehopper/redmine_reporting/actions/workflows/compatibility.yml)
+runs every version/database/SLA/demo combination again from the published source.
+Local logs and screenshots are retained in the ignored `dist/validation` and
+`dist/previews` directories; neither is required to install the plugin.
 
 ## Reproduce
 
@@ -137,5 +170,4 @@ test load, not a production latency guarantee or a measured before/after speedup
 Reports still load visible records into memory; large installations should profile
 their actual data volume. No cache with uncertain permission invalidation is added.
 
-GitHub Actions repeats the version, database, SLA and demo checks. The workflow is
-prepared locally; its remote execution requires publishing the repository.
+GitHub Actions repeats the version, database, SLA and demo checks. Results are available in the repository’s Actions tab.

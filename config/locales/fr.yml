@@ -101,8 +101,8 @@ fr:
     scope:
       flow: "Tickets créés et fermés du %{from} au %{to}, par %{grouping} ; statuts des tickets ouverts aujourd'hui et des tickets fermés sur la période."
       activity: "Temps saisis du %{from} au %{to}, par collaborateur et par type d'activité."
-      consumption: "Temps saisis convertis en jours (%{hours} h/j) sur les 12 mois précédant le %{to}%{contract}, face aux crédits et recharges des trackers."
-      consumption_contract: " et depuis le début du contrat (%{date})"
+      consumption: "Crédits et temps imputé du %{from} au %{to} (%{hours} h/j), à partir du crédit reporté au %{from}%{contract}."
+      consumption_contract: " ; contrat démarré le %{date}"
       backlog: "Tickets non fermés à la fin de chaque période (%{grouping}) du %{from} au %{to}, et leur reste à passer (estimé − passé à cette date)."
       performance: "Tickets fermés du %{from} au %{to} (vélocité par %{grouping}, délai moyen) ; ancienneté des tickets ouverts au %{to}."
       projects: "Projets : %{projects}"
@@ -111,6 +111,19 @@ fr:
       no_project: Aucun projet
       project_with_subprojects: "%{project} et ses %{count} sous-projets"
       other_projects: "%{count} autres"
+    consumption:
+      opening: "Crédit au %{date}"
+      opening_title: "Crédit reporté au %{date} : crédits accordés depuis le début du contrat moins le temps imputé avant cette date. Négatif en cas de dépassement."
+      granted: Crédits accordés sur la période
+      granted_title: "Dotations annuelles et recharges tombant entre le %{from} et le %{to}"
+      available: Crédit disponible
+      available_title: "Crédit reporté plus crédits accordés sur la période"
+      consumed: Consommé
+      consumed_title: "Temps imputé du %{from} au %{to} (%{hours} h/j), à partir du début du contrat"
+      remaining: "Reste au %{date}"
+      remaining_title: "Crédit disponible moins consommé ; jamais négatif, un dépassement est reporté"
+      progress: Part consommée
+      progress_title: "Consommé ÷ crédit disponible"
     summary:
       issues: Tickets
       time: Temps
@@ -123,14 +136,17 @@ fr:
       closed_title: "Tickets de la période aujourd'hui fermés"
       closed_ratio: Taux de résolution
       closed_ratio_title: "Fermés / total tickets de la période"
-      initial_credit: Crédit initial
-      initial_credit_title: "Crédits initiaux des politiques actives du projet"
-      spent: Temps passé
-      spent_title: "Temps saisis du %{from} au %{to} (%{hours} h/j)"
-      remaining: Reste à passer
-      remaining_title: "Temps estimé (%{estimated} h) − temps passé (%{spent} h) des %{count} tickets de la période encore ouverts, %{hours} h/j. La liste affiche ces deux colonnes et leurs totaux."
+      spent: Temps saisi sur la période
+      spent_title: "Temps saisi du %{from} au %{to}, tous tickets confondus (%{hours} h/j)"
+      estimated: Estimé
+      estimated_title: "Temps estimé des %{count} tickets de la période, ouverts et fermés. Les %{unestimated} tickets sans estimation comptent pour zéro."
+      done: Réalisé
+      done_title: "Temps passé sur ces %{count} tickets, toutes dates confondues (%{hours} h/j)."
+      remaining: Reste à faire
+      remaining_title: "Estimé − réalisé des %{count} tickets encore ouverts : %{estimated} h − %{done} h, %{hours} h/j. Écart des fermés : estimé − réalisé des %{closed} tickets fermés, positif s’ils ont demandé moins que prévu. Estimé − réalisé = reste à faire + écart des fermés."
+      closed_gap: "écart des fermés : %{gap}"
       progress: Avancement
-      progress_title: "Temps passé / temps estimé des tickets de la période encore ouverts"
+      progress_title: "Réalisé ÷ (réalisé + reste à faire) : 100 % quand il ne reste rien à faire."
     sections:
       flow: "1. Flux de tickets"
       activity: "2. Activité sur la période"
@@ -138,34 +154,42 @@ fr:
       backlog: "4. Backlog"
       performance: "5. Performance"
     charts:
+      resolution_desc: "Délai moyen entre création et dernière clôture des tickets fermés sur la période et toujours fermés aujourd’hui."
+      velocity_desc: "Nombre de tickets fermés dans chaque période et toujours fermés aujourd’hui."
+      backlog_priority_desc: "Tickets ouverts à la fin de chaque période, répartis par priorité."
+      backlog_tracker_desc: "Tickets ouverts à la fin de chaque période, répartis par tracker."
+      consumption_contract_desc: "Solde du crédit et consommation mensuelle depuis le début du contrat jusqu’à la date de fin sélectionnée."
+      time_activity_desc: "Total des heures par activité sur la période sélectionnée ; légende de couleurs commune au graphique 2.1."
+      time_user_desc: "Heures par collaborateur, réparties par activité. Les couleurs correspondent au graphique 2.2 ; chaque segment ouvre les temps concernés."
       flow_tracker: "1.1 Ouvert / Fermé par Tracker"
-      flow_priority: "1.1 Ouvert / Fermé par Priorité"
+      flow_priority: "1.2 Ouvert / Fermé par Priorité"
       flow_mirrored_desc: "Créations au-dessus de zéro ; clôtures en dessous, selon les dates des tickets."
-      flow_period: "1.2 Flux des tickets ouverts vs fermés"
+      flow_period: "1.3 Flux des tickets ouverts vs fermés"
       flow_period_desc: "Nombre absolu de tickets ouverts et fermés par période"
-      flow_cumulative: "1.3 Flux cumulé des tickets ouverts vs fermés"
+      flow_cumulative: "1.4 Flux cumulé des tickets ouverts vs fermés"
       flow_cumulative_desc: "Créations et clôtures cumulées depuis le début de la période filtrée. Un clic ouvre les tickets comptés."
-      status_open: "1.4 Tickets ouverts par statut"
+      status_open: "1.5 Tickets ouverts par statut"
       status_open_desc: "Tickets actuellement ouverts (toutes dates de création)"
-      status_closed: "1.5 Tickets fermés par statut"
+      status_closed: "1.6 Tickets fermés par statut"
       status_closed_desc: "Tickets fermés sur la période sélectionnée"
       time_user: "2.1 Temps passé par collaborateur"
       time_activity: "2.2 Temps passé par type d'activité"
-      consumption_desc: "Temps saisi converti en jours (%{hours} h/jour). Les crédits initiaux et recharges suivent les règles annuelles des trackers."
-      consumption_12m: "3.1 Évolution sur les 12 derniers mois"
+      consumption_desc: "Ce que vous aviez au début de la période, ce qui a été accordé et consommé, et ce qu’il reste. Temps converti en jours (%{hours} h/jour) ; le temps saisi avant le début du contrat n’est pas imputé."
+      consumption_period: "3.1 Sur la période sélectionnée"
+      consumption_period_desc: "Crédit et consommation mois par mois du %{from} au %{to}, à partir du crédit reporté au %{from}."
       consumption_contract: "3.2 Évolution sur la durée du contrat"
       consumption_projects: "Synthèse par projet"
-      consumption_projects_desc: "Crédits et temps consommé de chaque sous-projet sur la durée du contrat, sous-projets inclus ; le projet affiché ne compte que ses propres crédits et temps. Un clic ouvre le reporting du sous-projet."
+      consumption_projects_desc: "Mêmes chiffres pour chaque sous-projet, avec ses propres sous-projets ; le projet affiché ne compte que ses propres crédits et temps. Un clic ouvre le reporting du sous-projet, qui affiche les mêmes valeurs."
       consumption_own: "(crédits et temps propres)"
       backlog_desc: "Tickets en cours sur la période (reconstitués à partir des dates de création / clôture)"
       backlog_tracker: "4.1 Backlog par Tracker"
       backlog_priority: "4.2 Backlog par Priorité"
-      remaining: "4.3 Reste à passer par Tracker (tickets en backlog)"
+      remaining: "4.3 Reste à faire par Tracker (tickets en backlog)"
       remaining_desc: "À la fin de chaque période : temps estimé moins temps passé jusqu'à cette date, des tickets non fermés · valeur négative = dépassement"
       velocity: "5.1 Vélocité (tickets fermés par période)"
       resolution: "5.2 Temps moyen de résolution par priorité (jours)"
       aging: "5.3 Ancienneté des tickets ouverts"
-      aging_desc: "Répartition par tranche d'âge (jours depuis la création) — clic sur une barre pour voir la liste"
+      aging_desc: "Répartition des tickets actuellement ouverts selon leur âge en jours depuis la création, mesuré à la date de fin sélectionnée."
     hints:
       bar_issues: "↑ clic sur une barre pour voir les tickets"
       issues: "↑ clic pour voir les tickets"
@@ -176,6 +200,11 @@ fr:
       closed_issues: "↑ clic pour voir les tickets fermés"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      horizon_help: "Solde positif restant divisé par le nombre de mois restant dans l’échéancier affiché, mois courant inclus. C’est une allocation mensuelle, pas une prévision de consommation."
+      balance_help: "Solde reporté augmenté des dotations et recharges du mois, avant déduction de la consommation mensuelle. Il peut être négatif."
+      credit_help: "Solde après dotations, recharges et consommation du mois. Affiché à zéro en cas de dépassement ; la dette est reportée."
+      spent_help: "Temps saisi pendant le mois, converti en jours selon les heures par jour de chaque projet."
+      refills_help: "Crédit supplémentaire accordé par les recharges du mois, en jours. Les dotations initiales annuelles sont intégrées au solde, pas à ces barres."
       no_issue: Aucun ticket
       opened: Ouverts
       closed: Fermés
@@ -196,17 +225,13 @@ fr:
       hours: Heures
       time: Temps
       activity: Activité
-      initial_credit: Crédit initial
       refills: Recharges
-      consumed: Consommé
-      remaining_credit: Crédit restant
-      progress: Avancement
-      spent: Temps passé
+      spent: Consommé
       credit: Crédit
       balance_at_month_start: Reste début mois
       horizon: Horizon
       cumulative_spent: Temps passés cumulés
-      remaining: Reste à passer
+      remaining: Reste à faire
       total: Total
       remaining_hours: "%{label} : %{value} h restantes (estimé − passé)"
       closed_issues: Tickets fermés

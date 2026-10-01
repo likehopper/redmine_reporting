@@ -56,12 +56,15 @@ module RedmineReporting
       @projects ||= query.selected_projects.to_a
     end
 
-    # Consumed days per project and month over a month grid: {[project_id, month start] => days}.
-    def spent_days_by_project_and_month(months)
-      query.time_entry_scope.where(project_id: credit_projects.map(&:id), spent_on: months.first_day..months.last_day).group(:project_id, :spent_on).sum(:hours).
-        each_with_object(Hash.new(0.0)) do |((project_id, spent_on), hours), totals|
-          totals[[project_id, spent_on.beginning_of_month]] += hours.to_f / project_hours.fetch(project_id, hours_per_day)
-        end
+    # Days logged per project and month between two dates, each project at its own hours
+    # per day: {[project_id, month start] => days}.
+    def spent_days_by_project_and_month(first_day, last_day)
+      (@spent_days ||= {})[[first_day, last_day]] ||=
+        query.time_entry_scope.where(project_id: credit_projects.map(&:id), spent_on: first_day..last_day).
+          group(:project_id, :spent_on).sum(:hours).
+          each_with_object(Hash.new(0.0)) do |((project_id, spent_on), hours), totals|
+            totals[[project_id, spent_on.beginning_of_month]] += hours.to_f / project_hours.fetch(project_id, hours_per_day)
+          end
     end
 
     def project_hours

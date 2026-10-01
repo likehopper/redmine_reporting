@@ -2,43 +2,73 @@
 
 module RedmineReporting
   module Reports
-    # Credits of every project in scope against the time logged, over the last 12 months and
-    # over the contract, with one row per subproject so each one can be checked.
+    # What the client had, consumed and has left, over the selected period and over the
+    # contract. Each subproject is an account of its own; the project's figures add them up,
+    # so its summary rows and each subproject's own report agree.
     class Consumption < Base
       def to_h
-        last12 = PeriodGrid.months(last_day.beginning_of_month << 11, last_day)
-        contract = PeriodGrid.months(contract_start || last12.first_day, last_day)
-
-        rows = ledger(contract).rows
-        prefix = last12.first_day < contract.first_day ? ledger(last12).rows.select { |row| row.period.first_day < contract.first_day } : []
+        period = CreditLedger.sum(accounts.map { |account| account.ledger(period_months) })
         {
-          last12: series(prefix + rows.select { |row| row.period.first_day >= last12.first_day }),
-          contract: series(rows.select { |row| row.period.first_day >= contract.first_day }),
-          initialCredit: round(policies.sum { |policy| policy.initial_credit_days.to_f }),
-          projects: branches.filter_map { |project, project_ids| branch_row(project, project_ids, contract) }
+          period: series(period).merge(totals: totals(period)),
+          contract: series(CreditLedger.sum(accounts.map { |account| account.ledger(contract_months) })),
+          projects: accounts.length > 1 ? accounts.filter_map { |account| account_row(account) } : []
         }
       end
 
       private
 
-      def contract_start
-        policies.filter_map(&:active_from).min&.beginning_of_month&.then { |start| [start, last_day.beginning_of_month].min }
+      def period_months
+        @period_months ||= PeriodGrid.new(first_day, last_day, "month")
       end
 
-      def ledger(months, project_ids = nil)
-        spent = Hash.new(0.0)
-        spent_by_project(months).each do |(project_id, month), days|
-          spent[month] += days if project_ids.nil? || project_ids.include?(project_id)
+      # From the earliest credit start, or the period start when no credit applies.
+      def contract_months
+        start = accounts.filter_map(&:start).min
+        PeriodGrid.new(start ? [start, last_day].min : first_day, last_day, "month")
+      end
+
+      # The displayed project for its own credits and time, then each direct subproject with
+      # its whole subtree; a single account when there is nothing to break down.
+      def accounts
+        @accounts ||= begin
+          projects = data.credit_projects
+          root = data.query.project
+          branches = branches(root, projects)
+          branches = [[root, projects.map(&:id)]] if branches.length < 2
+          branches.map do |project, ids|
+            CreditAccount.new(project: project, project_ids: ids, data: data,
+                              policies: policies.select { |policy| ids.include?(policy.project_id) })
+          end
         end
-        scoped = project_ids ? policies.select { |policy| project_ids.include?(policy.project_id) } : policies
-        CreditLedger.new(policies: scoped, spent_days: spent, months: months)
       end
 
-      def spent_by_project(months)
-        (@spent_by_project ||= {})[months.first_day] ||= data.spent_days_by_project_and_month(months)
+      def branches(root, projects)
+        return [] unless root && projects.length > 1
+
+        list = projects.include?(root) ? [[root, [root.id]]] : []
+        root.children.visible(data.user).sort_by(&:lft).each do |child|
+          ids = projects.select { |project| project.lft >= child.lft && project.rgt <= child.rgt }.map(&:id)
+          list << [child, ids] if ids.any?
+        end
+        list
       end
 
-      def series(rows)
+      def totals(ledger)
+        {opening: round(ledger.opening_balance), granted: round(ledger.granted), available: round(ledger.available),
+         consumed: round(ledger.consumed), remaining: round(ledger.remaining), progress: ledger.progress}
+      end
+
+      def account_row(account)
+        ledger = account.ledger(period_months)
+        return if ledger.available.zero? && ledger.consumed.zero? && ledger.opening_balance.zero?
+
+        project = account.project
+        {id: project.id, identifier: project.identifier, name: project.name, own: project == data.query.project,
+         **totals(ledger)}
+      end
+
+      def series(ledger)
+        rows = ledger.rows
         {
           labels: rows.map { |row| row.period.label },
           periodStarts: rows.map { |row| row.period.start },
@@ -50,32 +80,6 @@ module RedmineReporting
           credit: rows.map { |row| round(row.credit) },
           horizon: rows.map { |row| round(row.horizon) },
           cumulativeSpent: rows.map { |row| round(row.cumulative_spent) }
-        }
-      end
-
-      # The reporting project for its own time and credits, then each direct subproject with
-      # its whole subtree, as its own reporting page shows it. Only listed with subprojects.
-      def branches
-        projects = data.credit_projects
-        root = data.query.project
-        return [] unless root && projects.length > 1
-
-        branches = projects.include?(root) ? [[root, [root.id]]] : []
-        root.children.visible(data.user).sort_by(&:lft).each do |child|
-          ids = projects.select { |project| project.lft >= child.lft && project.rgt <= child.rgt }.map(&:id)
-          branches << [child, ids] if ids.any?
-        end
-        branches
-      end
-
-      def branch_row(project, project_ids, contract)
-        ledger = ledger(contract, project_ids)
-        return if ledger.available.zero? && ledger.consumed.zero?
-
-        {
-          id: project.id, identifier: project.identifier, name: project.name, own: project == data.query.project,
-          granted: round(ledger.granted), refilled: round(ledger.refilled), consumed: round(ledger.consumed),
-          remaining: round(ledger.remaining), progress: ledger.progress
         }
       end
     end

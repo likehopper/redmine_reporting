@@ -58,7 +58,7 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     @child_issue.update_columns(estimated_hours: 4)
     open_dashboard
     # 14 h estimated minus the child's 2 h spent, at 8 h per day.
-    card = find(".reporting-kpi-group a.reporting-stat", text: "Time left")
+    card = find(".reporting-kpi-group a.reporting-stat", text: "Left to do")
     assert_includes card.text, "1.5d"
     assert_issue_list(count: 2, times: true) { card.click }
   end
@@ -72,12 +72,12 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     end
   end
 
-  def test_legends_use_the_right_on_wide_charts_and_bottom_on_small_screens
+  def test_flow_legends_stay_below_charts_on_wide_and_small_screens
     page.current_window.resize_to(1600, 1000)
     open_dashboard
     %w[flow-tracker flow-priority].each do |id|
-      assert_equal "right", chart_value(id, "chart.legend.position")
-      assert_operator chart_value(id, "chart.legend.left"), :>=, chart_value(id, "chart.chartArea.right")
+      assert_equal "bottom", chart_value(id, "chart.legend.position")
+      assert_operator chart_value(id, "chart.legend.top"), :>=, chart_value(id, "chart.chartArea.bottom")
     end
     # The paired opened/closed datasets still toggle together from the legend.
     entry = chart_value("flow-tracker", "chart.legend.legendHitBoxes[0]")
@@ -108,6 +108,66 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     data = JSON.parse(find("#report-data", visible: false).text(:all))
     refute data.key?("issueFlow")
     refute data["summary"].key?("estimatedHours")
+  end
+
+  def test_activity_segments_match_colors_tooltips_and_filtered_time_entries
+    other_activity = TimeEntryActivity.create!(name: "Reporting analysis", active: true)
+    TimeEntry.create!(project: @project, user: @administrator, activity: other_activity, hours: 4, spent_on: Date.current)
+    namesake = create_viewer
+    namesake.update!(firstname: @administrator.firstname, lastname: @administrator.lastname)
+    # Logged by the namesake itself: Redmine only lets users log time for others when allowed to.
+    TimeEntry.create!(project: @project, user: namesake, author: namesake, activity: other_activity, hours: 1, spent_on: Date.current)
+    open_dashboard
+    find("#tab-activity").click
+    wait_for_charts
+    index = chart_value("time-user", "chart.data.datasets.findIndex(dataset => dataset.activityId === #{other_activity.id})")
+    assert_equal 4, chart_value("time-user", "chart.data.datasets[#{index}].data[0]")
+    assert_equal chart_value("time-activity", "chart.data.datasets[0].backgroundColor[#{index}]"),
+                 chart_value("time-user", "chart.data.datasets[#{index}].backgroundColor")
+    point = chart_value("time-user", "(() => { const bar = chart.getDatasetMeta(#{index}).data[0]; return {x: (bar.x + bar.base) / 2, y: bar.y}; })()")
+    canvas = find("#time-user")
+    page.execute_script("arguments[0].scrollIntoView({block: 'center'})", canvas)
+    size = bounds("time-user")
+    page.driver.browser.action.move_to_location((size["left"] + point["x"]).round, (size["top"] + point["y"]).round).perform
+    Timeout.timeout(Capybara.default_max_wait_time) do
+      sleep 0.1 until chart_value("time-user", "chart.tooltip.opacity") > 0
+    end
+    assert_includes chart_value("time-user", "chart.tooltip.body[0].lines.join(' ')"), "Reporting analysis"
+    page.save_screenshot("/artifacts/activity-stacked.png") if File.directory?("/artifacts")
+    list = window_opened_by { click_chart("time-user", point) }
+    within_window(list) do
+      assert_current_path "/time_entries", ignore_query: true
+      assert_selector "table.time-entries tbody tr", count: 1
+      assert_selector "td.activity", text: "Reporting analysis"
+    end
+    list.close
+  end
+
+  def test_chart_numbering_subtitles_backlog_legends_and_consumption_legend_help
+    page.current_window.resize_to(1600, 1000)
+    open_dashboard
+    assert_equal %w[1.1 1.2 1.3 1.4 1.5 1.6], all("#panel-flow h4").map { |title| title.text.split.first }
+    assert_empty page.evaluate_script("[...document.querySelectorAll('.reporting-chart-grid article h4')].filter(title => !title.nextElementSibling.classList.contains('reporting-desc')).map(title => title.textContent)")
+    find("#tab-backlog").click
+    wait_for_charts
+    %w[backlog-tracker backlog-priority estimated-remaining].each do |id|
+      assert_equal "bottom", chart_value(id, "chart.legend.position")
+    end
+    find("#tab-consumption").click
+    wait_for_charts
+    %w[consumption-period consumption-contract].each do |id|
+      page.execute_script("arguments[0].scrollIntoView({block: 'center'})", find("##{id}"))
+      entry = chart_value(id, "chart.legend.legendHitBoxes[0]")
+      size = bounds(id)
+      page.driver.browser.action.move_to_location((size["left"] + entry["left"] + 5).round, (size["top"] + entry["top"] + 5).round).perform
+      assert_selector "##{id} + .reporting-legend-tooltip", visible: true
+      assert_operator find("##{id} + .reporting-legend-tooltip").text.length, :>, 40
+      page.save_screenshot("/artifacts/#{id}-legend.png") if File.directory?("/artifacts")
+      page.driver.browser.action.move_to_location(5, 5).perform
+      assert_no_selector "##{id} + .reporting-legend-tooltip", visible: true
+    end
+  ensure
+    page.current_window.resize_to(1024, 900)
   end
 
   private

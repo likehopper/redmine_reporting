@@ -131,8 +131,8 @@ class ReportingNavigationTest < ActionDispatch::IntegrationTest
   end
 
   def test_dashboard_follows_the_user_language
-    {"fr" => ["Flux des tickets", "Reste à passer", "Taux de résolution"],
-     "en" => ["Issue flow", "Time left", "Resolution rate"]}.each do |language, texts|
+    {"fr" => ["Flux des tickets", "Reste à faire", "Taux de résolution"],
+     "en" => ["Issue flow", "Left to do", "Resolution rate"]}.each do |language, texts|
       @administrator.update_columns(language: language)
       session = authenticated_session(@administrator)
       session.get "/projects/#{@project.identifier}/reporting", params: {grouping: "quarter", tab: "backlog"}

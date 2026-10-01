@@ -153,7 +153,14 @@ module RedmineReporting
       date_filter("spent_on", date_parameter(:from), date_parameter(:to))
       restrict_named("tracker_id", Tracker, :tracker)
       restrict_named("priority_id", IssuePriority, :priority)
-      restrict("activity_id", TimeEntryActivity.where(name: @parameters[:activity]).ids) if @parameters[:activity].present?
+      if @parameters[:activity_id].present?
+        restrict("activity_id", TimeEntryActivity.where(id: @parameters[:activity_id]).ids)
+      elsif @parameters[:activity].present?
+        restrict("activity_id", TimeEntryActivity.where(name: @parameters[:activity]).ids)
+      end
+      if @parameters[:user_id].present?
+        restrict("user_id", User.where(id: @reporting_query.time_entry_scope.select(:user_id)).where(id: @parameters[:user_id]).ids)
+      end
       if @parameters[:user].present?
         # Restrict the lookup to contributors; inactive users and namesakes still count.
         contributors = User.where(id: @reporting_query.time_entry_scope.select(:user_id))

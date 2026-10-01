@@ -75,11 +75,13 @@
       <div class="reporting-chart-grid">
         <article>
           <h4><%= l(:"reporting.charts.time_user") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.time_user_desc") %></p>
           <div class="reporting-chart short"><canvas id="time-user"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.detail") %></p>
         </article>
         <article>
           <h4><%= l(:"reporting.charts.time_activity") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.time_activity_desc") %></p>
           <div class="reporting-chart short"><canvas id="time-activity"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.detail") %></p>
         </article>
@@ -93,16 +95,18 @@
     <h3 class="reporting-section-hdr">💰 <%= l(:"reporting.sections.consumption") %></h3>
     <div class="reporting-section-body">
       <p class="reporting-desc"><%= l(:"reporting.charts.consumption_desc", hours: @dashboard.hours_per_day) %></p>
-      <div class="reporting-stats" id="consumption-stats"></div>
+      <%= render "consumption_totals" %>
       <%= render "consumption_projects" %>
       <div class="reporting-chart-grid">
         <article class="reporting-wide">
-          <h4><%= l(:"reporting.charts.consumption_12m") %></h4>
-          <div class="reporting-chart tall"><canvas id="consumption-12m"></canvas></div>
+          <h4><%= l(:"reporting.charts.consumption_period") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.consumption_period_desc", from: @dashboard.date_from, to: @dashboard.date_to) %></p>
+          <div class="reporting-chart tall"><canvas id="consumption-period"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.bar_time_entries") %></p>
         </article>
         <article class="reporting-wide">
           <h4><%= l(:"reporting.charts.consumption_contract") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.consumption_contract_desc") %></p>
           <div class="reporting-chart tall"><canvas id="consumption-contract"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.bar_time_entries") %></p>
         </article>
@@ -119,11 +123,13 @@
       <div class="reporting-chart-grid">
         <article>
           <h4><%= l(:"reporting.charts.backlog_tracker") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.backlog_tracker_desc") %></p>
           <div class="reporting-chart"><canvas id="backlog-tracker"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.backlog_issues") %></p>
         </article>
         <article>
           <h4><%= l(:"reporting.charts.backlog_priority") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.backlog_priority_desc") %></p>
           <div class="reporting-chart"><canvas id="backlog-priority"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
         </article>
@@ -147,11 +153,13 @@
       <div class="reporting-chart-grid">
         <article>
           <h4><%= l(:"reporting.charts.velocity") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.velocity_desc") %></p>
           <div class="reporting-chart"><canvas id="velocity"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.closed_issues") %></p>
         </article>
         <article>
           <h4><%= l(:"reporting.charts.resolution") %></h4>
+          <p class="reporting-desc"><%= l(:"reporting.charts.resolution_desc") %></p>
           <div class="reporting-chart"><canvas id="resolution"></canvas></div>
           <p class="reporting-hint"><%= l(:"reporting.hints.closed_issues") %></p>
         </article>
@@ -159,7 +167,6 @@
           <h4><%= l(:"reporting.charts.aging") %></h4>
           <p class="reporting-desc"><%= l(:"reporting.charts.aging_desc") %></p>
           <div class="reporting-chart short"><canvas id="aging"></canvas></div>
-          <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
         </article>
       </div>
     </div>

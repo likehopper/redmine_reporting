@@ -1,13 +1,16 @@
 <% rows = @report_data.dig(:consumption, :projects) %>
 <% if rows.length > 1 %>
+  <% from, to = @dashboard.date_from, @dashboard.date_to %>
   <article class="reporting-consumption-projects">
     <h4><%= l(:"reporting.charts.consumption_projects") %></h4>
     <p class="reporting-desc"><%= l(:"reporting.charts.consumption_projects_desc") %></p>
     <table class="list">
       <thead>
         <tr>
-          <th><%= l(:label_project) %></th><th><%= l(:"reporting.summary.initial_credit") %></th><th><%= l(:"reporting.js.refills") %></th>
-          <th><%= l(:"reporting.js.consumed") %></th><th><%= l(:"reporting.js.remaining_credit") %></th><th><%= l(:"reporting.js.progress") %></th>
+          <th><%= l(:label_project) %></th>
+          <th><%= l(:"reporting.consumption.opening", date: from) %></th><th><%= l(:"reporting.consumption.granted") %></th>
+          <th><%= l(:"reporting.consumption.available") %></th><th><%= l(:"reporting.consumption.consumed") %></th>
+          <th><%= l(:"reporting.consumption.remaining", date: to) %></th><th><%= l(:"reporting.consumption.progress") %></th>
         </tr>
       </thead>
       <tbody>
@@ -21,8 +24,9 @@
                                                                 grouping: @grouping, tab: "consumption") %>
               <% end %>
             </td>
+            <td class="<%= "reporting-red" if row[:opening].negative? %>"><%= reporting_days(row[:opening]) %></td>
             <td><%= reporting_days(row[:granted]) %></td>
-            <td><%= reporting_days(row[:refilled]) %></td>
+            <td><%= reporting_days(row[:available]) %></td>
             <td><%= reporting_days(row[:consumed]) %></td>
             <td class="<%= "reporting-red" if row[:remaining].zero? && row[:consumed].positive? %>"><%= reporting_days(row[:remaining]) %></td>
             <td class="reporting-progress-cell">

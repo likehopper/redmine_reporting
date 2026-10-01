@@ -1,8 +1,8 @@
 # Publishing 1.0.0
 
-The code is a release candidate under GPL-2.0-or-later. The publication repository
-has not been configured. Publish the stable release after the compatibility
-matrix passes and the destination is selected.
+The code is a release candidate under GPL-2.0-or-later. Its public repository is
+https://github.com/likehopper/redmine_reporting. Publish a tagged stable release
+after the compatibility matrix passes.
 
 1. Retain the GPL license in `LICENSE` and the version-or-later notice in README.
    Retain `assets/javascripts/Chart.js.LICENSE.md` for the bundled MIT dependency.

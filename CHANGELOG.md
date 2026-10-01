@@ -11,15 +11,25 @@ Release hardening:
 - Authorize report JSON and project credit scopes, not only visible tabs.
 - Reconstruct backlog status from issue journals, including reopenings, with
   matching native issue-list filters and user time zones.
-- Preserve the opening credit balance in the rolling twelve-month graph.
+- Compute consumption over the selected period: credit carried over to its first
+  day, credits granted in it, time charged over it, credit left at its end. Time
+  logged before the contract start is not charged.
+- Keep independent credit balances and contract starts at every depth of the project tree.
+- Treat each subproject as a credit account of its own and add accounts up, so the
+  summary by project, the totals and each subproject's report agree.
+- Separate the provider banner from the client consumption figures, with distinct
+  labels. The banner's estimated, done and left-to-do figures cover the same filtered
+  issues: estimated − done = left to do (open issues) + gap on closed issues.
 - Convert each project's consumption with its own inherited hours-per-day setting.
 - Reject invalid dates and more than 600 periods before allocating report data.
 - Keep demo accounts locked with random passwords, require explicit disposable
   development/test usage, reject unrelated projects and account collisions.
-- Use right-hand legends on wide multi-series charts and bottom legends on small
-  screens, preserving legend toggles and chart drilldowns.
+- Keep flow/backlog legends below charts, with sequential flow numbering 1.1–1.6.
+- Split collaborator bars by activity with shared colors, hour tooltips and exact
+  collaborator/activity drilldowns, including distinct users with the same name.
+- Explain consumption legends on hover and add descriptive chart subtitles.
 - Move dashboard descriptions and links into DashboardPresenter with explicit
-  dependencies; keep only five stateless formatting/icon helpers.
+  dependencies; keep formatting/icon helpers independent of controller state.
 - Keep date boundaries in Ruby, presentation outside ReportingQuery, and inherited
   settings writes in the model; use prefix sums for historical spent time.
 - Add regression/security/browser tests and a Docker/GitHub Actions matrix for

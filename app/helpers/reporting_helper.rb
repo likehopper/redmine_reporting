@@ -24,6 +24,11 @@ module ReportingHelper
     number_with_precision(value, precision: 2, strip_insignificant_zeros: true)
   end
 
+  # "+3j" / "-2j": a gap reads with its sign.
+  def reporting_signed_days(value)
+    value.positive? ? "+#{reporting_days(value)}" : reporting_days(value)
+  end
+
   def reporting_days(value)
     l(:"reporting.summary.days", value: number_with_precision(value, precision: 1, strip_insignificant_zeros: true))
   end

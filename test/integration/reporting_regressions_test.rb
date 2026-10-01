@@ -38,12 +38,13 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
     refute timeline.closed?
     assert timeline.in_backlog_on?(Date.new(2026, 3, 31))
   end
-  def test_last12_credit_matches_contract_closing_balance
+  def test_period_credit_matches_contract_closing_balance
     @project.reporting_credit_policies.create!(tracker: @tracker, name: 'Annual budget',
       initial_credit_days: 100, anniversary_month: 1, anniversary_day: 1, active_from: Date.new(2025, 1, 1))
     report = RedmineReporting::ReportBuilder.new(query: build_query,
       first_day: Date.new(2026, 1, 1), last_day: Date.new(2026, 3, 31)).build.fetch(:consumption)
-    assert_equal report[:contract][:credit].last, report[:last12][:credit].last
+    assert_equal report[:contract][:credit].last, report[:period][:credit].last
+    assert_equal report[:contract][:credit].last, report[:period][:totals][:remaining]
   end
 
   def test_subproject_consumption_matches_its_own_report
@@ -57,6 +58,7 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
       first_day: Date.current.beginning_of_year, last_day: Date.current, hours_per_day: 4).build.fetch(:consumption)
     branch = root_report[:projects].find { |project| project[:id] == @child.id }
     assert_equal child_report[:contract][:cumulativeSpent].last, branch[:consumed]
+    assert_equal child_report[:period][:totals].except(:progress), branch.slice(*child_report[:period][:totals].keys).except(:progress)
   end
 
   def test_invalid_and_excessive_periods_are_rejected_without_report_data
@@ -76,7 +78,7 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
       anniversary_month: 1, anniversary_day: 1)
     query = build_query(user: viewer)
     report = RedmineReporting::ReportBuilder.new(query: query, first_day: Date.current.beginning_of_year, last_day: Date.current).build
-    assert_equal 0, report[:consumption][:initialCredit]
+    assert_equal 0, report[:consumption][:period][:totals][:available]
   end
 
 end
