@@ -1,5 +1,15 @@
 # Redmine Reporting
 
+![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
+![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
+![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-blue)
+![MariaDB](https://img.shields.io/badge/MariaDB-10.11-blue)
+![SQLite](https://img.shields.io/badge/SQLite-3-blue)
+![License](https://img.shields.io/github/license/likehopper/redmine_reporting)
+
 ![Redmine Reporting - Project dashboard](doc/images/redmine_reporting_home.png)
 
 Project reporting for Redmine: a dashboard of issue flow, activity, time-credit
