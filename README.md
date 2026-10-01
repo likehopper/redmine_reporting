@@ -1,5 +1,7 @@
 # Redmine Reporting
 
+![Redmine Reporting - Project dashboard](doc/images/redmine_reporting_home.png)
+
 Project reporting for Redmine: a dashboard of issue flow, activity, time-credit
 consumption, backlog and performance, computed from Redmine's own issues and time
 entries. Chart selections and linked summary figures open native Redmine lists,
