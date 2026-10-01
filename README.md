@@ -296,6 +296,13 @@ Rails and database versions, enabled modules and relevant role permissions, chos
 filters/date range, expected versus actual values, and any relevant browser/server
 error. Remove credentials and confidential project data from shared diagnostics.
 
+## Community
+
+Please read the [contribution guide](CONTRIBUTING.md) and
+[code of conduct](CODE_OF_CONDUCT.md) before participating. Report suspected
+vulnerabilities privately according to the [security policy](SECURITY.md).
+Use the issue templates for bug reports and feature requests.
+
 ## License
 
 Redmine Reporting is licensed under the GNU General Public License, version 2
