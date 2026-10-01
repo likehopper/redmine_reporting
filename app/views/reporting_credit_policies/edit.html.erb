@@ -1,3 +1,22 @@
+<%#
+File: redmine_reporting/app/views/reporting_credit_policies/edit.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
 <h2><%= link_to l(:label_reporting), settings_project_path(@project, tab: "reporting") %> » <%= @policy.name %></h2>
 
 <%= labelled_form_for :reporting_credit_policy, @policy, url: project_reporting_credit_policy_path(project_id: @project, id: @policy), html: {method: :patch} do |f| %>

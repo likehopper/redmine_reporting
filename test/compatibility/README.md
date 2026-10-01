@@ -171,3 +171,9 @@ Reports still load visible records into memory; large installations should profi
 their actual data volume. No cache with uncertain permission invalidation is added.
 
 GitHub Actions repeats the version, database, SLA and demo checks. Results are available in the repository’s Actions tab.
+
+## License header maintenance — 2026-10-01
+
+The runtime manifest was refreshed after adding license and source-path comments.
+Removing each inserted header reproduces the previous source byte for byte;
+no application behavior was changed.
