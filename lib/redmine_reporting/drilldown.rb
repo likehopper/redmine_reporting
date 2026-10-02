@@ -109,10 +109,22 @@ module RedmineReporting
     end
 
     def apply_selection
-      restrict("tracker_id", @reporting_query.run_tracker_ids) if @reporting_query.run_tracker_ids.present?
+      restrict("tracker_id", @reporting_query.run_tracker_ids) unless @reporting_query.run_tracker_ids.nil?
       restrict_named("tracker_id", Tracker, :tracker)
       restrict_named("priority_id", IssuePriority, :priority)
       restrict_named("status_id", IssueStatus, :status)
+      if @parameters[:version_id].present?
+        if @parameters[:version_id] == "none"
+          if @reporting_query.issue_scope.where(fixed_version_id: nil).exists?
+            @query.add_filter("fixed_version_id", "!*", [""])
+          else
+            restrict("fixed_version_id", [])
+          end
+        else
+          restrict("fixed_version_id", [@parameters[:version_id]])
+        end
+      end
+      date_filter("due_date", nil, date_parameter(:due_before))
       date_filter("created_on", date_parameter(:created_from), date_parameter(:created_to))
       date_filter("closed_on", date_parameter(:closed_from), date_parameter(:closed_to))
       date_filter("reporting_flow_on", date_parameter(:flow_from), date_parameter(:flow_to))
@@ -140,9 +152,9 @@ module RedmineReporting
     # Same rule as ReportingQuery#time_entry_scope: time without an issue stays, unless issues are filtered.
     def apply_run_perimeter(issue_filtered)
       run_ids = @reporting_query.run_tracker_ids
-      return if run_ids.blank?
+      return if run_ids.nil?
 
-      if issue_filtered
+      if issue_filtered || @reporting_query.section == "build"
         restrict("issue.tracker_id", run_ids)
       elsif (other_ids = Tracker.where.not(id: run_ids).ids).any?
         # Redmine's "is not" also keeps entries without an issue.

@@ -1,0 +1,40 @@
+<%#
+File: redmine_reporting/app/views/reporting/_build.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<section class="reporting-section" role="tabpanel" id="panel-build" aria-labelledby="tab-build" data-reporting-panel="build">
+  <h3 class="reporting-section-hdr"><%= l(:"reporting.tabs.build") %></h3>
+  <div class="reporting-section-body">
+    <p class="reporting-desc"><%= l(:"reporting.build.scope") %></p>
+    <% if @report_data[:build][:versions].empty? %>
+      <p class="reporting-empty"><%= l(:"reporting.build.empty") %></p>
+    <% else %>
+      <div class="reporting-chart-grid">
+        <% charts = %w[progress deadlines] %>
+        <% charts += %w[charges] if @capabilities.time? %>
+        <% charts.each do |chart| %>
+          <article>
+            <h4><%= l(:"reporting.build.#{chart}") %></h4>
+            <p class="reporting-desc"><%= l(:"reporting.build.#{chart}_desc") %></p>
+            <div class="reporting-chart tall"><canvas id="build-<%= chart %>"></canvas></div>
+          </article>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</section>

@@ -31,8 +31,8 @@ class ReportingQuery < Query
 
   validate :validate_reporting_operators
 
-  # Trackers of the Run perimeter, from the project's reporting settings; nil counts every tracker.
-  attr_accessor :run_tracker_ids
+  # Trackers of the active family (historically Run); nil counts all, [] counts none.
+  attr_accessor :run_tracker_ids, :section
 
   def initialize(attributes = nil, *args)
     super
@@ -67,7 +67,9 @@ class ReportingQuery < Query
 
   def as_params
     # Charts have no columns or sorting; serialize only their native filters.
-    super.slice(:f, :op, :v, :set_filter).reverse_merge(f: [""])
+    super.slice(:f, :op, :v, :set_filter).reverse_merge(f: [""]).tap do |parameters|
+      parameters[:section] = section if section == "build"
+    end
   end
 
   def visible_projects
@@ -92,7 +94,7 @@ class ReportingQuery < Query
     return [] unless valid?
 
     scope = tracker_scope
-    scope = scope.where(id: run_tracker_ids) if run_tracker_ids.present?
+    scope = scope.where(id: run_tracker_ids) unless run_tracker_ids.nil?
     if has_filter?("tracker_id")
       scope = scope.where(sql_for_field("tracker_id", operator_for("tracker_id"), values_for("tracker_id"), Tracker.table_name, "id"))
     end
@@ -103,11 +105,11 @@ class ReportingQuery < Query
     return Issue.none unless valid?
 
     scope = Issue.visible(reporting_user).where(project_id: selected_projects.select(:id)).where(statement)
-    run_tracker_ids.present? ? scope.where(tracker_id: run_tracker_ids) : scope
+    run_tracker_ids.nil? ? scope : scope.where(tracker_id: run_tracker_ids)
   end
 
   def tracker_restricted?
-    has_filter?("tracker_id") || run_tracker_ids.present?
+    has_filter?("tracker_id") || !run_tracker_ids.nil?
   end
 
   def time_entry_scope
@@ -116,9 +118,9 @@ class ReportingQuery < Query
     scope = TimeEntry.visible(reporting_user).where(project_id: selected_projects.select(:id))
     # Unassigned time entries remain included until an issue filter is applied; the Run
     # perimeter alone keeps them, as it only sorts issues out.
-    if filters.keys.any? { |field| field != "project_id" }
+    if section == "build" || filters.keys.any? { |field| field != "project_id" }
       scope.where(issue_id: issue_scope.select(:id))
-    elsif run_tracker_ids.present?
+    elsif !run_tracker_ids.nil?
       scope.where(issue_id: nil).or(scope.where(issue_id: issue_scope.select(:id)))
     else
       scope

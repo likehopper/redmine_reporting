@@ -70,7 +70,7 @@ fr:
       time_unit: Unité de temps
       hours_per_day_desc: "Convertit le temps saisi et les estimations en jours, pour les crédits et le bandeau."
       trackers: Périmètre des trackers
-      trackers_desc: "Les graphiques Run ne comptent que les trackers Run. Tant qu'aucun tracker n'est classé Run, tous sont comptés. Le classement Build servira aux graphiques Build & Projets."
+      trackers_desc: "Les graphiques Run ne comptent que les trackers Run. Tant qu'aucun tracker n'est classé Run, tous sont comptés. Seuls les trackers classés Build alimentent les graphiques Build & Projets ; sans classement Build, ils restent vides."
       tracker_role:
         run: Run
         build: Build
@@ -98,7 +98,17 @@ fr:
     title: "%{project} · Reporting"
     sections_label: Sections du reporting
     unknown: Inconnu
+    build:
+      scope: "État actuel des tickets BUILD, toutes dates confondues : les dates de période ne filtrent pas ces graphiques. Seuls les trackers classés BUILD sont comptés."
+      empty: "Aucun ticket BUILD visible. Vérifiez le classement des trackers et les filtres."
+      progress: "Avancement par version"
+      progress_desc: "Tickets ouverts et fermés par version ; pourcentage fermé dans l’infobulle."
+      deadlines: "Échéances et retards"
+      deadlines_desc: "Tickets encore ouverts dont l’échéance est dépassée aujourd’hui ; échéance de la version dans l’infobulle."
+      charges: "Charges par version"
+      charges_desc: "Heures estimées et saisies visibles, toutes dates. Restant : somme des écarts positifs estimé − passé des tickets ouverts. Dépassement : somme des écarts positifs passé − estimé. Les tickets sans estimation ont une estimation de zéro."
     tabs:
+      build: "Build & Projets"
       flow: Flux des tickets
       activity: Activité
       consumption: Consommation
@@ -217,6 +227,14 @@ fr:
       closed_issues: "↑ clic pour voir les tickets fermés"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      build_unversioned: "Sans version"
+      build_overdue: "Tickets en retard"
+      build_due: "Échéance version : %{date}"
+      build_no_due: "non définie"
+      build_estimated: "Estimé"
+      build_spent: "Passé"
+      build_remaining: "Restant calculé"
+      build_overrun: "Dépassement"
       horizon_help: "Solde positif restant divisé par le nombre de mois restant dans l’échéancier affiché, mois courant inclus. C’est une allocation mensuelle, pas une prévision de consommation."
       balance_help: "Solde reporté augmenté des dotations et recharges du mois, avant déduction de la consommation mensuelle. Il peut être négatif."
       credit_help: "Solde après dotations, recharges et consommation du mois. Affiché à zéro en cas de dépassement ; la dette est reportée."

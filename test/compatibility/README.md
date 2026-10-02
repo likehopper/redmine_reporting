@@ -18,6 +18,23 @@ The initial hardening results below describe commit `1fbc347`.
 The subsequent DashboardPresenter refactor changes presentation only; its
 verification is recorded separately below.
 
+## Build & Projects verification — 2026-10-02
+
+The Build charts and family navigation passed the complete suite with SQLite and
+Chromium, including installation and uninstall/reinstall checks:
+
+| Redmine | Tests | Assertions | Result |
+|---|---:|---:|---|
+| 5.0.14 | 104 | 854 | PASS |
+| 6.1.4 | 104 | 856 | PASS |
+| 7.0.1 | 104 | 864 | PASS |
+
+No failures, errors or skips. Coverage includes empty Build classification,
+version drilldowns, excluded unassigned time, overruns, project/time permissions,
+Build-only projects, browser rendering and chart clicks. Redmine 5.1/6.0 and
+external databases were not rerun for this change. The historical runtime checksum
+file below still describes its earlier snapshot.
+
 ## Initial hardening results — 2026-09-30
 
 All runs below passed installation, rollback/reinstallation and the complete suite,

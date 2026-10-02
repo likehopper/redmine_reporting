@@ -17,8 +17,8 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.0.0 covers the **Run** reports. Run & Support (SLA) reports are planned for
-1.1.0; Build & Projects and Workload & Team reports will follow.
+Version 1.0.0 covers **Run** and **Build & Projects** reports. Run & Support (SLA)
+and Workload & Team reports are planned.
 
 ## Requirements
 
@@ -79,6 +79,21 @@ RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_repor
 Remove `plugins/redmine_reporting`, then restart Redmine.
 
 ## The dashboard
+
+Enable **Build & Projects** in project settings and classify its trackers as **Build**.
+The family selector opens three charts: open/closed issues by version (closure
+percentage in the tooltip), overdue open issues by version (version deadline in
+the tooltip), and estimated/spent/calculated remaining/overrun hours. Issues without
+a version have their own group. These charts show the current state across all
+dates, rather than reconstructing historical version membership. Remaining hours
+sum positive estimated-minus-spent gaps on open issues; overruns sum positive
+spent-minus-estimated gaps. An absent estimate counts as zero. Only visible logged
+time contributes; the effort chart requires time-viewing permissions. Clicks open
+native issue lists scoped to the chosen version and status, with time columns for
+effort charts. The effort list shows all contributing issues (open ones for remaining),
+not just overrunning issues. BUILD with no classified tracker stays empty; time
+without an issue is excluded.
+
 
 The *Reporting* project menu opens five tabs, over a date range and a grouping (day,
 week, month or quarter), with Redmine's native filters (subprojects, tracker, status,
@@ -177,14 +192,14 @@ the parent report.
 
 The **Reporting** tab of the project settings holds:
 
-- **Displayed reports**: the report families. Run is available; the others are listed
+- **Displayed reports**: the report families. Run and Build & Projects are available; the others are listed
   as coming soon. The SLA family will need redmine_sla, its module enabled on the
   project and at least one tracker with an SLA.
 - **Time unit**: hours per day, to convert logged time and estimates into days.
 - **Tracker scope**: each tracker is Run, Build or unclassified. Once a tracker is Run,
   Run reports, credits and their lists only count Run trackers (time logged without an
-  issue still counts); until then, every tracker counts. Build will feed the Build &
-  Projects reports.
+  issue still counts); until then, every tracker counts. Build trackers feed the
+  Build & Projects reports, including their native detail lists.
 - **SLA statuses**: read-only, when redmine_sla is configured for the project. An SLA
   status is a status in which an SLA type's delay elapses; open statuses where no type
   of the project elapses are waiting statuses. Nothing SLA-related is entered here: it
@@ -300,7 +315,7 @@ estimate and historical time entries; it does not reconstruct earlier estimates.
 Reports load visible records into memory. The compatibility document includes a
 volume measurement; installations with larger datasets should measure their own
 report ranges. Only the stock Redmine theme and the documented plugin/database
-combinations have been validated. SLA reports, Build & Projects and Workload & Team
+combinations have been validated. SLA reports and Workload & Team
 are not implemented in this release; Redmine 7.1 is not certified.
 
 For a reproducible issue report, include the plugin commit/version, Redmine, Ruby,
