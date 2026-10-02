@@ -34,6 +34,9 @@ module RedmineReporting
       project_ids = reporting_query.selected_projects.ids.map(&:to_s)
       @query.add_filter("project_id", "=", project_ids.presence || ["0"])
       filters = reporting_query.valid? ? reporting_query.filters.except("project_id") : {}
+      if parameters[:version_at].present? && parameters[:records] != "time_entries"
+        filters = filters.except("fixed_version_id")
+      end
       filters.each do |field, filter|
         @query.add_filter(native_field(field), filter[:operator], filter[:values].dup)
       end
@@ -113,6 +116,24 @@ module RedmineReporting
       restrict_named("tracker_id", Tracker, :tracker)
       restrict_named("priority_id", IssuePriority, :priority)
       restrict_named("status_id", IssueStatus, :status)
+      if @parameters[:version_at].present?
+        if (date = date_parameter(:version_at))
+          @query.add_filter("reporting_version_on", "=", [date.iso8601])
+          @query.add_filter("reporting_completed_on", "=", [date.iso8601]) if @parameters[:completed] == "true"
+          field = "reporting_historical_version_id"
+          if @reporting_query.has_filter?("fixed_version_id")
+            @query.add_filter(field, @reporting_query.operator_for("fixed_version_id"), @reporting_query.values_for("fixed_version_id"))
+          end
+          if @parameters[:historical_version_id] == "none"
+            excludes_null = @query.has_filter?(field) && %w[= *].include?(@query.operator_for(field))
+            excludes_null ? restrict(field, []) : @query.add_filter(field, "!*", [""])
+          else
+            restrict(field, [@parameters[:historical_version_id].to_i])
+          end
+        else
+          restrict("project_id", [])
+        end
+      end
       if @parameters[:version_id].present?
         if @parameters[:version_id] == "none"
           if @reporting_query.issue_scope.where(fixed_version_id: nil).exists?

@@ -44,6 +44,9 @@ fr:
   field_section_ids: Rapports affichés
   field_build_tracker_ids: Trackers Build
 
+  label_reporting_version_on: "Périmètre au"
+  label_reporting_completed_on: "Terminé au"
+  label_reporting_historical_version: "Version à la date du périmètre"
   reporting:
     no_section: "Aucun reporting n'est activé pour ce projet."
     no_module: "Le reporting a besoin du module Demandes ou Suivi du temps sur ce projet (ou un sous-projet), avec le droit de voir les demandes ou le temps passé."
@@ -119,9 +122,14 @@ fr:
       contributors: "Temps passé par collaborateur"
       contributors_desc: "Heures saisies sur la période sélectionnée. Un clic ouvre les saisies de temps de cette personne."
       empty: "Aucune donnée visible pour ces filtres."
+    burnup:
+      description: "Périmètre total et tickets terminés à chaque fin de période, par version. Changements de version et réouvertures suivent les journaux. La période en cours s’arrête aujourd’hui ; aucune prévision."
+      limitations: "Les tickets sont ceux visibles aujourd’hui. Les filtres hors version et le classement BUILD utilisent les valeurs actuelles. Sans journal de version, la version actuelle est supposée constante ; sans historique de statut, le statut actuel et la dernière clôture sont utilisés. Les tickets supprimés ne sont pas reconstitués."
+      empty: "Aucune donnée historique visible sur cette période."
     tabs:
       workload: "Charge actuelle"
       team_activity: "Activité de l’équipe"
+      burnup: "Burnup par version"
       build: "Build & Projets"
       flow: Flux des tickets
       activity: Activité
@@ -251,6 +259,8 @@ fr:
       workload_assignees: "Tickets ouverts par assigné"
       workload_remaining: "Restant estimé par assigné"
       workload_contributors: "Temps passé par collaborateur"
+      burnup_scope: "Périmètre total"
+      burnup_completed: "Tickets terminés"
       build_unversioned: "Sans version"
       build_overdue: "Tickets en retard"
       build_due: "Échéance version : %{date}"

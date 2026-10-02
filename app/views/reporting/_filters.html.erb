@@ -27,7 +27,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
         <legend onclick="toggleFieldset(this);" class="icon icon-expanded"><%= sprite_icon("angle-down") if respond_to?(:sprite_icon) %><%= l(:label_filter_plural) %></legend>
         <div><%= render partial: "queries/filters", locals: { query: @query } %></div>
       </fieldset>
-      <% unless @query.section == "build" %>
+      <% unless @query.section == "build" && @active_tab != "burnup" %>
       <fieldset id="options" class="collapsible">
         <legend onclick="toggleFieldset(this);" class="icon icon-expanded"><%= sprite_icon("angle-down") if respond_to?(:sprite_icon) %><%= l(:label_options) %></legend>
         <div>

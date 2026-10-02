@@ -44,6 +44,9 @@ en:
   field_section_ids: Displayed reports
   field_build_tracker_ids: Build trackers
 
+  label_reporting_version_on: "Scope as of"
+  label_reporting_completed_on: "Completed as of"
+  label_reporting_historical_version: "Version at scope date"
   reporting:
     no_section: "No report is enabled for this project."
     no_module: "Reporting needs the Issue tracking or Time tracking module on this project (or a subproject), with the permission to view issues or spent time."
@@ -119,9 +122,14 @@ en:
       contributors: "Logged time by contributor"
       contributors_desc: "Hours logged over the selected period. Clicking opens that person’s time entries."
       empty: "No visible data for these filters."
+    burnup:
+      description: "Total scope and completed issues at each period end, by version. Version changes and reopenings follow journals. The current period stops today; no forecast."
+      limitations: "Only currently visible issues are included. Non-version filters and BUILD classification use current values. Without version journals, current membership is assumed constant; missing status history falls back to current status and last closure. Deleted issues cannot be reconstructed."
+      empty: "No visible historical data over this period."
     tabs:
       workload: "Current workload"
       team_activity: "Team activity"
+      burnup: "Burnup by version"
       build: "Build & Projects"
       flow: Issue flow
       activity: Activity
@@ -251,6 +259,8 @@ en:
       workload_assignees: "Open issues by assignee"
       workload_remaining: "Calculated remaining effort by assignee"
       workload_contributors: "Logged time by contributor"
+      burnup_scope: "Total scope"
+      burnup_completed: "Completed issues"
       build_unversioned: "No version"
       build_overdue: "Overdue issues"
       build_due: "Version due: %{date}"
