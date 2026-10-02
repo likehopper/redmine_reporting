@@ -187,6 +187,25 @@ module RedmineReporting
       issue_filtered = @reporting_query.filters.keys.any? { |field| field != "project_id" }
       @query.add_filter("issue_id", "*", [""]) if issue_filtered
       apply_run_perimeter(issue_filtered)
+      if %w[run build unclassified no_issue].include?(@parameters[:work_role])
+        role = @parameters[:work_role]
+        if role == "no_issue"
+          if issue_filtered
+            @query.add_filter("project_id", "=", ["0"])
+          else
+            @query.add_filter("issue_id", "!*", [""])
+          end
+        else
+          setting = ReportingProjectSetting.for(@reporting_query.project)
+          ids = case role
+                when "run" then setting.run_tracker_ids
+                when "build" then setting.build_tracker_ids
+                else Tracker.ids - setting.run_tracker_ids - setting.build_tracker_ids
+                end
+          @query.add_filter("issue_id", "*", [""])
+          restrict("issue.tracker_id", ids)
+        end
+      end
       date_filter("spent_on", date_parameter(:from), date_parameter(:to))
       restrict_named("tracker_id", Tracker, :tracker)
       restrict_named("priority_id", IssuePriority, :priority)

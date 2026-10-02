@@ -108,6 +108,8 @@ fr:
       charges: "Charges par version"
       charges_desc: "Heures estimées et saisies visibles, toutes dates. Restant : somme des écarts positifs estimé − passé des tickets ouverts. Dépassement : somme des écarts positifs passé − estimé. Les tickets sans estimation ont une estimation de zéro."
     workload:
+      mix: "Répartition RUN / BUILD"
+      mix_desc: "Heures visibles sur la période, selon le classement actuel des trackers du projet de reporting (hérité si nécessaire). Non classé et sans ticket restent dans le total. Un clic ouvre les saisies correspondantes."
       workload_scope: "Affectations actuelles, tous trackers et toutes dates. La période sélectionnée concerne uniquement le temps passé. Aucune capacité disponible n’est déduite."
       team_activity_scope: "Temps saisi du %{from} au %{to}, tous trackers, y compris sans ticket en l’absence de filtre de ticket. Le contributeur peut être différent de la personne assignée."
       assignees: "Tickets ouverts par assigné"
@@ -239,6 +241,11 @@ fr:
       closed_issues: "↑ clic pour voir les tickets fermés"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      work_mix_run: "RUN"
+      work_mix_build: "BUILD"
+      work_mix_unclassified: "Non classé"
+      work_mix_no_issue: "Sans ticket"
+      work_mix_empty: "Aucune heure sur cette période."
       workload_unassigned: "Non assigné"
       workload_count: "%{count} tickets, dont %{missing} sans estimation positive"
       workload_assignees: "Tickets ouverts par assigné"

@@ -43,6 +43,7 @@ module RedmineReporting
           end
         end
         if @data.capabilities.time?
+          result[:mix] = work_mix
           result[:contributors] = @data.time_entries.group_by(&:user).map do |user, entries|
             {id: user.id, name: user.name, hours: entries.sum { |entry| entry.hours.to_f }.round(2)}
           end.sort_by { |row| [row[:name], row[:id]] }
@@ -51,6 +52,22 @@ module RedmineReporting
       end
 
       private
+
+      # Classification is that of the reporting project, including inherited settings.
+      # Like Redmine's native time tracker filter, this reads the tracker of logged issues.
+      def work_mix
+        setting = ReportingProjectSetting.for(@data.query.project)
+        totals = Hash.new(0.0)
+        @data.query.time_entry_scope.where(spent_on: @data.first_day..@data.last_day).includes(:issue).each do |entry|
+          role = if entry.issue_id.nil? then "no_issue"
+                 elsif setting.run_tracker_ids.include?(entry.issue&.tracker_id) then "run"
+                 elsif setting.build_tracker_ids.include?(entry.issue&.tracker_id) then "build"
+                 else "unclassified"
+                 end
+          totals[role] += entry.hours.to_f
+        end
+        %w[run build unclassified no_issue].map { |role| {role: role, hours: totals[role].round(2)} }
+      end
 
       def group(issues)
         issues.group_by(&:assigned_to).map do |assignee, items|

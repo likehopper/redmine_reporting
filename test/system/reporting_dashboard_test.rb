@@ -52,7 +52,7 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     visit "/projects/#{@project.identifier}/reporting"
     assert_selector "#workload-assignees"
     wait_for_charts
-    %w[assignees remaining contributors].each do |key|
+    %w[assignees remaining contributors mix].each do |key|
       assert page.evaluate_script("!!Chart.getChart(document.getElementById('workload-#{key}'))")
     end
     point = chart_value("workload-assignees", "(() => { const bar = chart.getDatasetMeta(0).data[0]; return {x: (bar.x + bar.base) / 2, y: bar.y}; })()")

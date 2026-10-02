@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 -%>
-<% {"workload" => %w[assignees remaining], "team_activity" => %w[contributors]}.each do |tab, charts| %>
+<% {"workload" => %w[assignees remaining], "team_activity" => %w[contributors mix]}.each do |tab, charts| %>
   <% next unless @tabs.include?(tab) %>
   <section class="reporting-section" role="tabpanel" id="panel-<%= tab %>" aria-labelledby="tab-<%= tab %>" data-reporting-panel="<%= tab %>" <%= "hidden" unless @active_tab == tab %>>
     <h3 class="reporting-section-hdr"><%= l(:"reporting.tabs.#{tab}") %></h3>

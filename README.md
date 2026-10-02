@@ -92,6 +92,10 @@ trackers (Run, Build and unclassified), subject to native filters and visibility
   count as zero. The effort chart and its detail lists only include projects where
   both issues and time are readable. Restricted time visibility can inflate the
   calculated remaining effort.
+- **RUN / BUILD split**: visible logged hours split using the reporting project’s
+  current (possibly inherited) tracker classification. Unclassified trackers and
+  time without issues remain separate categories in the total. Chart clicks open
+  matching native time-entry lists. This is not historical tracker classification.
 - **Team activity**: visible time logged by contributor during the selected date
   range, including time without issues unless an issue filter excludes it.
   Contributors and current assignees are distinct dimensions.

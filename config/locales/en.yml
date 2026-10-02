@@ -108,6 +108,8 @@ en:
       charges: "Effort by version"
       charges_desc: "Estimated and visible logged hours, across all dates. Remaining: sum of positive estimated minus spent gaps on open issues. Overrun: sum of positive spent minus estimated gaps. Unestimated issues count as zero estimated hours."
     workload:
+      mix: "RUN / BUILD split"
+      mix_desc: "Visible hours over the period, using the reporting project’s current tracker classification (inherited when applicable). Unclassified and issue-less time remain in the total. Click to open matching entries."
       workload_scope: "Current assignments, across all trackers and dates. The selected period only applies to logged time. No available capacity is inferred."
       team_activity_scope: "Time logged from %{from} to %{to}, across all trackers, including unassigned time unless issue filters apply. The contributor may differ from the assignee."
       assignees: "Open issues by assignee"
@@ -239,6 +241,11 @@ en:
       closed_issues: "↑ click to see the closed issues"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      work_mix_run: "RUN"
+      work_mix_build: "BUILD"
+      work_mix_unclassified: "Unclassified"
+      work_mix_no_issue: "Without issue"
+      work_mix_empty: "No hours over this period."
       workload_unassigned: "Unassigned"
       workload_count: "%{count} issues, %{missing} without positive estimates"
       workload_assignees: "Open issues by assignee"

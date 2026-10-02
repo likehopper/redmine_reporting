@@ -444,4 +444,19 @@ if (workload) {
     });
   });
 }
+if (workload && workload.mix) {
+  const rows = workload.mix;
+  const total = sum(rows.map(row => row.hours));
+  if (total > 0) draw("workload-mix", {
+    type: "doughnut",
+    data: {labels: rows.map(row => t(`work_mix_${row.role}`)), datasets: [{data: rows.map(row => row.hours), backgroundColor: ["#4472C4", "#27AE60", "#F7941D", "#7F8C8D"]}]},
+    options: {plugins: {legend: legend(), tooltip: {callbacks: {
+      label: context => `${context.label}: ${formatHours(context.parsed)} h (${formatHours(context.parsed * 100 / total)} %)`
+    }}}, ...clickable(({index}) => ({title: t(`work_mix_${rows[index].role}`), filters: {records: "time_entries", work_role: rows[index].role}}))}
+  });
+  else {
+    const canvas = document.getElementById("workload-mix");
+    if (canvas) canvas.closest(".reporting-chart").textContent = t("work_mix_empty");
+  }
+}
 })();

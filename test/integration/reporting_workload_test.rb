@@ -94,7 +94,7 @@ class ReportingWorkloadTest < ActionDispatch::IntegrationTest
   def test_time_only_modules_render_activity_without_issue_payload
     [@project, @child].each { |project| project.disable_module!(:issue_tracking) }
     data, page, = dashboard(from: Date.current, to: Date.current)
-    assert_equal ["contributors"], data.keys
+    assert_equal %w[contributors mix], data.keys.sort
     assert_equal 3, data["contributors"].sum { |row| row["hours"] }
     assert page.at_css("#panel-team_activity")
     refute page.at_css("#tab-workload")
@@ -105,9 +105,33 @@ class ReportingWorkloadTest < ActionDispatch::IntegrationTest
     data, = dashboard
     assert_equal 1, data["assignees"].sum { |row| row["count"] }
     data, = dashboard(f: ["project_id"], op: {"project_id" => "="}, v: {"project_id" => [@outside.id.to_s]})
-    assert data.values.all?(&:empty?)
+    assert data.except("mix").values.all?(&:empty?)
+    assert_equal 0, data["mix"].sum { |row| row["hours"] }
     anonymous = ActionDispatch::Integration::Session.new(Rails.application)
     anonymous.get "/projects/#{@project.identifier}/reporting", params: {section: "workload"}
     assert_equal 302, anonymous.response.status
   end
+  def test_work_mix_includes_all_four_categories_and_matches_native_lists
+    run, build, other = Tracker.order(:id).first(3)
+    @project.trackers = [run, build, other]
+    @child.trackers = [run, build, other]
+    ReportingProjectSetting.update_for(@project, run_tracker_ids: [run.id], build_tracker_ids: [build.id])
+    @parent_issue.update_columns(tracker_id: run.id)
+    @child_issue.update_columns(tracker_id: build.id)
+    third = create_issue(@project, tracker: other)
+    [@parent_issue, third].each_with_index do |issue, index|
+      TimeEntry.create!(project: @project, issue: issue, user: @administrator, activity: @entry.activity, hours: index + 3, spent_on: Date.current)
+    end
+    data, _, session = dashboard(from: Date.current, to: Date.current)
+    assert_equal [3, 2, 4, 1], data["mix"].map { |row| row["hours"] }
+    data["mix"].each do |row|
+      session.get "/projects/#{@project.identifier}/reporting/details", params: {section: "workload", records: "time_entries", work_role: row["role"], from: Date.current, to: Date.current}
+      session.follow_redirect!
+      assert_equal 200, session.response.status
+      assert_equal 1, Nokogiri::HTML(session.response.body).css("table.time-entries tbody tr").size, row["role"]
+    end
+    data, = dashboard(from: Date.current, to: Date.current, f: ["tracker_id"], op: {"tracker_id" => "="}, v: {"tracker_id" => [build.id.to_s]})
+    assert_equal [0, 2, 0, 0], data["mix"].map { |row| row["hours"] }
+  end
+
 end

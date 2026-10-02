@@ -17,6 +17,9 @@ Build & Projects:
 
 Workload & Team:
 
+- Add a RUN/BUILD hours split with unclassified and issue-less categories, percentages
+  and native time-entry drilldowns over the selected period.
+
 - Show current open issues and calculated remaining effort by assignee, including
   groups, locked users and unassigned issues; flag missing estimates.
 - Show period-based logged time by contributor across all trackers, with native
