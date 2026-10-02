@@ -45,6 +45,7 @@ en:
   field_build_tracker_ids: Build trackers
 
   reporting:
+    icons_credit: Icons created by
     no_section: "No report is enabled for this project."
     no_module: "Reporting needs the Issue tracking or Time tracking module on this project (or a subproject), with the permission to view issues or spent time."
     no_section_settings: "Choose the reports in the project settings"

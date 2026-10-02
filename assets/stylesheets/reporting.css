@@ -17,6 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
+.reporting-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reporting-title img {
+  flex-shrink: 0;
+}
+
+.reporting-credits {
+  border-top: 1px solid #ddd;
+  margin-top: 20px;
+  padding-top: 8px;
+  font-size: 0.9em;
+  color: #666;
+  text-align: center;
+}
+
+.reporting-credits img {
+  vertical-align: text-bottom;
+}
+
 /* Visual language shared with ReportingTMA-Django: orange headers, numbered sub-titles, stat cards. */
 .reporting-sticky {
   position: sticky;

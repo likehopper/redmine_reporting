@@ -45,6 +45,7 @@ fr:
   field_build_tracker_ids: Trackers Build
 
   reporting:
+    icons_credit: Icônes réalisées par
     no_section: "Aucun reporting n'est activé pour ce projet."
     no_module: "Le reporting a besoin du module Demandes ou Suivi du temps sur ce projet (ou un sous-projet), avec le droit de voir les demandes ou le temps passé."
     no_section_settings: "Choisir les rapports dans la configuration du projet"

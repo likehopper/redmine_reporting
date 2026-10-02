@@ -1,4 +1,4 @@
-# Redmine Reporting
+# <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
 ![Version](https://img.shields.io/badge/Version-1.0.0-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
@@ -321,3 +321,8 @@ Redmine Reporting is licensed under the GNU General Public License, version 2
 or (at your option) any later version (GPL-2.0-or-later). See [LICENSE](LICENSE)
 and the [publication steps](RELEASING.md). Bundled Chart.js 4.4.0 is covered by the
 [MIT license](assets/javascripts/Chart.js.LICENSE.md).
+
+## Credits
+
+Icons created by [Magnific](https://www.flaticon.com/fr/auteurs/magnific)
+on [Flaticon](https://www.flaticon.com/). See the [image credits](assets/images/CREDITS.md).
