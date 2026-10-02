@@ -48,6 +48,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 <main class="reporting-sections" data-report-details-url="<%= project_reporting_details_path(project_id: @project) %>">
   <%= render "build" if @tabs.include?("build") %>
+  <%= render "burnup" if @tabs.include?("burnup") %>
   <% if @tabs.include?("flow") %>
   <section class="reporting-section" role="tabpanel" id="panel-flow" aria-labelledby="tab-flow" data-reporting-panel="flow" <%= "hidden" unless @active_tab == "flow" %>>
     <h3 class="reporting-section-hdr">📈 <%= l(:"reporting.sections.flow") %></h3>

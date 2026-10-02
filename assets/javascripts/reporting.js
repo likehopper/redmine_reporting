@@ -421,4 +421,18 @@ if (build && build.versions.length) {
     ...clickable(({index, datasetIndex}) => selection(index, {times: "true", ...(datasetIndex === 2 ? {open: "true"} : {})}))}
   });
 }
+if (report.burnup) report.burnup.versions.forEach((version, index) => {
+  draw(`burnup-${index}`, {
+    type: "line",
+    data: {labels: report.burnup.labels, datasets: [
+      {label: t("burnup_scope"), data: version.scope, borderColor: "#4472C4", backgroundColor: "#4472C4", tension: 0, pointRadius: 4},
+      {label: t("burnup_completed"), data: version.completed, borderColor: "#27AE60", backgroundColor: "#27AE60", tension: 0, pointRadius: 4}
+    ]},
+    options: {plugins: {legend: legend(), tooltip: {callbacks: {afterTitle: contexts => report.burnup.dates[contexts[0].dataIndex]}}},
+      scales: axes({y: {beginAtZero: true, ticks: {precision: 0}}}),
+      ...clickable(({index: point, datasetIndex}) => ({title: version.name || t("build_unversioned"), filters: {
+        records: "issues", version_at: report.burnup.dates[point], historical_version_id: version.id || "none", completed: datasetIndex === 1 ? "true" : "false"
+      }}))}
+  });
+});
 })();

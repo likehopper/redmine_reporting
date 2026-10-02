@@ -44,6 +44,18 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     assert_issue_list(count: 1) { click_chart("build-progress", point) }
   end
 
+  def test_burnup_renders_and_opens_historical_version_list
+    ReportingProjectSetting.create!(project: @project, section_ids: %w[build], build_tracker_ids: [@tracker.id])
+    log_user(@administrator.login, "Reporting-test-123!")
+    visit "/projects/#{@project.identifier}/reporting?section=build&tab=burnup"
+    assert_selector "#panel-burnup"
+    wait_for_charts
+    assert page.evaluate_script("!!Chart.getChart(document.getElementById('burnup-0'))")
+    last = chart_value("burnup-0", "chart.data.labels.length - 1")
+    point = chart_value("burnup-0", "chart.getDatasetMeta(0).data[#{last}].getProps(['x', 'y'], true)")
+    assert_issue_list(count: 1) { click_chart("burnup-0", point) }
+  end
+
   def test_every_chart_renders_inside_redmine_content
     open_dashboard
     assert_selector "#content > .reporting-sticky .reporting-banner"

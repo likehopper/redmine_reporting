@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 -%>
-<section class="reporting-section" role="tabpanel" id="panel-build" aria-labelledby="tab-build" data-reporting-panel="build">
+<section class="reporting-section" role="tabpanel" id="panel-build" aria-labelledby="tab-build" data-reporting-panel="build" <%= "hidden" unless @active_tab == "build" %>>
   <h3 class="reporting-section-hdr"><%= l(:"reporting.tabs.build") %></h3>
   <div class="reporting-section-body">
     <p class="reporting-desc"><%= l(:"reporting.build.scope") %></p>

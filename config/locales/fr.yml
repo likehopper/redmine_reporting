@@ -44,6 +44,9 @@ fr:
   field_section_ids: Rapports affichés
   field_build_tracker_ids: Trackers Build
 
+  label_reporting_version_on: "Périmètre au"
+  label_reporting_completed_on: "Terminé au"
+  label_reporting_historical_version: "Version à la date du périmètre"
   reporting:
     no_section: "Aucun reporting n'est activé pour ce projet."
     no_module: "Le reporting a besoin du module Demandes ou Suivi du temps sur ce projet (ou un sous-projet), avec le droit de voir les demandes ou le temps passé."
@@ -107,7 +110,12 @@ fr:
       deadlines_desc: "Tickets encore ouverts dont l’échéance est dépassée aujourd’hui ; échéance de la version dans l’infobulle."
       charges: "Charges par version"
       charges_desc: "Heures estimées et saisies visibles, toutes dates. Restant : somme des écarts positifs estimé − passé des tickets ouverts. Dépassement : somme des écarts positifs passé − estimé. Les tickets sans estimation ont une estimation de zéro."
+    burnup:
+      description: "Périmètre total et tickets terminés à chaque fin de période, par version. Changements de version et réouvertures suivent les journaux. La période en cours s’arrête aujourd’hui ; aucune prévision."
+      limitations: "Les tickets sont ceux visibles aujourd’hui. Les filtres hors version et le classement BUILD utilisent les valeurs actuelles. Sans journal de version, la version actuelle est supposée constante ; sans historique de statut, le statut actuel et la dernière clôture sont utilisés. Les tickets supprimés ne sont pas reconstitués."
+      empty: "Aucune donnée historique visible sur cette période."
     tabs:
+      burnup: "Burnup par version"
       build: "Build & Projets"
       flow: Flux des tickets
       activity: Activité
@@ -227,6 +235,8 @@ fr:
       closed_issues: "↑ clic pour voir les tickets fermés"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      burnup_scope: "Périmètre total"
+      burnup_completed: "Tickets terminés"
       build_unversioned: "Sans version"
       build_overdue: "Tickets en retard"
       build_due: "Échéance version : %{date}"

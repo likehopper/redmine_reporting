@@ -8,6 +8,11 @@ English and French UI; bundled Chart.js.
 
 Build & Projects:
 
+- Add a period-based Burnup by version, replaying membership changes and status
+  transitions, including unassignment and reopenings, with native historical
+  issue-list drilldowns and viewer-time-zone boundaries.
+- Keep future periods out of the Burnup and document missing-history fallbacks.
+
 - Enable the Build family with its own tracker scope; an empty classification
   stays empty and excludes unassigned time.
 - Show current open/closed issues, overdue issues and effort by version, including

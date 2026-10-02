@@ -80,6 +80,24 @@ Remove `plugins/redmine_reporting`, then restart Redmine.
 
 ## The dashboard
 
+### Burnup by version
+
+The Build family also has a **Burnup** tab with total scope and completed issue
+counts at each period end, grouped by target version. Select dates, grouping and
+native filters; version filters apply to historical membership, so issues moved
+out of the selected version remain visible at earlier dates. Other filters and
+Build tracker classification use current values. Reopenings reduce the completed
+series, and version changes adjust scope. The current period stops today; future
+periods are omitted. Click a point to open the matching historical native issue
+list, preserving pagination and exports.
+
+The reconstruction uses status and target-version journal details of currently
+visible issues. Without version history, current membership is assumed constant;
+missing status history falls back to current status and last closure. Deleted
+issues and missing journal events cannot be recovered. These counts are not an
+immutable historical audit, an hours/points velocity or a delivery forecast.
+
+
 Enable **Build & Projects** in project settings and classify its trackers as **Build**.
 The family selector opens three charts: open/closed issues by version (closure
 percentage in the tooltip), overdue open issues by version (version deadline in
