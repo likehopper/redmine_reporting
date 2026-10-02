@@ -139,7 +139,7 @@ not just overrunning issues. BUILD with no classified tracker stays empty; time
 without an issue is excluded.
 
 
-The *Reporting* project menu opens five tabs, over a date range and a grouping (day,
+The *Run* family opens five tabs, over a date range and a grouping (day,
 week, month or quarter), with Redmine's native filters (subprojects, tracker, status,
 priority, target version):
 
