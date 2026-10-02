@@ -1,0 +1,43 @@
+<%#
+File: redmine_reporting/app/views/reporting/_workload.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<% {"workload" => %w[assignees remaining], "team_activity" => %w[contributors]}.each do |tab, charts| %>
+  <% next unless @tabs.include?(tab) %>
+  <section class="reporting-section" role="tabpanel" id="panel-<%= tab %>" aria-labelledby="tab-<%= tab %>" data-reporting-panel="<%= tab %>" <%= "hidden" unless @active_tab == tab %>>
+    <h3 class="reporting-section-hdr"><%= l(:"reporting.tabs.#{tab}") %></h3>
+    <div class="reporting-section-body">
+      <p class="reporting-desc"><%= l(:"reporting.workload.#{tab}_scope", from: @dashboard.date_from, to: @dashboard.date_to) %></p>
+      <div class="reporting-chart-grid">
+        <% charts.each do |chart| %>
+          <% rows = @report_data[:workload][chart.to_sym] %>
+          <% next unless rows %>
+          <article>
+            <h4><%= l(:"reporting.workload.#{chart}") %></h4>
+            <p class="reporting-desc"><%= l(:"reporting.workload.#{chart}_desc") %></p>
+            <% if rows.empty? %>
+              <p class="reporting-empty"><%= l(:"reporting.workload.empty") %></p>
+            <% else %>
+              <div class="reporting-chart tall"><canvas id="workload-<%= chart %>"></canvas></div>
+            <% end %>
+          </article>
+        <% end %>
+      </div>
+    </div>
+  </section>
+<% end %>

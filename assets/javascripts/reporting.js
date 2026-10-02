@@ -421,4 +421,27 @@ if (build && build.versions.length) {
     ...clickable(({index, datasetIndex}) => selection(index, {times: "true", ...(datasetIndex === 2 ? {open: "true"} : {})}))}
   });
 }
+const workload = report.workload;
+if (workload) {
+  ["assignees", "remaining", "contributors"].forEach(key => {
+    const rows = workload[key];
+    if (!rows || !rows.length) return;
+    const hours = key !== "assignees";
+    draw(`workload-${key}`, {
+      type: "bar",
+      data: {labels: rows.map(row => row.name || t("workload_unassigned")), datasets: [{
+        label: t(`workload_${key}`), data: rows.map(row => hours ? row.hours : row.count), backgroundColor: "#4472C4"
+      }]},
+      options: {indexAxis: "y", plugins: {legend: {display: false}, tooltip: {callbacks: {
+        label: context => hours ? t("hours_short", {value: formatHours(context.parsed.x)}) : t("workload_count", {count: context.parsed.x, missing: rows[context.dataIndex].unestimated})
+      }}}, scales: axes({x: {beginAtZero: true, ticks: hours ? {callback: value => t("hours_short", {value})} : {precision: 0}}}),
+      ...clickable(({index}) => ({title: rows[index].name || t("workload_unassigned"), filters:
+        key === "contributors" ? {records: "time_entries", user_id: rows[index].id} : {
+          records: "issues", open: "true", assignee_id: rows[index].id || "none",
+          ...(key === "remaining" ? {times: "true", workload_effort: "true"} : {})
+        }
+      }))}
+    });
+  });
+}
 })();

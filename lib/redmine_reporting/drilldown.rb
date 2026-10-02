@@ -124,6 +124,14 @@ module RedmineReporting
           restrict("fixed_version_id", [@parameters[:version_id]])
         end
       end
+      if @parameters[:assignee_id].present?
+        if @parameters[:assignee_id] == "none"
+          @query.add_filter("assigned_to_id", "!*", [""])
+        else
+          restrict("assigned_to_id", [@parameters[:assignee_id]])
+        end
+      end
+      restrict("project_id", @reporting_query.effort_project_ids) if @parameters[:workload_effort] == "true"
       date_filter("due_date", nil, date_parameter(:due_before))
       date_filter("created_on", date_parameter(:created_from), date_parameter(:created_to))
       date_filter("closed_on", date_parameter(:closed_from), date_parameter(:closed_to))

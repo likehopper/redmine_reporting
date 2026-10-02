@@ -2,7 +2,7 @@
 
 ## 1.0.0 — Unreleased
 
-Initial Run and Build reporting release: issue flow, activity, time credits, backlog and
+Initial Run, Build and Workload reporting release: issue flow, activity, time credits, backlog and
 performance; project settings, subprojects, native Redmine filters and drilldowns;
 English and French UI; bundled Chart.js.
 
@@ -14,6 +14,16 @@ Build & Projects:
   unversioned issues, with native issue-list drilldowns and permission-aware time data.
 - Preserve the family when applying filters and opening detail lists; support
   projects that enable Build without Run.
+
+Workload & Team:
+
+- Show current open issues and calculated remaining effort by assignee, including
+  groups, locked users and unassigned issues; flag missing estimates.
+- Show period-based logged time by contributor across all trackers, with native
+  list drilldowns using identities rather than display names.
+- Respect issue/time visibility independently, including time-only configurations
+  and project-level restrictions on remaining-effort calculations and their lists.
+- Keep capacity planning out of this first version; no availability is inferred.
 
 Release hardening:
 
@@ -44,4 +54,4 @@ Release hardening:
 - Add regression/security/browser tests and a Docker/GitHub Actions matrix for
   Redmine 5.0–7.0, SQLite, PostgreSQL, MariaDB, MySQL and SLA coexistence.
 
-SLA reports and Workload & Team are outside this release.
+SLA reports are outside this release.

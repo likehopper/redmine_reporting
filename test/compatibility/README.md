@@ -18,6 +18,24 @@ The initial hardening results below describe commit `1fbc347`.
 The subsequent DashboardPresenter refactor changes presentation only; its
 verification is recorded separately below.
 
+## Workload & Team verification — 2026-10-02
+
+The full suite passed with SQLite and Chromium, including installation and
+uninstall/reinstall checks:
+
+| Redmine | Tests | Assertions | Result |
+|---|---:|---:|---|
+| 5.0.14 | 111 | 929 | PASS |
+| 6.1.4 | 111 | 931 | PASS |
+| 7.0.1 | 111 | 939 | PASS |
+
+No failures, errors or skips. Added coverage includes current assignments versus
+period contributions, groups, locked assignees, missing estimates, overruns,
+unassigned issues, issue-only/time-only access, private projects/issues,
+project-level effort permissions, empty filters and browser drilldowns.
+Redmine 5.1/6.0 and external databases were not rerun for this change.
+The historical runtime checksum file still describes its earlier snapshot.
+
 ## Build & Projects verification — 2026-10-02
 
 The Build charts and family navigation passed the complete suite with SQLite and

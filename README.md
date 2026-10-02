@@ -17,8 +17,8 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.0.0 covers **Run** and **Build & Projects** reports. Run & Support (SLA)
-and Workload & Team reports are planned.
+Version 1.0.0 covers **Run**, **Build & Projects** and **Workload & Team** reports.
+Run & Support (SLA) reports are planned.
 
 ## Requirements
 
@@ -79,6 +79,29 @@ RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_repor
 Remove `plugins/redmine_reporting`, then restart Redmine.
 
 ## The dashboard
+
+### Workload & Team
+
+Enable **Workload & Team** in project reporting settings. This family includes all
+trackers (Run, Build and unclassified), subject to native filters and visibility:
+
+- **Current workload**: open issues by assignee (people, groups and unassigned),
+  with missing positive estimates indicated in tooltips. Locked assignees remain
+  represented. Calculated remaining effort sums positive estimated-minus-visible-
+  logged-hours gaps on those open issues, across all dates; missing estimates
+  count as zero. The effort chart and its detail lists only include projects where
+  both issues and time are readable. Restricted time visibility can inflate the
+  calculated remaining effort.
+- **Team activity**: visible time logged by contributor during the selected date
+  range, including time without issues unless an issue filter excludes it.
+  Contributors and current assignees are distinct dimensions.
+
+Clicks open matching native issue or time-entry lists; identities use IDs, so
+namesakes are kept separate. The current-workload charts ignore the period dates;
+these apply only to activity. No capacity, leave calendar, utilization rate or
+availability is inferred in this first version.
+
+### Build & Projects
 
 Enable **Build & Projects** in project settings and classify its trackers as **Build**.
 The family selector opens three charts: open/closed issues by version (closure
@@ -192,7 +215,7 @@ the parent report.
 
 The **Reporting** tab of the project settings holds:
 
-- **Displayed reports**: the report families. Run and Build & Projects are available; the others are listed
+- **Displayed reports**: the report families. Run, Build & Projects and Workload & Team are available; SLA is listed
   as coming soon. The SLA family will need redmine_sla, its module enabled on the
   project and at least one tracker with an SLA.
 - **Time unit**: hours per day, to convert logged time and estimates into days.
@@ -315,7 +338,7 @@ estimate and historical time entries; it does not reconstruct earlier estimates.
 Reports load visible records into memory. The compatibility document includes a
 volume measurement; installations with larger datasets should measure their own
 report ranges. Only the stock Redmine theme and the documented plugin/database
-combinations have been validated. SLA reports and Workload & Team
+combinations have been validated. SLA reports
 are not implemented in this release; Redmine 7.1 is not certified.
 
 For a reproducible issue report, include the plugin commit/version, Redmine, Ruby,

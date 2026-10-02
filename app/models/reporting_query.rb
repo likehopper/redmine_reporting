@@ -68,7 +68,7 @@ class ReportingQuery < Query
   def as_params
     # Charts have no columns or sorting; serialize only their native filters.
     super.slice(:f, :op, :v, :set_filter).reverse_merge(f: [""]).tap do |parameters|
-      parameters[:section] = section if section == "build"
+      parameters[:section] = section if %w[build workload].include?(section)
     end
   end
 
@@ -84,6 +84,10 @@ class ReportingQuery < Query
       project_scope = project_scope.where(sql_for_field("project_id", operator_for("project_id"), values_for("project_id"), Project.table_name, "id"))
     end
     project_scope
+  end
+
+  def effort_project_ids
+    selected_projects.select { |project| reporting_user.allowed_to?(:view_issues, project) && reporting_user.allowed_to?(:view_time_entries, project) }.map(&:id)
   end
 
   def tracker_scope
