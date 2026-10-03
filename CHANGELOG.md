@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.2.0 — Unreleased
+## 1.2.0 — 2026-10-03
 
 Workload & Team:
 
@@ -15,7 +15,7 @@ Workload & Team:
   and project-level restrictions on remaining-effort calculations and their lists.
 - Keep capacity planning out of this first version; no availability is inferred.
 
-## 1.1.0 — Unreleased
+## 1.1.0 — 2026-10-03
 
 Build & Projects:
 
