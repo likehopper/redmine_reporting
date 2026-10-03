@@ -44,6 +44,30 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     assert_issue_list(count: 1) { click_chart("build-progress", point) }
   end
 
+  def test_workload_charts_render_and_open_matching_issue_and_time_lists
+    ReportingProjectSetting.create!(project: @project, section_ids: %w[workload])
+    @parent_issue.update_columns(estimated_hours: 4)
+    @child_issue.update_columns(estimated_hours: 5)
+    log_user(@administrator.login, "Reporting-test-123!")
+    visit "/projects/#{@project.identifier}/reporting"
+    assert_selector "#workload-assignees"
+    wait_for_charts
+    %w[assignees remaining contributors mix].each do |key|
+      assert page.evaluate_script("!!Chart.getChart(document.getElementById('workload-#{key}'))")
+    end
+    point = chart_value("workload-assignees", "(() => { const bar = chart.getDatasetMeta(0).data[0]; return {x: (bar.x + bar.base) / 2, y: bar.y}; })()")
+    assert_issue_list(count: 2) { click_chart("workload-assignees", point) }
+    find("#tab-team_activity").click
+    wait_for_charts
+    point = chart_value("workload-contributors", "(() => { const bar = chart.getDatasetMeta(0).data[0]; return {x: (bar.x + bar.base) / 2, y: bar.y}; })()")
+    list = window_opened_by { click_chart("workload-contributors", point) }
+    within_window(list) do
+      assert_current_path "/time_entries", ignore_query: true
+      assert_selector "table.time-entries tbody tr", count: 2
+    end
+    list.close
+  end
+
   def test_burnup_renders_and_opens_historical_version_list
     ReportingProjectSetting.create!(project: @project, section_ids: %w[build], build_tracker_ids: [@tracker.id])
     log_user(@administrator.login, "Reporting-test-123!")

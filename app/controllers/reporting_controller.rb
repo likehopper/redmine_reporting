@@ -63,8 +63,11 @@ class ReportingController < ApplicationController
   def build_reporting_query
     @query = ReportingQuery.new(name: "Reporting", project: @project, user: User.current)
     visible_sections = RedmineReporting::Sections.visible(@project, User.current, @reporting_setting)
-    @query.section = params[:section].present? ? (params[:section] == "build" ? "build" : "run") : (visible_sections.first&.id || "run")
-    @query.run_tracker_ids = @query.section == "build" ? @reporting_setting.build_tracker_ids : @reporting_setting.run_scope_tracker_ids
+    @query.section = params[:section].present? ? (RedmineReporting::Sections.selectable_ids.include?(params[:section]) ? params[:section] : "run") : (visible_sections.first&.id || "run")
+    @query.run_tracker_ids = case @query.section
+                             when "build" then @reporting_setting.build_tracker_ids
+                             when "run" then @reporting_setting.run_scope_tracker_ids
+                             end
     @query.build_from_params(params)
   end
 end

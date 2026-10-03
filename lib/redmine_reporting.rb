@@ -36,6 +36,7 @@ require_relative "redmine_reporting/reports/activity"
 require_relative "redmine_reporting/reports/consumption"
 require_relative "redmine_reporting/reports/backlog"
 require_relative "redmine_reporting/reports/build"
+require_relative "redmine_reporting/reports/workload"
 require_relative "redmine_reporting/reports/burnup"
 require_relative "redmine_reporting/reports/performance"
 require_relative "redmine_reporting/report_builder"
@@ -51,5 +52,5 @@ require_relative "redmine_reporting/projects_helper_patch"
 require_relative "redmine_reporting/hooks"
 
 module RedmineReporting
-  VERSION = "1.1.0"
+  VERSION = "1.2.0"
 end

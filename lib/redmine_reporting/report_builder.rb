@@ -38,6 +38,11 @@ module RedmineReporting
     end
 
     def build
+      if @query.section == "workload"
+        return {dateFrom: @data.first_day.iso8601, dateTo: @data.last_day.iso8601,
+                queryParams: @query.as_params.to_query, workload: Reports::Workload.new(@data).to_h}
+      end
+
       if @query.section == "build"
         return {dateFrom: @data.first_day.iso8601, dateTo: @data.last_day.iso8601,
                 queryParams: @query.as_params.to_query, build: Reports::Build.new(@data).to_h, burnup: Reports::Burnup.new(@data).to_h}

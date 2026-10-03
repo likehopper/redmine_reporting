@@ -39,7 +39,7 @@ module RedmineReporting
       Section.new(id: "run", permission: :view_reporting, tabs: RUN_TABS),
       Section.new(id: "sla", permission: :view_reporting, requires: :sla, planned: true),
       Section.new(id: "build", permission: :view_reporting, tabs: [Tab.new("build", [:issues]), Tab.new("burnup", [:issues])]),
-      Section.new(id: "workload", permission: :view_reporting, planned: true)
+      Section.new(id: "workload", permission: :view_reporting, tabs: [Tab.new("workload", [:issues]), Tab.new("team_activity", [:time])])
     ].freeze
 
     def self.find(id)

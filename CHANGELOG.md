@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.2.0 — 2026-10-03
+
+Workload & Team:
+
+- Add a RUN/BUILD hours split with unclassified and issue-less categories, percentages
+  and native time-entry drilldowns over the selected period.
+
+- Show current open issues and calculated remaining effort by assignee, including
+  groups, locked users and unassigned issues; flag missing estimates.
+- Show period-based logged time by contributor across all trackers, with native
+  list drilldowns using identities rather than display names.
+- Respect issue/time visibility independently, including time-only configurations
+  and project-level restrictions on remaining-effort calculations and their lists.
+- Keep capacity planning out of this first version; no availability is inferred.
+
 ## 1.1.0 — 2026-10-03
 
 Build & Projects:
