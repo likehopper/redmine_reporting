@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.1 — Unreleased
+
+- Add the Reporting logo to the README and dashboard title.
+- Add localized Magnific/Flaticon credits and retain image attribution with the assets.
+
 ## 1.2.0 — Unreleased
 
 Workload & Team:
