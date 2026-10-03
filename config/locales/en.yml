@@ -44,6 +44,9 @@ en:
   field_section_ids: Displayed reports
   field_build_tracker_ids: Build trackers
 
+  label_reporting_version_on: "Scope as of"
+  label_reporting_completed_on: "Completed as of"
+  label_reporting_historical_version: "Version at scope date"
   reporting:
     no_section: "No report is enabled for this project."
     no_module: "Reporting needs the Issue tracking or Time tracking module on this project (or a subproject), with the permission to view issues or spent time."
@@ -70,7 +73,7 @@ en:
       time_unit: Time unit
       hours_per_day_desc: "Converts logged time and estimates into days, for credits and the banner."
       trackers: Tracker scope
-      trackers_desc: "Run charts only count Run trackers. As long as no tracker is classified as Run, all of them count. The Build classification will feed the Build & Projects charts."
+      trackers_desc: "Run charts only count Run trackers. As long as no tracker is classified as Run, all of them count. Only trackers classified as Build feed Build & Projects charts; without Build trackers, they stay empty."
       tracker_role:
         run: Run
         build: Build
@@ -98,7 +101,22 @@ en:
     title: "%{project} · Reporting"
     sections_label: Reporting sections
     unknown: Unknown
+    build:
+      scope: "Current BUILD issues, across all dates: the period dates do not filter these charts. Only trackers classified as BUILD are counted."
+      empty: "No visible BUILD issues. Check tracker classification and filters."
+      progress: "Progress by version"
+      progress_desc: "Open and closed issues by version; closure percentage in the tooltip."
+      deadlines: "Deadlines and overdue issues"
+      deadlines_desc: "Currently open issues overdue today; version due date in the tooltip."
+      charges: "Effort by version"
+      charges_desc: "Estimated and visible logged hours, across all dates. Remaining: sum of positive estimated minus spent gaps on open issues. Overrun: sum of positive spent minus estimated gaps. Unestimated issues count as zero estimated hours."
+    burnup:
+      description: "Total scope and completed issues at each period end, by version. Version changes and reopenings follow journals. The current period stops today; no forecast."
+      limitations: "Only currently visible issues are included. Non-version filters and BUILD classification use current values. Without version journals, current membership is assumed constant; missing status history falls back to current status and last closure. Deleted issues cannot be reconstructed."
+      empty: "No visible historical data over this period."
     tabs:
+      burnup: "Burnup by version"
+      build: "Build & Projects"
       flow: Issue flow
       activity: Activity
       consumption: Consumption
@@ -217,6 +235,16 @@ en:
       closed_issues: "↑ click to see the closed issues"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      burnup_scope: "Total scope"
+      burnup_completed: "Completed issues"
+      build_unversioned: "No version"
+      build_overdue: "Overdue issues"
+      build_due: "Version due: %{date}"
+      build_no_due: "not set"
+      build_estimated: "Estimated"
+      build_spent: "Spent"
+      build_remaining: "Calculated remaining"
+      build_overrun: "Overrun"
       horizon_help: "Remaining positive balance divided by the number of months left in the displayed ledger, including this month. This is a monthly allowance, not a consumption forecast."
       balance_help: "Balance carried forward plus grants and refills for this month, before deducting monthly consumption. It may be negative."
       credit_help: "Balance after monthly grants, refills and consumption. Displayed at zero when overdrawn; debt carries forward."

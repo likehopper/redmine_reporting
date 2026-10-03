@@ -380,4 +380,59 @@ draw("aging", {
   }
 });
 }
+const build = report.build;
+if (build && build.versions.length) {
+  const rows = build.versions;
+  const labels = rows.map(row => row.name || t("build_unversioned"));
+  const selection = (index, filters = {}) => ({title: labels[index], filters: {
+    records: "issues", version_id: rows[index].id || "none", ...filters
+  }});
+  draw("build-progress", {
+    type: "bar",
+    data: {labels, datasets: [
+      {label: t("closed_issues"), data: rows.map(row => row.closed), backgroundColor: "#27AE60"},
+      {label: t("open_issues"), data: rows.map(row => row.open), backgroundColor: "#4472C4"}
+    ]},
+    options: {indexAxis: "y", plugins: {legend: legend(), tooltip: {callbacks: {
+      afterTitle: contexts => `${rows[contexts[0].dataIndex].progress}%`
+    }}}, scales: axes({x: {stacked: true, ticks: {precision: 0}}, y: {stacked: true}}),
+    ...clickable(({index, datasetIndex}) => selection(index, datasetIndex ? {open: "true"} : {closed: "true"}))}
+  });
+  draw("build-deadlines", {
+    type: "bar",
+    data: {labels, datasets: [{label: t("build_overdue"), data: rows.map(row => row.overdue), backgroundColor: "#E74C3C"}]},
+    options: {indexAxis: "y", plugins: {legend: legend(), tooltip: {callbacks: {
+      afterTitle: contexts => t("build_due", {date: rows[contexts[0].dataIndex].dueDate || t("build_no_due")})
+    }}}, scales: axes({x: {ticks: {precision: 0}}}),
+    ...clickable(({index}) => {
+      const yesterday = new Date(`${build.today}T12:00:00Z`);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      return selection(index, {open: "true", due_before: yesterday.toISOString().slice(0, 10)});
+    })}
+  });
+  if (rows[0].spent !== undefined) draw("build-charges", {
+    type: "bar",
+    data: {labels, datasets: ["estimated", "spent", "remaining", "overrun"].map((key, index) => ({
+      label: t(`build_${key}`), data: rows.map(row => row[key]), backgroundColor: PALETTE[index]
+    }))},
+    options: {indexAxis: "y", plugins: {legend: legend(), tooltip: {callbacks: {
+      label: context => `${context.dataset.label}: ${formatHours(context.parsed.x)} h`
+    }}}, scales: axes({x: {ticks: {callback: value => t("hours_short", {value})}}}),
+    ...clickable(({index, datasetIndex}) => selection(index, {times: "true", ...(datasetIndex === 2 ? {open: "true"} : {})}))}
+  });
+}
+if (report.burnup) report.burnup.versions.forEach((version, index) => {
+  draw(`burnup-${index}`, {
+    type: "line",
+    data: {labels: report.burnup.labels, datasets: [
+      {label: t("burnup_scope"), data: version.scope, borderColor: "#4472C4", backgroundColor: "#4472C4", tension: 0, pointRadius: 4},
+      {label: t("burnup_completed"), data: version.completed, borderColor: "#27AE60", backgroundColor: "#27AE60", tension: 0, pointRadius: 4}
+    ]},
+    options: {plugins: {legend: legend(), tooltip: {callbacks: {afterTitle: contexts => report.burnup.dates[contexts[0].dataIndex]}}},
+      scales: axes({y: {beginAtZero: true, ticks: {precision: 0}}}),
+      ...clickable(({index: point, datasetIndex}) => ({title: version.name || t("build_unversioned"), filters: {
+        records: "issues", version_at: report.burnup.dates[point], historical_version_id: version.id || "none", completed: datasetIndex === 1 ? "true" : "false"
+      }}))}
+  });
+});
 })();

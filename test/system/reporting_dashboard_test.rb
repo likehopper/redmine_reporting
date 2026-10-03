@@ -31,6 +31,31 @@ require File.expand_path("../../../../test/application_system_test_case", __dir_
 class ReportingDashboardSystemTest < ApplicationSystemTestCase
   include ReportingTestData
 
+  def test_build_charts_render_and_open_the_selected_version
+    ReportingProjectSetting.create!(project: @project, section_ids: %w[build], build_tracker_ids: [@tracker.id])
+    log_user(@administrator.login, "Reporting-test-123!")
+    visit "/projects/#{@project.identifier}/reporting"
+    assert_selector "#panel-build"
+    wait_for_charts
+    %w[build-progress build-deadlines build-charges].each do |id|
+      assert page.evaluate_script("!!Chart.getChart(document.getElementById('#{id}'))")
+    end
+    point = chart_value("build-progress", "(() => { const bar = chart.getDatasetMeta(1).data[0]; return {x: (bar.x + bar.base) / 2, y: bar.y}; })()")
+    assert_issue_list(count: 1) { click_chart("build-progress", point) }
+  end
+
+  def test_burnup_renders_and_opens_historical_version_list
+    ReportingProjectSetting.create!(project: @project, section_ids: %w[build], build_tracker_ids: [@tracker.id])
+    log_user(@administrator.login, "Reporting-test-123!")
+    visit "/projects/#{@project.identifier}/reporting?section=build&tab=burnup"
+    assert_selector "#panel-burnup"
+    wait_for_charts
+    assert page.evaluate_script("!!Chart.getChart(document.getElementById('burnup-0'))")
+    last = chart_value("burnup-0", "chart.data.labels.length - 1")
+    point = chart_value("burnup-0", "chart.getDatasetMeta(0).data[#{last}].getProps(['x', 'y'], true)")
+    assert_issue_list(count: 1) { click_chart("burnup-0", point) }
+  end
+
   def test_every_chart_renders_inside_redmine_content
     open_dashboard
     assert_selector "#content > .reporting-sticky .reporting-banner"
