@@ -6,7 +6,19 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
-The release-hardening suite contains 98 unit, integration and browser tests.
+## Release 1.2.1 validation — 2026-10-03
+
+GitHub Actions passed all ten compatibility jobs for application commit
+`92753d2b66c67d687deab396cdc71cb18c1c12df` in [PR #4](https://github.com/likehopper/redmine_reporting/pull/4):
+Redmine 5.0.14, 5.1.13, 6.0.11, 6.1.4 and 7.0.1 with SQLite; Redmine 6.1.4
+with PostgreSQL 16, MySQL 8.0 and MariaDB 10.11; SLA coexistence on PostgreSQL;
+and the disposable demo-data smoke check. Browser tests are included.
+
+The release-finalization changes only date the changelog and update release
+validation documentation. Runtime fingerprints match the application files.
+
+
+Test counts are recorded per validated snapshot below.
 The optional SLA coexistence case adds one test when that plugin is installed.
 See the result table below for the exact runtimes validated after the fixes.
 

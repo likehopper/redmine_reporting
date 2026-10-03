@@ -1,11 +1,11 @@
 # Changelog
 
-## 1.2.1 — Unreleased
+## 1.2.1 — 2026-10-03
 
 - Add the Reporting logo to the README and dashboard title.
 - Add localized Magnific/Flaticon credits and retain image attribution with the assets.
 
-## 1.2.0 — Unreleased
+## 1.2.0 — 2026-10-03
 
 Workload & Team:
 
@@ -20,7 +20,7 @@ Workload & Team:
   and project-level restrictions on remaining-effort calculations and their lists.
 - Keep capacity planning out of this first version; no availability is inferred.
 
-## 1.1.0 — Unreleased
+## 1.1.0 — 2026-10-03
 
 Build & Projects:
 
