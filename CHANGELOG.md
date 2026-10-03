@@ -1,10 +1,6 @@
 # Changelog
 
-## 1.0.0 — Unreleased
-
-Initial Run and Build reporting release: issue flow, activity, time credits, backlog and
-performance; project settings, subprojects, native Redmine filters and drilldowns;
-English and French UI; bundled Chart.js.
+## 1.1.0 — Unreleased
 
 Build & Projects:
 
@@ -19,6 +15,12 @@ Build & Projects:
   unversioned issues, with native issue-list drilldowns and permission-aware time data.
 - Preserve the family when applying filters and opening detail lists; support
   projects that enable Build without Run.
+
+## 1.0.0 — Unreleased
+
+Initial Run reporting release: issue flow, activity, time credits, backlog and
+performance; project settings, subprojects, native Redmine filters and drilldowns;
+English and French UI; bundled Chart.js.
 
 Release hardening:
 
@@ -49,4 +51,4 @@ Release hardening:
 - Add regression/security/browser tests and a Docker/GitHub Actions matrix for
   Redmine 5.0–7.0, SQLite, PostgreSQL, MariaDB, MySQL and SLA coexistence.
 
-SLA reports and Workload & Team are outside this release.
+SLA reports, Build & Projects and Workload & Team are outside this release.
