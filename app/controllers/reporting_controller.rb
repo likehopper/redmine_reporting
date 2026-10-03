@@ -27,15 +27,15 @@ class ReportingController < ApplicationController
   helper :reporting
 
   def index
-    run = RedmineReporting::Sections.find("run")
+    section = RedmineReporting::Sections.find(@query.section)
     @capabilities = RedmineReporting::Capabilities.new(User.current, @query.visible_projects)
     @disabled_reason =
-      if RedmineReporting::Sections.visible(@project, User.current, @reporting_setting).exclude?(run) then "sections"
-      elsif !@capabilities.any? then "modules"
+      if RedmineReporting::Sections.visible(@project, User.current, @reporting_setting).exclude?(section) then "sections"
+      elsif @capabilities.tabs(section).empty? then "modules"
       end
     return render(:disabled) if @disabled_reason
 
-    @tabs = @capabilities.tabs(run)
+    @tabs = @capabilities.tabs(section)
     @active_tab = @tabs.include?(params[:tab]) ? params[:tab] : @tabs.first
     grid = RedmineReporting::PeriodGrid.from_params(from: params[:from], to: params[:to], grouping: params[:grouping], today: User.current.today)
     @date_from, @date_to, @grouping = grid.first_day, grid.last_day, grid.grouping
@@ -62,7 +62,12 @@ class ReportingController < ApplicationController
 
   def build_reporting_query
     @query = ReportingQuery.new(name: "Reporting", project: @project, user: User.current)
-    @query.run_tracker_ids = @reporting_setting.run_scope_tracker_ids
+    visible_sections = RedmineReporting::Sections.visible(@project, User.current, @reporting_setting)
+    @query.section = params[:section].present? ? (RedmineReporting::Sections.selectable_ids.include?(params[:section]) ? params[:section] : "run") : (visible_sections.first&.id || "run")
+    @query.run_tracker_ids = case @query.section
+                             when "build" then @reporting_setting.build_tracker_ids
+                             when "run" then @reporting_setting.run_scope_tracker_ids
+                             end
     @query.build_from_params(params)
   end
 end

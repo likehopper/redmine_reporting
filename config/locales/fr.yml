@@ -44,6 +44,9 @@ fr:
   field_section_ids: Rapports affichés
   field_build_tracker_ids: Trackers Build
 
+  label_reporting_version_on: "Périmètre au"
+  label_reporting_completed_on: "Terminé au"
+  label_reporting_historical_version: "Version à la date du périmètre"
   reporting:
     icons_credit: Icônes réalisées par
     no_section: "Aucun reporting n'est activé pour ce projet."
@@ -61,7 +64,7 @@ fr:
         run: "Flux des tickets, backlog et performance (module Demandes) ; activité et consommation du crédit (module Suivi du temps)."
         sla: "Respect des délais de prise en charge et de résolution."
         build: "Planification et avancement des versions."
-        workload: "Charge par collaborateur et capacité de l'équipe."
+        workload: "Tickets ouverts, restant estimé et temps passé par collaborateur."
       planned: Prochainement
       sla:
         configured: "Plugin SLA configuré pour ce projet"
@@ -71,7 +74,7 @@ fr:
       time_unit: Unité de temps
       hours_per_day_desc: "Convertit le temps saisi et les estimations en jours, pour les crédits et le bandeau."
       trackers: Périmètre des trackers
-      trackers_desc: "Les graphiques Run ne comptent que les trackers Run. Tant qu'aucun tracker n'est classé Run, tous sont comptés. Le classement Build servira aux graphiques Build & Projets."
+      trackers_desc: "Les graphiques Run ne comptent que les trackers Run. Tant qu'aucun tracker n'est classé Run, tous sont comptés. Seuls les trackers classés Build alimentent les graphiques Build & Projets ; sans classement Build, ils restent vides."
       tracker_role:
         run: Run
         build: Build
@@ -99,7 +102,36 @@ fr:
     title: "%{project} · Reporting"
     sections_label: Sections du reporting
     unknown: Inconnu
+    build:
+      scope: "État actuel des tickets BUILD, toutes dates confondues : les dates de période ne filtrent pas ces graphiques. Seuls les trackers classés BUILD sont comptés."
+      empty: "Aucun ticket BUILD visible. Vérifiez le classement des trackers et les filtres."
+      progress: "Avancement par version"
+      progress_desc: "Tickets ouverts et fermés par version ; pourcentage fermé dans l’infobulle."
+      deadlines: "Échéances et retards"
+      deadlines_desc: "Tickets encore ouverts dont l’échéance est dépassée aujourd’hui ; échéance de la version dans l’infobulle."
+      charges: "Charges par version"
+      charges_desc: "Heures estimées et saisies visibles, toutes dates. Restant : somme des écarts positifs estimé − passé des tickets ouverts. Dépassement : somme des écarts positifs passé − estimé. Les tickets sans estimation ont une estimation de zéro."
+    workload:
+      mix: "Répartition RUN / BUILD"
+      mix_desc: "Heures visibles sur la période, selon le classement actuel des trackers du projet de reporting (hérité si nécessaire). Non classé et sans ticket restent dans le total. Un clic ouvre les saisies correspondantes."
+      workload_scope: "Affectations actuelles, tous trackers et toutes dates. La période sélectionnée concerne uniquement le temps passé. Aucune capacité disponible n’est déduite."
+      team_activity_scope: "Temps saisi du %{from} au %{to}, tous trackers, y compris sans ticket en l’absence de filtre de ticket. Le contributeur peut être différent de la personne assignée."
+      assignees: "Tickets ouverts par assigné"
+      assignees_desc: "Personnes, groupes et tickets non assignés. L’infobulle signale les tickets sans estimation positive ; les comptes inactifs restent visibles."
+      remaining: "Restant estimé par assigné"
+      remaining_desc: "Somme des écarts positifs estimé − temps saisi visible, toutes dates, sur les tickets ouverts. Une estimation absente vaut zéro. Seuls les projets autorisant la lecture des tickets et du temps sont inclus ; les restrictions de visibilité du temps peuvent majorer ce calcul. Ce n’est pas une mesure de disponibilité."
+      contributors: "Temps passé par collaborateur"
+      contributors_desc: "Heures saisies sur la période sélectionnée. Un clic ouvre les saisies de temps de cette personne."
+      empty: "Aucune donnée visible pour ces filtres."
+    burnup:
+      description: "Périmètre total et tickets terminés à chaque fin de période, par version. Changements de version et réouvertures suivent les journaux. La période en cours s’arrête aujourd’hui ; aucune prévision."
+      limitations: "Les tickets sont ceux visibles aujourd’hui. Les filtres hors version et le classement BUILD utilisent les valeurs actuelles. Sans journal de version, la version actuelle est supposée constante ; sans historique de statut, le statut actuel et la dernière clôture sont utilisés. Les tickets supprimés ne sont pas reconstitués."
+      empty: "Aucune donnée historique visible sur cette période."
     tabs:
+      workload: "Charge actuelle"
+      team_activity: "Activité de l’équipe"
+      burnup: "Burnup par version"
+      build: "Build & Projets"
       flow: Flux des tickets
       activity: Activité
       consumption: Consommation
@@ -218,6 +250,26 @@ fr:
       closed_issues: "↑ clic pour voir les tickets fermés"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      work_mix_run: "RUN"
+      work_mix_build: "BUILD"
+      work_mix_unclassified: "Non classé"
+      work_mix_no_issue: "Sans ticket"
+      work_mix_empty: "Aucune heure sur cette période."
+      workload_unassigned: "Non assigné"
+      workload_count: "%{count} tickets, dont %{missing} sans estimation positive"
+      workload_assignees: "Tickets ouverts par assigné"
+      workload_remaining: "Restant estimé par assigné"
+      workload_contributors: "Temps passé par collaborateur"
+      burnup_scope: "Périmètre total"
+      burnup_completed: "Tickets terminés"
+      build_unversioned: "Sans version"
+      build_overdue: "Tickets en retard"
+      build_due: "Échéance version : %{date}"
+      build_no_due: "non définie"
+      build_estimated: "Estimé"
+      build_spent: "Passé"
+      build_remaining: "Restant calculé"
+      build_overrun: "Dépassement"
       horizon_help: "Solde positif restant divisé par le nombre de mois restant dans l’échéancier affiché, mois courant inclus. C’est une allocation mensuelle, pas une prévision de consommation."
       balance_help: "Solde reporté augmenté des dotations et recharges du mois, avant déduction de la consommation mensuelle. Il peut être négatif."
       credit_help: "Solde après dotations, recharges et consommation du mois. Affiché à zéro en cas de dépassement ; la dette est reportée."

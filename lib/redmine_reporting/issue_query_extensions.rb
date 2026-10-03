@@ -21,9 +21,45 @@ module RedmineReporting
   module IssueQueryExtensions
     def initialize_available_filters
       super
+      add_available_filter "reporting_version_on", type: :date, name: l(:label_reporting_version_on)
+      add_available_filter "reporting_completed_on", type: :date, name: l(:label_reporting_completed_on)
+      add_available_filter "reporting_historical_version_id", type: :list_optional, name: l(:label_reporting_historical_version),
+        values: -> { available_filters.fetch("fixed_version_id").values }
       add_available_filter "reporting_closed_on", type: :date_past, name: l(:label_reporting_closed_on)
       add_available_filter "reporting_backlog_on", type: :date, name: l(:label_reporting_backlog_on)
       add_available_filter "reporting_flow_on", type: :date_past, name: l(:label_reporting_flow_on)
+    end
+
+    def sql_for_reporting_version_on_field(_field, operator, values)
+      return "1=0" unless operator == "="
+
+      "issues.created_on < #{VersionHistory.cutoff(Date.iso8601(values.first.to_s), User.current)}"
+    rescue Date::Error
+      "1=0"
+    end
+
+    def sql_for_reporting_completed_on_field(_field, operator, values)
+      return "1=0" unless operator == "="
+
+      "NOT (#{IssueHistory.sql_open_on(Date.iso8601(values.first.to_s), User.current)})"
+    rescue Date::Error
+      "1=0"
+    end
+
+    def sql_for_reporting_historical_version_id_field(_field, operator, values)
+      return "1=0" unless has_filter?("reporting_version_on") && operator_for("reporting_version_on") == "="
+
+      expression = VersionHistory.sql_on(Date.iso8601(values_for("reporting_version_on").first.to_s), User.current)
+      ids = values.map { |value| Issue.connection.quote(value.to_i.to_s) }
+      case operator
+      when "=" then ids.any? ? "#{expression} IN (#{ids.join(',')})" : "1=0"
+      when "!" then ids.any? ? "(#{expression} IS NULL OR #{expression} NOT IN (#{ids.join(',')}))" : "1=1"
+      when "*" then "#{expression} IS NOT NULL"
+      when "!*" then "#{expression} IS NULL"
+      else "1=0"
+      end
+    rescue Date::Error
+      "1=0"
     end
 
     # Historical backlog includes both later closures and issues with no closure date.

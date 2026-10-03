@@ -1,5 +1,36 @@
 # Changelog
 
+## 1.2.0 — Unreleased
+
+Workload & Team:
+
+- Add a RUN/BUILD hours split with unclassified and issue-less categories, percentages
+  and native time-entry drilldowns over the selected period.
+
+- Show current open issues and calculated remaining effort by assignee, including
+  groups, locked users and unassigned issues; flag missing estimates.
+- Show period-based logged time by contributor across all trackers, with native
+  list drilldowns using identities rather than display names.
+- Respect issue/time visibility independently, including time-only configurations
+  and project-level restrictions on remaining-effort calculations and their lists.
+- Keep capacity planning out of this first version; no availability is inferred.
+
+## 1.1.0 — Unreleased
+
+Build & Projects:
+
+- Add a period-based Burnup by version, replaying membership changes and status
+  transitions, including unassignment and reopenings, with native historical
+  issue-list drilldowns and viewer-time-zone boundaries.
+- Keep future periods out of the Burnup and document missing-history fallbacks.
+
+- Enable the Build family with its own tracker scope; an empty classification
+  stays empty and excludes unassigned time.
+- Show current open/closed issues, overdue issues and effort by version, including
+  unversioned issues, with native issue-list drilldowns and permission-aware time data.
+- Preserve the family when applying filters and opening detail lists; support
+  projects that enable Build without Run.
+
 ## 1.0.0 — Unreleased
 
 Initial Run reporting release: issue flow, activity, time credits, backlog and

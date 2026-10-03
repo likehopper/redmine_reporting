@@ -1,0 +1,37 @@
+<%#
+File: redmine_reporting/app/views/reporting/_burnup.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<section class="reporting-section" role="tabpanel" id="panel-burnup" aria-labelledby="tab-burnup" data-reporting-panel="burnup" <%= "hidden" unless @active_tab == "burnup" %>>
+  <h3 class="reporting-section-hdr"><%= l(:"reporting.tabs.burnup") %></h3>
+  <div class="reporting-section-body">
+    <p class="reporting-desc"><%= l(:"reporting.burnup.description") %></p>
+    <p class="reporting-desc"><%= l(:"reporting.burnup.limitations") %></p>
+    <% if @report_data[:burnup][:versions].empty? %>
+      <p class="reporting-empty"><%= l(:"reporting.burnup.empty") %></p>
+    <% end %>
+    <div class="reporting-chart-grid">
+      <% @report_data[:burnup][:versions].each_with_index do |version, index| %>
+        <article>
+          <h4><%= version[:name] || l(:"reporting.js.build_unversioned") %></h4>
+          <div class="reporting-chart"><canvas id="burnup-<%= index %>"></canvas></div>
+        </article>
+      <% end %>
+    </div>
+  </div>
+</section>

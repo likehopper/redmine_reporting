@@ -20,12 +20,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 <%= form_tag project_reporting_path(project_id: @project), method: :get, id: "query_form" do %>
   <%= hidden_field_tag :tab, @active_tab, id: "reporting-active-tab" %>
   <%= hidden_field_tag :set_filter, 1 %>
+  <%= hidden_field_tag :section, @query.section %>
   <div id="query_form_with_buttons" class="hide-when-print">
     <div id="query_form_content">
       <fieldset id="filters" class="collapsible">
         <legend onclick="toggleFieldset(this);" class="icon icon-expanded"><%= sprite_icon("angle-down") if respond_to?(:sprite_icon) %><%= l(:label_filter_plural) %></legend>
         <div><%= render partial: "queries/filters", locals: { query: @query } %></div>
       </fieldset>
+      <% unless @query.section == "build" && @active_tab != "burnup" %>
       <fieldset id="options" class="collapsible">
         <legend onclick="toggleFieldset(this);" class="icon icon-expanded"><%= sprite_icon("angle-down") if respond_to?(:sprite_icon) %><%= l(:label_options) %></legend>
         <div>
@@ -41,10 +43,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
           </p>
         </div>
       </fieldset>
+      <% end %>
     </div>
     <p class="buttons">
       <%= link_to_function (respond_to?(:sprite_icon) ? sprite_icon("checked", l(:button_apply)) : l(:button_apply)), "$('#query_form').submit()", class: "icon icon-checked" %>
-      <%= link_to (respond_to?(:sprite_icon) ? sprite_icon("reload", l(:button_clear)) : l(:button_clear)), project_reporting_path(project_id: @project, tab: @active_tab), class: "icon icon-reload" %>
+      <%= link_to (respond_to?(:sprite_icon) ? sprite_icon("reload", l(:button_clear)) : l(:button_clear)), project_reporting_path(project_id: @project, tab: @active_tab, section: @query.section), class: "icon icon-reload" %>
     </p>
   </div>
 <% end %>

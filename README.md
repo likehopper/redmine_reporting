@@ -1,6 +1,6 @@
 # <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+![Version](https://img.shields.io/badge/Version-1.2.0-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,8 +17,8 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.0.0 covers the **Run** reports. Run & Support (SLA) reports are planned for
-1.1.0; Build & Projects and Workload & Team reports will follow.
+Version 1.2.0 covers **Run**, **Build & Projects** and **Workload & Team** reports.
+Run & Support (SLA) reports are planned.
 
 ## Requirements
 
@@ -80,7 +80,66 @@ Remove `plugins/redmine_reporting`, then restart Redmine.
 
 ## The dashboard
 
-The *Reporting* project menu opens five tabs, over a date range and a grouping (day,
+### Workload & Team
+
+Enable **Workload & Team** in project reporting settings. This family includes all
+trackers (Run, Build and unclassified), subject to native filters and visibility:
+
+- **Current workload**: open issues by assignee (people, groups and unassigned),
+  with missing positive estimates indicated in tooltips. Locked assignees remain
+  represented. Calculated remaining effort sums positive estimated-minus-visible-
+  logged-hours gaps on those open issues, across all dates; missing estimates
+  count as zero. The effort chart and its detail lists only include projects where
+  both issues and time are readable. Restricted time visibility can inflate the
+  calculated remaining effort.
+- **RUN / BUILD split**: visible logged hours split using the reporting project’s
+  current (possibly inherited) tracker classification. Unclassified trackers and
+  time without issues remain separate categories in the total. Chart clicks open
+  matching native time-entry lists. This is not historical tracker classification.
+- **Team activity**: visible time logged by contributor during the selected date
+  range, including time without issues unless an issue filter excludes it.
+  Contributors and current assignees are distinct dimensions.
+
+Clicks open matching native issue or time-entry lists; identities use IDs, so
+namesakes are kept separate. The current-workload charts ignore the period dates;
+these apply only to activity. No capacity, leave calendar, utilization rate or
+availability is inferred in this first version.
+
+### Burnup by version
+
+The Build family also has a **Burnup** tab with total scope and completed issue
+counts at each period end, grouped by target version. Select dates, grouping and
+native filters; version filters apply to historical membership, so issues moved
+out of the selected version remain visible at earlier dates. Other filters and
+Build tracker classification use current values. Reopenings reduce the completed
+series, and version changes adjust scope. The current period stops today; future
+periods are omitted. Click a point to open the matching historical native issue
+list, preserving pagination and exports.
+
+The reconstruction uses status and target-version journal details of currently
+visible issues. Without version history, current membership is assumed constant;
+missing status history falls back to current status and last closure. Deleted
+issues and missing journal events cannot be recovered. These counts are not an
+immutable historical audit, an hours/points velocity or a delivery forecast.
+
+### Build & Projects
+
+Enable **Build & Projects** in project settings and classify its trackers as **Build**.
+The family selector opens three charts: open/closed issues by version (closure
+percentage in the tooltip), overdue open issues by version (version deadline in
+the tooltip), and estimated/spent/calculated remaining/overrun hours. Issues without
+a version have their own group. These charts show the current state across all
+dates, rather than reconstructing historical version membership. Remaining hours
+sum positive estimated-minus-spent gaps on open issues; overruns sum positive
+spent-minus-estimated gaps. An absent estimate counts as zero. Only visible logged
+time contributes; the effort chart requires time-viewing permissions. Clicks open
+native issue lists scoped to the chosen version and status, with time columns for
+effort charts. The effort list shows all contributing issues (open ones for remaining),
+not just overrunning issues. BUILD with no classified tracker stays empty; time
+without an issue is excluded.
+
+
+The *Run* family opens five tabs, over a date range and a grouping (day,
 week, month or quarter), with Redmine's native filters (subprojects, tracker, status,
 priority, target version):
 
@@ -177,14 +236,14 @@ the parent report.
 
 The **Reporting** tab of the project settings holds:
 
-- **Displayed reports**: the report families. Run is available; the others are listed
+- **Displayed reports**: the report families. Run, Build & Projects and Workload & Team are available; SLA is listed
   as coming soon. The SLA family will need redmine_sla, its module enabled on the
   project and at least one tracker with an SLA.
 - **Time unit**: hours per day, to convert logged time and estimates into days.
 - **Tracker scope**: each tracker is Run, Build or unclassified. Once a tracker is Run,
   Run reports, credits and their lists only count Run trackers (time logged without an
-  issue still counts); until then, every tracker counts. Build will feed the Build &
-  Projects reports.
+  issue still counts); until then, every tracker counts. Build trackers feed the
+  Build & Projects reports, including their native detail lists.
 - **SLA statuses**: read-only, when redmine_sla is configured for the project. An SLA
   status is a status in which an SLA type's delay elapses; open statuses where no type
   of the project elapses are waiting statuses. Nothing SLA-related is entered here: it
@@ -300,7 +359,7 @@ estimate and historical time entries; it does not reconstruct earlier estimates.
 Reports load visible records into memory. The compatibility document includes a
 volume measurement; installations with larger datasets should measure their own
 report ranges. Only the stock Redmine theme and the documented plugin/database
-combinations have been validated. SLA reports, Build & Projects and Workload & Team
+combinations have been validated. SLA reports
 are not implemented in this release; Redmine 7.1 is not certified.
 
 For a reproducible issue report, include the plugin commit/version, Redmine, Ruby,

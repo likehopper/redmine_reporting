@@ -34,6 +34,9 @@ module RedmineReporting
       project_ids = reporting_query.selected_projects.ids.map(&:to_s)
       @query.add_filter("project_id", "=", project_ids.presence || ["0"])
       filters = reporting_query.valid? ? reporting_query.filters.except("project_id") : {}
+      if parameters[:version_at].present? && parameters[:records] != "time_entries"
+        filters = filters.except("fixed_version_id")
+      end
       filters.each do |field, filter|
         @query.add_filter(native_field(field), filter[:operator], filter[:values].dup)
       end
@@ -109,10 +112,48 @@ module RedmineReporting
     end
 
     def apply_selection
-      restrict("tracker_id", @reporting_query.run_tracker_ids) if @reporting_query.run_tracker_ids.present?
+      restrict("tracker_id", @reporting_query.run_tracker_ids) unless @reporting_query.run_tracker_ids.nil?
       restrict_named("tracker_id", Tracker, :tracker)
       restrict_named("priority_id", IssuePriority, :priority)
       restrict_named("status_id", IssueStatus, :status)
+      if @parameters[:version_at].present?
+        if (date = date_parameter(:version_at))
+          @query.add_filter("reporting_version_on", "=", [date.iso8601])
+          @query.add_filter("reporting_completed_on", "=", [date.iso8601]) if @parameters[:completed] == "true"
+          field = "reporting_historical_version_id"
+          if @reporting_query.has_filter?("fixed_version_id")
+            @query.add_filter(field, @reporting_query.operator_for("fixed_version_id"), @reporting_query.values_for("fixed_version_id"))
+          end
+          if @parameters[:historical_version_id] == "none"
+            excludes_null = @query.has_filter?(field) && %w[= *].include?(@query.operator_for(field))
+            excludes_null ? restrict(field, []) : @query.add_filter(field, "!*", [""])
+          else
+            restrict(field, [@parameters[:historical_version_id].to_i])
+          end
+        else
+          restrict("project_id", [])
+        end
+      end
+      if @parameters[:version_id].present?
+        if @parameters[:version_id] == "none"
+          if @reporting_query.issue_scope.where(fixed_version_id: nil).exists?
+            @query.add_filter("fixed_version_id", "!*", [""])
+          else
+            restrict("fixed_version_id", [])
+          end
+        else
+          restrict("fixed_version_id", [@parameters[:version_id]])
+        end
+      end
+      if @parameters[:assignee_id].present?
+        if @parameters[:assignee_id] == "none"
+          @query.add_filter("assigned_to_id", "!*", [""])
+        else
+          restrict("assigned_to_id", [@parameters[:assignee_id]])
+        end
+      end
+      restrict("project_id", @reporting_query.effort_project_ids) if @parameters[:workload_effort] == "true"
+      date_filter("due_date", nil, date_parameter(:due_before))
       date_filter("created_on", date_parameter(:created_from), date_parameter(:created_to))
       date_filter("closed_on", date_parameter(:closed_from), date_parameter(:closed_to))
       date_filter("reporting_flow_on", date_parameter(:flow_from), date_parameter(:flow_to))
@@ -140,9 +181,9 @@ module RedmineReporting
     # Same rule as ReportingQuery#time_entry_scope: time without an issue stays, unless issues are filtered.
     def apply_run_perimeter(issue_filtered)
       run_ids = @reporting_query.run_tracker_ids
-      return if run_ids.blank?
+      return if run_ids.nil?
 
-      if issue_filtered
+      if issue_filtered || @reporting_query.section == "build"
         restrict("issue.tracker_id", run_ids)
       elsif (other_ids = Tracker.where.not(id: run_ids).ids).any?
         # Redmine's "is not" also keeps entries without an issue.
@@ -167,6 +208,25 @@ module RedmineReporting
       issue_filtered = @reporting_query.filters.keys.any? { |field| field != "project_id" }
       @query.add_filter("issue_id", "*", [""]) if issue_filtered
       apply_run_perimeter(issue_filtered)
+      if %w[run build unclassified no_issue].include?(@parameters[:work_role])
+        role = @parameters[:work_role]
+        if role == "no_issue"
+          if issue_filtered
+            @query.add_filter("project_id", "=", ["0"])
+          else
+            @query.add_filter("issue_id", "!*", [""])
+          end
+        else
+          setting = ReportingProjectSetting.for(@reporting_query.project)
+          ids = case role
+                when "run" then setting.run_tracker_ids
+                when "build" then setting.build_tracker_ids
+                else Tracker.ids - setting.run_tracker_ids - setting.build_tracker_ids
+                end
+          @query.add_filter("issue_id", "*", [""])
+          restrict("issue.tracker_id", ids)
+        end
+      end
       date_filter("spent_on", date_parameter(:from), date_parameter(:to))
       restrict_named("tracker_id", Tracker, :tracker)
       restrict_named("priority_id", IssuePriority, :priority)

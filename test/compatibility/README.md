@@ -18,6 +18,62 @@ The initial hardening results below describe commit `1fbc347`.
 The subsequent DashboardPresenter refactor changes presentation only; its
 verification is recorded separately below.
 
+## RUN/BUILD split and historical Burnup verification — 2026-10-02
+
+The combined branch passed migrations, uninstall/reinstall and the full suite,
+including Chromium. All runs completed without failures, errors or skips.
+
+| Redmine | Database | Tests | Assertions | Result |
+|---|---|---:|---:|---|
+| 5.0.14 | SQLite | 117 | 1001 | PASS |
+| 7.0.1 | SQLite | 117 | 1011 | PASS |
+| 6.1.4 | PostgreSQL 16 | 117 | 1003 | PASS |
+| 6.1.4 | MySQL 8.0, strict SQL mode | 117 | 1003 | PASS |
+| 6.1.4 | MariaDB 10.11, strict SQL mode | 117 | 1003 | PASS |
+
+Before integration, Redmine 6.1.4/SQLite passed the ratio branch (112 tests,
+955 assertions) and the Burnup branch (109 tests, 903 assertions) separately.
+Coverage includes all four time categories and native drilldowns, historical
+version moves/unassignment, closure/reopening, timezone boundaries, version
+filters retaining moved-out issues, future periods and visibility.
+Redmine 5.1/6.0 and SLA coexistence were not rerun for these changes.
+Historical runtime checksums still describe their earlier snapshot.
+
+## Workload & Team verification — 2026-10-02
+
+The full suite passed with SQLite and Chromium, including installation and
+uninstall/reinstall checks:
+
+| Redmine | Tests | Assertions | Result |
+|---|---:|---:|---|
+| 5.0.14 | 111 | 929 | PASS |
+| 6.1.4 | 111 | 931 | PASS |
+| 7.0.1 | 111 | 939 | PASS |
+
+No failures, errors or skips. Added coverage includes current assignments versus
+period contributions, groups, locked assignees, missing estimates, overruns,
+unassigned issues, issue-only/time-only access, private projects/issues,
+project-level effort permissions, empty filters and browser drilldowns.
+Redmine 5.1/6.0 and external databases were not rerun for this change.
+The historical runtime checksum file still describes its earlier snapshot.
+
+## Build & Projects verification — 2026-10-02
+
+The Build charts and family navigation passed the complete suite with SQLite and
+Chromium, including installation and uninstall/reinstall checks:
+
+| Redmine | Tests | Assertions | Result |
+|---|---:|---:|---|
+| 5.0.14 | 104 | 854 | PASS |
+| 6.1.4 | 104 | 856 | PASS |
+| 7.0.1 | 104 | 864 | PASS |
+
+No failures, errors or skips. Coverage includes empty Build classification,
+version drilldowns, excluded unassigned time, overruns, project/time permissions,
+Build-only projects, browser rendering and chart clicks. Redmine 5.1/6.0 and
+external databases were not rerun for this change. The historical runtime checksum
+file below still describes its earlier snapshot.
+
 ## Initial hardening results — 2026-09-30
 
 All runs below passed installation, rollback/reinstallation and the complete suite,

@@ -44,6 +44,9 @@ en:
   field_section_ids: Displayed reports
   field_build_tracker_ids: Build trackers
 
+  label_reporting_version_on: "Scope as of"
+  label_reporting_completed_on: "Completed as of"
+  label_reporting_historical_version: "Version at scope date"
   reporting:
     icons_credit: Icons created by
     no_section: "No report is enabled for this project."
@@ -61,7 +64,7 @@ en:
         run: "Issue flow, backlog and performance (Issue tracking module); activity and credit consumption (Time tracking module)."
         sla: "Compliance with response and resolution times."
         build: "Planning and progress of versions."
-        workload: "Workload per collaborator and team capacity."
+        workload: "Open issues, calculated remaining effort and logged time per contributor."
       planned: Coming soon
       sla:
         configured: "SLA plugin configured for this project"
@@ -71,7 +74,7 @@ en:
       time_unit: Time unit
       hours_per_day_desc: "Converts logged time and estimates into days, for credits and the banner."
       trackers: Tracker scope
-      trackers_desc: "Run charts only count Run trackers. As long as no tracker is classified as Run, all of them count. The Build classification will feed the Build & Projects charts."
+      trackers_desc: "Run charts only count Run trackers. As long as no tracker is classified as Run, all of them count. Only trackers classified as Build feed Build & Projects charts; without Build trackers, they stay empty."
       tracker_role:
         run: Run
         build: Build
@@ -99,7 +102,36 @@ en:
     title: "%{project} · Reporting"
     sections_label: Reporting sections
     unknown: Unknown
+    build:
+      scope: "Current BUILD issues, across all dates: the period dates do not filter these charts. Only trackers classified as BUILD are counted."
+      empty: "No visible BUILD issues. Check tracker classification and filters."
+      progress: "Progress by version"
+      progress_desc: "Open and closed issues by version; closure percentage in the tooltip."
+      deadlines: "Deadlines and overdue issues"
+      deadlines_desc: "Currently open issues overdue today; version due date in the tooltip."
+      charges: "Effort by version"
+      charges_desc: "Estimated and visible logged hours, across all dates. Remaining: sum of positive estimated minus spent gaps on open issues. Overrun: sum of positive spent minus estimated gaps. Unestimated issues count as zero estimated hours."
+    workload:
+      mix: "RUN / BUILD split"
+      mix_desc: "Visible hours over the period, using the reporting project’s current tracker classification (inherited when applicable). Unclassified and issue-less time remain in the total. Click to open matching entries."
+      workload_scope: "Current assignments, across all trackers and dates. The selected period only applies to logged time. No available capacity is inferred."
+      team_activity_scope: "Time logged from %{from} to %{to}, across all trackers, including unassigned time unless issue filters apply. The contributor may differ from the assignee."
+      assignees: "Open issues by assignee"
+      assignees_desc: "People, groups and unassigned issues. Tooltips flag issues without positive estimates; inactive accounts remain visible."
+      remaining: "Calculated remaining effort by assignee"
+      remaining_desc: "Sum of positive estimated minus visible logged time gaps, across all dates, on open issues. Missing estimates count as zero. Only projects allowing both issue and time viewing are included; time visibility restrictions may inflate this calculation. This does not measure availability."
+      contributors: "Logged time by contributor"
+      contributors_desc: "Hours logged over the selected period. Clicking opens that person’s time entries."
+      empty: "No visible data for these filters."
+    burnup:
+      description: "Total scope and completed issues at each period end, by version. Version changes and reopenings follow journals. The current period stops today; no forecast."
+      limitations: "Only currently visible issues are included. Non-version filters and BUILD classification use current values. Without version journals, current membership is assumed constant; missing status history falls back to current status and last closure. Deleted issues cannot be reconstructed."
+      empty: "No visible historical data over this period."
     tabs:
+      workload: "Current workload"
+      team_activity: "Team activity"
+      burnup: "Burnup by version"
+      build: "Build & Projects"
       flow: Issue flow
       activity: Activity
       consumption: Consumption
@@ -218,6 +250,26 @@ en:
       closed_issues: "↑ click to see the closed issues"
     # Chart labels, tooltips and list titles rendered by the page script.
     js:
+      work_mix_run: "RUN"
+      work_mix_build: "BUILD"
+      work_mix_unclassified: "Unclassified"
+      work_mix_no_issue: "Without issue"
+      work_mix_empty: "No hours over this period."
+      workload_unassigned: "Unassigned"
+      workload_count: "%{count} issues, %{missing} without positive estimates"
+      workload_assignees: "Open issues by assignee"
+      workload_remaining: "Calculated remaining effort by assignee"
+      workload_contributors: "Logged time by contributor"
+      burnup_scope: "Total scope"
+      burnup_completed: "Completed issues"
+      build_unversioned: "No version"
+      build_overdue: "Overdue issues"
+      build_due: "Version due: %{date}"
+      build_no_due: "not set"
+      build_estimated: "Estimated"
+      build_spent: "Spent"
+      build_remaining: "Calculated remaining"
+      build_overrun: "Overrun"
       horizon_help: "Remaining positive balance divided by the number of months left in the displayed ledger, including this month. This is a monthly allowance, not a consumption forecast."
       balance_help: "Balance carried forward plus grants and refills for this month, before deducting monthly consumption. It may be negative."
       credit_help: "Balance after monthly grants, refills and consumption. Displayed at zero when overdrawn; debt carries forward."

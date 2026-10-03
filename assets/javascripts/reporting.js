@@ -380,4 +380,97 @@ draw("aging", {
   }
 });
 }
+const build = report.build;
+if (build && build.versions.length) {
+  const rows = build.versions;
+  const labels = rows.map(row => row.name || t("build_unversioned"));
+  const selection = (index, filters = {}) => ({title: labels[index], filters: {
+    records: "issues", version_id: rows[index].id || "none", ...filters
+  }});
+  draw("build-progress", {
+    type: "bar",
+    data: {labels, datasets: [
+      {label: t("closed_issues"), data: rows.map(row => row.closed), backgroundColor: "#27AE60"},
+      {label: t("open_issues"), data: rows.map(row => row.open), backgroundColor: "#4472C4"}
+    ]},
+    options: {indexAxis: "y", plugins: {legend: legend(), tooltip: {callbacks: {
+      afterTitle: contexts => `${rows[contexts[0].dataIndex].progress}%`
+    }}}, scales: axes({x: {stacked: true, ticks: {precision: 0}}, y: {stacked: true}}),
+    ...clickable(({index, datasetIndex}) => selection(index, datasetIndex ? {open: "true"} : {closed: "true"}))}
+  });
+  draw("build-deadlines", {
+    type: "bar",
+    data: {labels, datasets: [{label: t("build_overdue"), data: rows.map(row => row.overdue), backgroundColor: "#E74C3C"}]},
+    options: {indexAxis: "y", plugins: {legend: legend(), tooltip: {callbacks: {
+      afterTitle: contexts => t("build_due", {date: rows[contexts[0].dataIndex].dueDate || t("build_no_due")})
+    }}}, scales: axes({x: {ticks: {precision: 0}}}),
+    ...clickable(({index}) => {
+      const yesterday = new Date(`${build.today}T12:00:00Z`);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      return selection(index, {open: "true", due_before: yesterday.toISOString().slice(0, 10)});
+    })}
+  });
+  if (rows[0].spent !== undefined) draw("build-charges", {
+    type: "bar",
+    data: {labels, datasets: ["estimated", "spent", "remaining", "overrun"].map((key, index) => ({
+      label: t(`build_${key}`), data: rows.map(row => row[key]), backgroundColor: PALETTE[index]
+    }))},
+    options: {indexAxis: "y", plugins: {legend: legend(), tooltip: {callbacks: {
+      label: context => `${context.dataset.label}: ${formatHours(context.parsed.x)} h`
+    }}}, scales: axes({x: {ticks: {callback: value => t("hours_short", {value})}}}),
+    ...clickable(({index, datasetIndex}) => selection(index, {times: "true", ...(datasetIndex === 2 ? {open: "true"} : {})}))}
+  });
+}
+const workload = report.workload;
+if (workload) {
+  ["assignees", "remaining", "contributors"].forEach(key => {
+    const rows = workload[key];
+    if (!rows || !rows.length) return;
+    const hours = key !== "assignees";
+    draw(`workload-${key}`, {
+      type: "bar",
+      data: {labels: rows.map(row => row.name || t("workload_unassigned")), datasets: [{
+        label: t(`workload_${key}`), data: rows.map(row => hours ? row.hours : row.count), backgroundColor: "#4472C4"
+      }]},
+      options: {indexAxis: "y", plugins: {legend: {display: false}, tooltip: {callbacks: {
+        label: context => hours ? t("hours_short", {value: formatHours(context.parsed.x)}) : t("workload_count", {count: context.parsed.x, missing: rows[context.dataIndex].unestimated})
+      }}}, scales: axes({x: {beginAtZero: true, ticks: hours ? {callback: value => t("hours_short", {value})} : {precision: 0}}}),
+      ...clickable(({index}) => ({title: rows[index].name || t("workload_unassigned"), filters:
+        key === "contributors" ? {records: "time_entries", user_id: rows[index].id} : {
+          records: "issues", open: "true", assignee_id: rows[index].id || "none",
+          ...(key === "remaining" ? {times: "true", workload_effort: "true"} : {})
+        }
+      }))}
+    });
+  });
+}
+if (workload && workload.mix) {
+  const rows = workload.mix;
+  const total = sum(rows.map(row => row.hours));
+  if (total > 0) draw("workload-mix", {
+    type: "doughnut",
+    data: {labels: rows.map(row => t(`work_mix_${row.role}`)), datasets: [{data: rows.map(row => row.hours), backgroundColor: ["#4472C4", "#27AE60", "#F7941D", "#7F8C8D"]}]},
+    options: {plugins: {legend: legend(), tooltip: {callbacks: {
+      label: context => `${context.label}: ${formatHours(context.parsed)} h (${formatHours(context.parsed * 100 / total)} %)`
+    }}}, ...clickable(({index}) => ({title: t(`work_mix_${rows[index].role}`), filters: {records: "time_entries", work_role: rows[index].role}}))}
+  });
+  else {
+    const canvas = document.getElementById("workload-mix");
+    if (canvas) canvas.closest(".reporting-chart").textContent = t("work_mix_empty");
+  }
+}
+if (report.burnup) report.burnup.versions.forEach((version, index) => {
+  draw(`burnup-${index}`, {
+    type: "line",
+    data: {labels: report.burnup.labels, datasets: [
+      {label: t("burnup_scope"), data: version.scope, borderColor: "#4472C4", backgroundColor: "#4472C4", tension: 0, pointRadius: 4},
+      {label: t("burnup_completed"), data: version.completed, borderColor: "#27AE60", backgroundColor: "#27AE60", tension: 0, pointRadius: 4}
+    ]},
+    options: {plugins: {legend: legend(), tooltip: {callbacks: {afterTitle: contexts => report.burnup.dates[contexts[0].dataIndex]}}},
+      scales: axes({y: {beginAtZero: true, ticks: {precision: 0}}}),
+      ...clickable(({index: point, datasetIndex}) => ({title: version.name || t("build_unversioned"), filters: {
+        records: "issues", version_at: report.burnup.dates[point], historical_version_id: version.id || "none", completed: datasetIndex === 1 ? "true" : "false"
+      }}))}
+  });
+});
 })();
