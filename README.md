@@ -1,6 +1,6 @@
 # Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.0.0-orange)
+![Version](https://img.shields.io/badge/Version-1.2.0-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,7 +17,7 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.0.0 covers **Run**, **Build & Projects** and **Workload & Team** reports.
+Version 1.2.0 covers **Run**, **Build & Projects** and **Workload & Team** reports.
 Run & Support (SLA) reports are planned.
 
 ## Requirements

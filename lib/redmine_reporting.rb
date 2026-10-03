@@ -52,5 +52,5 @@ require_relative "redmine_reporting/projects_helper_patch"
 require_relative "redmine_reporting/hooks"
 
 module RedmineReporting
-  VERSION = "1.0.0"
+  VERSION = "1.2.0"
 end
