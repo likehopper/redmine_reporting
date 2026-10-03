@@ -6,10 +6,10 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
-## Release 1.2.0 validation — 2026-10-03
+## Release 1.2.1 validation — 2026-10-03
 
 GitHub Actions passed all ten compatibility jobs for application commit
-`72788366bc9d8e839f5f32f83f57ec23744ceda3` in [PR #3](https://github.com/likehopper/redmine_reporting/pull/3):
+`92753d2b66c67d687deab396cdc71cb18c1c12df` in [PR #4](https://github.com/likehopper/redmine_reporting/pull/4):
 Redmine 5.0.14, 5.1.13, 6.0.11, 6.1.4 and 7.0.1 with SQLite; Redmine 6.1.4
 with PostgreSQL 16, MySQL 8.0 and MariaDB 10.11; SLA coexistence on PostgreSQL;
 and the disposable demo-data smoke check. Browser tests are included.
