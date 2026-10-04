@@ -1,4 +1,4 @@
-# Publishing 1.2.0
+# Publishing 1.2.1
 
 The code is a release candidate under GPL-2.0-or-later. Its public repository is
 https://github.com/likehopper/redmine_reporting. Publish a tagged stable release
@@ -10,13 +10,13 @@ after the compatibility matrix passes.
    from an archive already works without a Git URL.
 3. Run the documented version, database, SLA and demo checks. Record their results
    in `test/compatibility/README.md` and refresh `runtime.sha256` when code changes.
-4. Commit the validated tree, date the changelog, then create the `v1.2.0` tag.
+4. Commit the validated tree, date the changelog, then create the `v1.2.1` tag.
 5. Create a reproducible archive from that tag:
 
    ```sh
    mkdir -p dist
-   git archive --format=tar --prefix=redmine_reporting/ v1.2.0 | gzip -n > dist/redmine_reporting-1.2.0.tar.gz
-   sha256sum dist/redmine_reporting-1.2.0.tar.gz
+   git archive --format=tar --prefix=redmine_reporting/ v1.2.1 | gzip -n > dist/redmine_reporting-1.2.1.tar.gz
+   sha256sum dist/redmine_reporting-1.2.1.tar.gz
    ```
 
 The local `*-candidate.tar.gz` archive, if present, is for review and is not a

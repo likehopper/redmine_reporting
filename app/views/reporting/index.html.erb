@@ -19,7 +19,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 -%>
 <%= stylesheet_link_tag "reporting", plugin: "redmine_reporting" %>
 
-<h2><%= l(:"reporting.title", project: @project.name) %></h2>
+<h2 class="reporting-title"><%= image_tag "rapport-dactivite-32.png", plugin: "redmine_reporting", size: "32x32", alt: "" %><%= l(:"reporting.title", project: @project.name) %></h2>
 <nav class="tabs" aria-label="<%= l(:"reporting.settings.sections") %>">
   <ul><% RedmineReporting::Sections.visible(@project, User.current, @reporting_setting).each do |section| %>
     <li><%= link_to l(:"reporting.settings.section.#{section.id}"), project_reporting_path(project_id: @project, **@report_query_params, from: @date_from, to: @date_to, section: section.id), class: (@query.section == section.id ? "selected" : nil) %></li>
@@ -200,6 +200,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
   </section>
   <% end %>
 </main>
+
+<p class="reporting-credits">
+  <%= l(:"reporting.icons_credit") %>
+  <a href="https://www.flaticon.com/" title="Flaticon"><%= image_tag "flaticon-32.png", plugin: "redmine_reporting", size: "16x16", alt: "Flaticon" %></a>
+  <a href="https://www.flaticon.com/fr/auteurs/magnific">Magnific</a>
+</p>
 
 <%# Plugin assets are fingerprinted, so browsers cache them; Chart.js is bundled for offline or strict-CSP sites. %>
 <%= javascript_include_tag "chart.umd.min", "reporting", plugin: "redmine_reporting" %>
