@@ -40,7 +40,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
     <% end %>
     </ul>
   </div>
-  <%= render "summary" unless @query.section == "build" %>
+  <%= render "summary" if @query.section == "run" %>
 </div>
 
 <script type="application/json" id="report-data"><%= raw json_escape(@report_data.to_json) %></script>
@@ -48,6 +48,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 <main class="reporting-sections" data-report-details-url="<%= project_reporting_details_path(project_id: @project) %>">
   <%= render "build" if @tabs.include?("build") %>
+  <%= render "workload" if @query.section == "workload" %>
   <%= render "burnup" if @tabs.include?("burnup") %>
   <% if @tabs.include?("flow") %>
   <section class="reporting-section" role="tabpanel" id="panel-flow" aria-labelledby="tab-flow" data-reporting-panel="flow" <%= "hidden" unless @active_tab == "flow" %>>

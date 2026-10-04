@@ -421,6 +421,44 @@ if (build && build.versions.length) {
     ...clickable(({index, datasetIndex}) => selection(index, {times: "true", ...(datasetIndex === 2 ? {open: "true"} : {})}))}
   });
 }
+const workload = report.workload;
+if (workload) {
+  ["assignees", "remaining", "contributors"].forEach(key => {
+    const rows = workload[key];
+    if (!rows || !rows.length) return;
+    const hours = key !== "assignees";
+    draw(`workload-${key}`, {
+      type: "bar",
+      data: {labels: rows.map(row => row.name || t("workload_unassigned")), datasets: [{
+        label: t(`workload_${key}`), data: rows.map(row => hours ? row.hours : row.count), backgroundColor: "#4472C4"
+      }]},
+      options: {indexAxis: "y", plugins: {legend: {display: false}, tooltip: {callbacks: {
+        label: context => hours ? t("hours_short", {value: formatHours(context.parsed.x)}) : t("workload_count", {count: context.parsed.x, missing: rows[context.dataIndex].unestimated})
+      }}}, scales: axes({x: {beginAtZero: true, ticks: hours ? {callback: value => t("hours_short", {value})} : {precision: 0}}}),
+      ...clickable(({index}) => ({title: rows[index].name || t("workload_unassigned"), filters:
+        key === "contributors" ? {records: "time_entries", user_id: rows[index].id} : {
+          records: "issues", open: "true", assignee_id: rows[index].id || "none",
+          ...(key === "remaining" ? {times: "true", workload_effort: "true"} : {})
+        }
+      }))}
+    });
+  });
+}
+if (workload && workload.mix) {
+  const rows = workload.mix;
+  const total = sum(rows.map(row => row.hours));
+  if (total > 0) draw("workload-mix", {
+    type: "doughnut",
+    data: {labels: rows.map(row => t(`work_mix_${row.role}`)), datasets: [{data: rows.map(row => row.hours), backgroundColor: ["#4472C4", "#27AE60", "#F7941D", "#7F8C8D"]}]},
+    options: {plugins: {legend: legend(), tooltip: {callbacks: {
+      label: context => `${context.label}: ${formatHours(context.parsed)} h (${formatHours(context.parsed * 100 / total)} %)`
+    }}}, ...clickable(({index}) => ({title: t(`work_mix_${rows[index].role}`), filters: {records: "time_entries", work_role: rows[index].role}}))}
+  });
+  else {
+    const canvas = document.getElementById("workload-mix");
+    if (canvas) canvas.closest(".reporting-chart").textContent = t("work_mix_empty");
+  }
+}
 if (report.burnup) report.burnup.versions.forEach((version, index) => {
   draw(`burnup-${index}`, {
     type: "line",

@@ -83,7 +83,7 @@ class ReportingProjectSettingTest < ActiveSupport::TestCase
     refute RedmineReporting::Sections.available?(sla, @project)
     RedmineReporting::SlaSource.any_instance.stubs(:configured?).returns(true)
     assert RedmineReporting::Sections.available?(sla, @project)
-    assert_equal %w[run build], RedmineReporting::Sections.selectable_ids
+    assert_equal %w[run build workload], RedmineReporting::Sections.selectable_ids
   end
 
   def test_visible_sections_follow_settings_and_permissions
