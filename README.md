@@ -37,7 +37,8 @@ cd /path/to/redmine
 RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_reporting
 ```
 
-Restart Redmine, then for each project:
+Restart Redmine, then for each project (see the illustrated
+[configuration guide](doc/CONFIGURATION.md) for every screen):
 
 1. Enable the **Reporting** module (project settings, *Modules*).
 2. Give roles the permissions they need:
@@ -308,8 +309,8 @@ calculations live in the objects above. `DashboardPresenter` owns dashboard desc
 dependencies instead of helper access to controller instance variables.
 `ReportingHelper` contains six view formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
 The browser script uses small functions for chart rendering and interactions.
-Comments and identifiers are written in English; translations and demo content
-may contain French. Small Rails callbacks and similar model validations remain
+Code, comments and demo content are written in English; only the French locale
+file is in French. Small Rails callbacks and similar model validations remain
 local when extracting them would obscure their meaning.
 
 ### Tests
