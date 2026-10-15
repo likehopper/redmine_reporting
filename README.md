@@ -1,6 +1,6 @@
 # <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.2.1-orange)
+![Version](https://img.shields.io/badge/Version-1.2.2-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,7 +17,7 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.2.1 covers **Run**, **Build & Projects** and **Workload & Team** reports.
+Version 1.2.2 covers **Run**, **Build & Projects** and **Workload & Team** reports.
 Run & Support (SLA) reports are planned.
 
 ## Requirements
@@ -37,7 +37,8 @@ cd /path/to/redmine
 RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_reporting
 ```
 
-Restart Redmine, then for each project:
+Restart Redmine, then for each project (see the illustrated
+[configuration guide](doc/CONFIGURATION.md) for every screen):
 
 1. Enable the **Reporting** module (project settings, *Modules*).
 2. Give roles the permissions they need:
@@ -308,8 +309,8 @@ calculations live in the objects above. `DashboardPresenter` owns dashboard desc
 dependencies instead of helper access to controller instance variables.
 `ReportingHelper` contains six view formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
 The browser script uses small functions for chart rendering and interactions.
-Comments and identifiers are written in English; translations and demo content
-may contain French. Small Rails callbacks and similar model validations remain
+Code, comments and demo content are written in English; only the French locale
+file is in French. Small Rails callbacks and similar model validations remain
 local when extracting them would obscure their meaning.
 
 ### Tests

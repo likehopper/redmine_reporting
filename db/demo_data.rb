@@ -73,7 +73,7 @@ module RedmineReporting
         versions: :quarterly
       },
       {
-        identifier: "reporting-demo-evolution", name: "Évolutions", code: "EVO", seed: 23,
+        identifier: "reporting-demo-evolution", name: "Product", code: "PRD", seed: 23,
         members: [["reporting-claire", MANAGER_ROLE], ["reporting-emma", DEVELOPER_ROLE], ["reporting-alice", DEVELOPER_ROLE]],
         trackers: {"Feature request" => 6, "Bug" => 2, "Support request" => 1},
         volumes: [3, 5, 2, 6, 4, 7, 3, 2, 5, 8, 4, 6],
@@ -85,36 +85,36 @@ module RedmineReporting
     PROFILES = {
       "Bug" => {triage: 0.1..2.0, work: 0.5..6.0, feedback: 1.0..5.0, validation: 1.0..4.0,
                 reject: 0.05, parked: 0.04, ask_feedback: 0.3, stale: 0.15, reopen: 0.2, estimate: 2.0..16.0, estimated: 0.85,
-                hours: 0.5..4.0, activity: "Development", resolved_note: "Correctif livré en recette."},
+                hours: 0.5..4.0, activity: "Development", resolved_note: "Fix delivered to acceptance testing."},
       "Support request" => {triage: 0.05..1.0, work: 0.2..2.0, feedback: 1.0..8.0, validation: 0.5..3.0,
                             reject: 0.1, parked: 0.05, ask_feedback: 0.55, stale: 0.2, reopen: 0.05, estimate: 1.0..6.0, estimated: 0.5,
-                            hours: 0.25..2.0, activity: "Support", resolved_note: "Réponse apportée au demandeur."},
+                            hours: 0.25..2.0, activity: "Support", resolved_note: "Answer sent to the requester."},
       "Feature request" => {triage: 2.0..20.0, work: 5.0..30.0, feedback: 2.0..10.0, validation: 3.0..12.0,
                             reject: 0.08, parked: 0.12, ask_feedback: 0.35, stale: 0.2, reopen: 0.15, estimate: 16.0..80.0, estimated: 0.95,
-                            hours: 1.0..7.0, activity: "Development", resolved_note: "Développement livré en recette."}
+                            hours: 1.0..7.0, activity: "Development", resolved_note: "Feature delivered to acceptance testing."}
     }.freeze
     PRIORITY_WEIGHTS = {"Low" => 2.0, "Normal" => 5.0, "High" => 3.0, "Urgent" => 1.5, "Immediate" => 0.5}.freeze
     PRIORITY_SPEED = {"Low" => 1.6, "Normal" => 1.0, "High" => 0.7, "Urgent" => 0.45, "Immediate" => 0.25}.freeze
     SUBJECTS = {
       "Bug" => [
-        "Erreur 500 à l'export PDF des factures", "Filtre par date ignoré dans la liste des commandes",
-        "Doublons dans la synchronisation des contacts", "Session expirée trop tôt sur mobile",
-        "Arrondi incorrect sur les totaux TTC", "Pièce jointe non téléchargeable depuis Safari",
-        "Notification e-mail envoyée deux fois", "Lenteur du tableau de bord au-delà de 500 lignes",
-        "Tri alphabétique incorrect avec les accents", "Import CSV bloqué sur le séparateur point-virgule"
+        "Error 500 when exporting invoices to PDF", "Date filter ignored in the order list",
+        "Duplicates in contact synchronization", "Session expires too early on mobile",
+        "Wrong rounding on totals including tax", "Attachment cannot be downloaded from Safari",
+        "Email notification sent twice", "Slow dashboard beyond 500 rows",
+        "Wrong alphabetical sort with accented letters", "CSV import fails on semicolon separators"
       ],
       "Support request" => [
-        "Création d'un compte pour un nouvel arrivant", "Réinitialisation du mot de passe d'un utilisateur",
-        "Question sur le paramétrage des droits", "Extraction ponctuelle des ventes du trimestre",
-        "Aide à la configuration du SSO", "Ajout d'un champ dans l'export mensuel",
-        "Purge des brouillons obsolètes", "Explication d'un écart de stock"
+        "Account for a new employee", "User password reset",
+        "Question about permission settings", "One-off export of quarterly sales",
+        "Help with SSO configuration", "Add a field to the monthly export",
+        "Purge obsolete drafts", "Explain a stock discrepancy"
       ],
       "Feature request" => [
-        "Export Excel des tableaux de bord", "Tableau de bord des indicateurs commerciaux",
-        "Signature électronique des bons de livraison", "API de consultation des stocks",
-        "Mode hors ligne pour l'application terrain", "Relances automatiques des devis",
-        "Historique des modifications des fiches clients", "Connecteur avec la comptabilité",
-        "Planification des tournées", "Personnalisation des modèles d'e-mail"
+        "Excel export of dashboards", "Sales KPI dashboard",
+        "Electronic signature of delivery notes", "Stock lookup API",
+        "Offline mode for the field app", "Automatic quote reminders",
+        "Change history of customer records", "Accounting connector",
+        "Delivery route planning", "Custom email templates"
       ]
     }.freeze
 
@@ -158,7 +158,7 @@ module RedmineReporting
       project = Project.find_or_initialize_by(identifier: PROJECT_IDENTIFIER)
       project.assign_attributes(
         name: "Reporting Demo",
-        description: "Données de démonstration RedmineReporting",
+        description: "RedmineReporting demo data",
         is_public: true
       )
       project.save!
@@ -230,7 +230,7 @@ module RedmineReporting
           firstname: first_name,
           lastname: last_name,
           mail: "#{login}@example.invalid",
-          language: "fr",
+          language: "en",
           status: User::STATUS_LOCKED,
           admin: false
         )
@@ -292,7 +292,7 @@ module RedmineReporting
       subproject = Project.find_or_initialize_by(identifier: definition[:identifier])
       subproject.assign_attributes(
         name: "#{project.name} · #{definition[:name]}",
-        description: "Sous-projet de démonstration pour les filtres RedmineReporting.",
+        description: "RedmineReporting demo subproject.",
         parent: project,
         is_public: true
       )
@@ -318,7 +318,7 @@ module RedmineReporting
           quarter = @first_month.beginning_of_quarter
           quarters = []
           while quarter <= (Date.current >> 3)
-            quarters << ["MCO T#{(quarter.month - 1) / 3 + 1} #{quarter.year}", quarter.end_of_quarter]
+            quarters << ["Maintenance Q#{(quarter.month - 1) / 3 + 1} #{quarter.year}", quarter.end_of_quarter]
             quarter >>= 3
           end
           quarters
@@ -330,7 +330,7 @@ module RedmineReporting
       versions = specifications.map do |name, effective_date|
         version = subproject.versions.find_or_initialize_by(name: name)
         version.assign_attributes(status: "open", sharing: "descendants", effective_date: effective_date,
-                                  description: "Version de démonstration")
+                                  description: "Demo version")
         version.save!
         version
       end
@@ -362,7 +362,7 @@ module RedmineReporting
               status: status,
               priority: priorities[(month_offset + tracker_index + issue_offset) % priorities.length],
               author: user,
-              description: "Ticket de démonstration pour les graphiques RedmineReporting.",
+              description: "RedmineReporting demo issue.",
               start_date: created_on.to_date,
               due_date: created_on.to_date + 14.days,
               estimated_hours: 12 + (sequence % 8) * 4,
@@ -372,7 +372,8 @@ module RedmineReporting
               closed_on: status.is_closed? ? created_on + 2.days : nil
             )
             issue.save!
-            issue.update_columns(
+            # Saving bumps lock_version: update_columns on this instance would be skipped.
+            Issue.where(id: issue.id).update_all(
               created_on: created_on,
               updated_on: created_on,
               closed_on: status.is_closed? ? created_on + 2.days : nil
@@ -459,34 +460,34 @@ module RedmineReporting
       developers = members.drop(1)
 
       if random.rand < profile[:reject]
-        advance.call(profile[:triage], "Rejected", manager, "Hors périmètre du contrat : demande rejetée.", done_ratio: 0)
+        advance.call(profile[:triage], "Rejected", manager, "Out of the contract scope: rejected.", done_ratio: 0)
         return steps
       end
       # Low and normal priorities may wait in the backlog without ever being triaged.
       return steps if speed >= 1.0 && random.rand < profile[:parked]
 
       worker = random.rand < 0.2 ? manager : developers[random.rand(developers.length)]
-      return steps unless advance.call(profile[:triage], "In Progress", manager, "Prise en charge.", assignee: worker, done_ratio: 10)
+      return steps unless advance.call(profile[:triage], "In Progress", manager, "Taken over.", assignee: worker, done_ratio: 10)
 
       rounds = 0
       loop do
         if rounds < 2 && random.rand < profile[:ask_feedback]
-          return steps unless advance.call(profile[:work], "Feedback", state[:assignee], "En attente d'un retour du demandeur.", done_ratio: 40)
+          return steps unless advance.call(profile[:work], "Feedback", state[:assignee], "Waiting for the requester's feedback.", done_ratio: 40)
           # Some requesters never answer: the issue ages in Feedback.
           return steps if random.rand < profile[:stale]
 
           others = members - [state[:assignee]]
           next_worker = random.rand < 0.25 ? others[random.rand(others.length)] : state[:assignee]
-          notes = next_worker == state[:assignee] ? "Retour reçu, reprise du traitement." : "Retour reçu ; réaffectation pour équilibrer la charge."
+          notes = next_worker == state[:assignee] ? "Feedback received, work resumed." : "Feedback received; reassigned to balance the workload."
           return steps unless advance.call(profile[:feedback], "In Progress", author, notes, assignee: next_worker, done_ratio: 50)
         end
         return steps unless advance.call(profile[:work], "Resolved", state[:assignee], profile[:resolved_note], done_ratio: 90)
         break unless rounds < 2 && random.rand < profile[:reopen]
 
         rounds += 1
-        return steps unless advance.call(profile[:validation], "In Progress", author, "Anomalie constatée en recette, reprise.", done_ratio: 60)
+        return steps unless advance.call(profile[:validation], "In Progress", author, "Defect found in acceptance testing, reopened.", done_ratio: 60)
       end
-      advance.call(profile[:validation], "Closed", manager, "Validé par le demandeur, clôture.", done_ratio: 100)
+      advance.call(profile[:validation], "Closed", manager, "Approved by the requester, closed.", done_ratio: 100)
       steps
     end
 
@@ -519,7 +520,7 @@ module RedmineReporting
         break unless following && at < finished_at
 
         moves << {at: at, user: story[:manager], version: following,
-                  notes: "Reporté sur #{following.name} : non livré pour l'échéance du #{I18n.l(version.effective_date, locale: :fr)}."}
+                  notes: "Moved to #{following.name}: not delivered by #{version.effective_date.iso8601}."}
         version = following
       end
       moves
@@ -553,7 +554,7 @@ module RedmineReporting
         author: story[:author],
         assigned_to: final[:assignee],
         fixed_version: final[:version],
-        description: "Scénario de démonstration : historique, affectations et temps passés cohérents.",
+        description: "Demo scenario: consistent history, assignments and spent time.",
         start_date: start_date,
         due_date: final[:version]&.effective_date&.then { |date| [date, start_date].max } || start_date + story[:random].rand(7..30),
         estimated_hours: story[:estimated_hours],
@@ -597,18 +598,18 @@ module RedmineReporting
       profile = story[:profile]
       steps = story[:steps]
       if story[:tracker] == "Feature request" && steps.any?
-        log_time(issue, story[:manager], activities.fetch("Analysis"), story[:created_on], steps.first[:at], profile, random, "Analyse du besoin")
+        log_time(issue, story[:manager], activities.fetch("Analysis"), story[:created_on], steps.first[:at], profile, random, "Requirements analysis")
       end
       steps.each_with_index do |step, index|
         finished_at = steps[index + 1]&.fetch(:at) || @now
         case step[:status]
         when "In Progress"
           (1 + random.rand(3)).times do
-            log_time(issue, step[:assignee], activities.fetch(profile[:activity]), step[:at], finished_at, profile, random, "Traitement")
+            log_time(issue, step[:assignee], activities.fetch(profile[:activity]), step[:at], finished_at, profile, random, "Implementation")
           end
         when "Resolved"
           tester = (story[:members] - [step[:assignee]]).then { |others| others[random.rand(others.length)] }
-          log_time(issue, tester, activities.fetch("Testing"), step[:at], finished_at, profile, random, "Recette") if random.rand < 0.6
+          log_time(issue, tester, activities.fetch("Testing"), step[:at], finished_at, profile, random, "Acceptance testing") if random.rand < 0.6
         end
       end
     end
@@ -633,7 +634,7 @@ module RedmineReporting
         spent_on = month + 9
         next if spent_on > Date.current
 
-        entry = TimeEntry.find_or_initialize_by(project: subproject, issue: nil, comments: "Comité de suivi #{definition[:name]} #{month.strftime('%Y-%m')}")
+        entry = TimeEntry.find_or_initialize_by(project: subproject, issue: nil, comments: "Steering committee #{definition[:name]} #{month.strftime('%Y-%m')}")
         entry.assign_attributes(user: manager, author: manager, activity: activities.fetch("Analysis"),
                                 hours: 1.5 + (month_offset % 3) * 0.5, spent_on: spent_on)
         entry.save!
