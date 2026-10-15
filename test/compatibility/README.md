@@ -6,6 +6,19 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.2.2 validation — 2026-10-15
+
+GitHub Actions passed all ten compatibility jobs for application commit
+`f07025322efdbc130e88a87f8aad0465273813ee` in [PR #5](https://github.com/likehopper/redmine_reporting/pull/5):
+Redmine 5.0.14, 5.1.13, 6.0.11, 6.1.4 and 7.0.1 with SQLite; Redmine 6.1.4
+with PostgreSQL 16, MySQL 8.0 and MariaDB 10.11; SLA coexistence on PostgreSQL;
+and the disposable demo-data smoke check. Browser tests are included.
+Locally, Redmine 6.1.4 with SQLite ran 117 tests and 1004 assertions without
+failures, errors or skips, and the documentation screenshots were regenerated.
+
+The release-finalization changes only bump the version, date the changelog and
+update release validation documentation. Runtime fingerprints match the application files.
+
 ## Release 1.2.1 validation — 2026-10-03
 
 GitHub Actions passed all ten compatibility jobs for application commit
