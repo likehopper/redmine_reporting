@@ -37,8 +37,8 @@ Redmine::Plugin.register :redmine_reporting do
   project_module :reporting do
     permission :view_reporting, { reporting: [:index, :details] }, require: :member
     permission :manage_reporting, {
-      reporting_settings: [:update],
-      reporting_credit_policies: [:new, :create, :edit, :update, :destroy]
+      reporting_settings: [:show, :update],
+      reporting_credit_policies: [:index, :show, :new, :create, :edit, :update, :destroy]
     }, require: :member
   end
 end
@@ -50,3 +50,10 @@ TimeEntryQuery.prepend(RedmineReporting::TimeEntryQueryExtensions) unless TimeEn
 Project.include(RedmineReporting::ProjectPatch) unless Project < RedmineReporting::ProjectPatch
 ProjectsController.helper(RedmineReporting::ProjectsHelperPatch) unless ProjectsController._helpers < RedmineReporting::ProjectsHelperPatch
 ProjectsController.helper(ReportingHelper) unless ProjectsController._helpers < ReportingHelper
+
+# Optional Redmine Mirror integration: copy the reporting configuration from another Redmine.
+# Plugins load alphabetically, so Mirror is already registered here when installed.
+if Redmine::Plugin.installed?(:redmine_mirror)
+  load File.expand_path("mirror/adapters.rb", __dir__)
+  RedmineReporting::MirrorAdapters.register
+end

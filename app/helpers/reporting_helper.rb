@@ -18,6 +18,35 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 module ReportingHelper
+  def render_api_reporting_credit_policy(api, policy)
+    api.reporting_credit_policy do
+      api.id policy.id
+      api.project(id: policy.project_id, name: policy.project.name)
+      api.tracker(id: policy.tracker_id, name: policy.tracker.name)
+      api.name policy.name
+      api.initial_credit_days policy.initial_credit_days.to_f
+      api.anniversary_month policy.anniversary_month
+      api.anniversary_day policy.anniversary_day
+      api.active_from policy.active_from
+      api.active_until policy.active_until
+      api.enabled policy.enabled
+      api.array :refills do
+        policy.sorted_refills.each do |refill|
+          api.refill do
+            api.id refill.id
+            api.month refill.month
+            api.day refill.day
+            api.credit_days refill.credit_days.to_f
+            api.starts_on refill.starts_on
+            api.ends_on refill.ends_on
+          end
+        end
+      end
+      api.created_on policy.created_at
+      api.updated_on policy.updated_at
+    end
+  end
+
   # "1 juillet" / "July 1" for yearly anniversaries and refills.
   def reporting_day_of_year(month, day)
     l(:"reporting.settings.day_of_year", day: day, month: month_name(month))

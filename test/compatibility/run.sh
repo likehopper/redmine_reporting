@@ -74,6 +74,10 @@ esac
 if [ -n "${COMPAT_SLA_PATH:-}" ]; then
   runtime_args+=(-v "$(cd "$COMPAT_SLA_PATH" && pwd):/sla:ro")
 fi
+# Optional Redmine Mirror checkout, to run the Mirror adapter tests.
+if [ -n "${COMPAT_MIRROR_PATH:-}" ]; then
+  runtime_args+=(-v "$(cd "$COMPAT_MIRROR_PATH" && pwd):/mirror:ro")
+fi
 mkdir -p "$results/artifacts"
 failed=0
 for version in "$@"; do

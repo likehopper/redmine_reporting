@@ -1,0 +1,35 @@
+# File: redmine_reporting/app/views/reporting_settings/show.api.rsb
+#
+# Redmine Reporting - project reporting plugin
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+api.reporting_setting do
+  # No id when the project uses the defaults; inherited_from names the ancestor that owns the row.
+  api.id @setting.id
+  api.project(id: @project.id, name: @project.name)
+  api.inherited_from(id: @setting.project_id, name: @setting.project.name) if @setting.inherited_by?(@project)
+  api.hours_per_day @setting.hours_per_day.to_f
+  api.array :section_ids do
+    @setting.section_ids.each { |section_id| api.section_id section_id }
+  end
+  %w[run build].each do |role|
+    api.array :"#{role}_trackers" do
+      Tracker.where(id: @setting.public_send(:"#{role}_tracker_ids")).sorted.each do |tracker|
+        api.tracker(id: tracker.id, name: tracker.name)
+      end
+    end
+  end
+end
