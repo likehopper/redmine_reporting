@@ -18,7 +18,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 require "redmine"
-require_relative "lib/redmine_reporting"
+# Not require_relative, which resolves symlinks (see lib/redmine_reporting.rb).
+require File.expand_path("lib/redmine_reporting", File.dirname(__FILE__))
 
 Redmine::Plugin.register :redmine_reporting do
   name "Redmine Reporting"

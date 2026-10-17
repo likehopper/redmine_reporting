@@ -18,38 +18,43 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 require "delegate"
-require_relative "redmine_reporting/query_description"
-require_relative "redmine_reporting/dashboard_presenter"
-require_relative "redmine_reporting/yearly_date"
-require_relative "redmine_reporting/period_grid"
-require_relative "redmine_reporting/issue_history"
-require_relative "redmine_reporting/version_history"
-require_relative "redmine_reporting/issue_timeline"
-require_relative "redmine_reporting/spent_time"
-require_relative "redmine_reporting/credit_ledger"
-require_relative "redmine_reporting/credit_account"
-require_relative "redmine_reporting/report_data"
-require_relative "redmine_reporting/reports/base"
-require_relative "redmine_reporting/reports/summary"
-require_relative "redmine_reporting/reports/flow"
-require_relative "redmine_reporting/reports/activity"
-require_relative "redmine_reporting/reports/consumption"
-require_relative "redmine_reporting/reports/backlog"
-require_relative "redmine_reporting/reports/build"
-require_relative "redmine_reporting/reports/workload"
-require_relative "redmine_reporting/reports/burnup"
-require_relative "redmine_reporting/reports/performance"
-require_relative "redmine_reporting/report_builder"
-require_relative "redmine_reporting/drilldown"
-require_relative "redmine_reporting/issue_query_extensions"
-require_relative "redmine_reporting/time_entry_query_extensions"
-require_relative "redmine_reporting/sections"
-require_relative "redmine_reporting/sla_source"
-require_relative "redmine_reporting/capabilities"
-require_relative "redmine_reporting/project_settings"
-require_relative "redmine_reporting/project_patch"
-require_relative "redmine_reporting/projects_helper_patch"
-require_relative "redmine_reporting/hooks"
+# Load through __FILE__ rather than require_relative: require_relative resolves symlinks, while
+# Zeitwerk loads lib/ through the plugin path as found under plugins/. When that directory is a
+# symlink (e.g. a Capistrano shared dir), the two paths differ and every file is loaded twice.
+%w[
+  query_description
+  dashboard_presenter
+  yearly_date
+  period_grid
+  issue_history
+  version_history
+  issue_timeline
+  spent_time
+  credit_ledger
+  credit_account
+  report_data
+  reports/base
+  reports/summary
+  reports/flow
+  reports/activity
+  reports/consumption
+  reports/backlog
+  reports/build
+  reports/workload
+  reports/burnup
+  reports/performance
+  report_builder
+  drilldown
+  issue_query_extensions
+  time_entry_query_extensions
+  sections
+  sla_source
+  capabilities
+  project_settings
+  project_patch
+  projects_helper_patch
+  hooks
+].each { |file| require File.expand_path("redmine_reporting/#{file}", File.dirname(__FILE__)) }
 
 module RedmineReporting
   VERSION = "1.2.2"
