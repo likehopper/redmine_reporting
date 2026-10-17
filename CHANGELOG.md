@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — 2026-10-18
+
+- Add a read-only REST API for a project's reporting settings and credit policies.
+- Add Redmine Mirror modules copying the reporting settings and credit policies from
+  another Redmine. They load only when Mirror is installed.
+- Fix "already initialized constant" warnings at boot when `plugins/` is a symlink
+  (e.g. a Capistrano shared directory): the plugin files were loaded twice.
+
 ## 1.2.2 — 2026-10-15
 
 - Add a step-by-step configuration guide (`doc/CONFIGURATION.md`) whose screenshots
