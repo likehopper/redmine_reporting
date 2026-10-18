@@ -1,6 +1,6 @@
 # <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.2.2-orange)
+![Version](https://img.shields.io/badge/Version-1.3.0-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,7 +17,7 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.2.2 covers **Run**, **Build & Projects** and **Workload & Team** reports.
+Version 1.3.0 covers **Run**, **Build & Projects** and **Workload & Team** reports.
 Run & Support (SLA) reports are planned.
 
 ## Requirements
@@ -255,6 +255,26 @@ A subproject without its own settings uses its nearest configured ancestor's; sa
 the tab on the subproject creates its own. Project copies keep the settings and
 credits; deleting a project removes them.
 
+### REST API
+
+With the REST API enabled, users with **Configure reporting** can read a project's
+configuration (read-only):
+
+| Request | Returns |
+| --- | --- |
+| `GET /projects/:id/reporting/settings.json` | Settings in effect; `inherited_from` names the ancestor that owns them, no `id` means defaults |
+| `GET /projects/:id/reporting/credit_policies.json` | Credit policies with their refills, paginated with `offset` and `limit` |
+| `GET /projects/:id/reporting/credit_policies/:policy_id.json` | One credit policy |
+
+### Redmine Mirror
+
+When [Redmine Mirror](https://www.redmine.org/plugins/redmine_mirror) is installed on
+the destination, it offers two modules: **Reporting settings** and **Reporting credit
+policies**. They copy a project's own settings and its credit policies from a source
+Redmine running Reporting 1.3.0 or later, mapping trackers through Mirror's tracker
+table. Local changes are reported as Mirror conflicts, never overwritten; deletions
+are not copied.
+
 ## Demo data
 
 ```sh
@@ -299,6 +319,7 @@ the current date.
 | `RedmineReporting::Sections`, `Capabilities` | report families and tabs; what modules and permissions allow |
 | `ReportingProjectSetting`, `RedmineReporting::ProjectSettings` | per-project settings and the settings tab |
 | `RedmineReporting::SlaSource` | read-only access to redmine_sla |
+| `RedmineReporting::MirrorAdapters` (`mirror/adapters.rb`) | Redmine Mirror modules; loaded only with Mirror, outside the eager-loaded `app/` and `lib/` |
 
 Query extensions add editable native filters for period membership, historical
 backlog and creation/closure dates. The page script is `assets/javascripts/reporting.js`; like Chart.js and
@@ -307,7 +328,7 @@ the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 The controllers coordinate authorization, parameter handling and responses. Report
 calculations live in the objects above. `DashboardPresenter` owns dashboard descriptions and detail links, using explicit
 dependencies instead of helper access to controller instance variables.
-`ReportingHelper` contains six view formatting methods; `ProjectsHelperPatch` adds the native project settings tab.
+`ReportingHelper` contains six view formatting methods and the REST API rendering of a credit policy; `ProjectsHelperPatch` adds the native project settings tab.
 The browser script uses small functions for chart rendering and interactions.
 Code, comments and demo content are written in English; only the French locale
 file is in French. Small Rails callbacks and similar model validations remain

@@ -20,6 +20,16 @@
 class ReportingSettingsController < ApplicationController
   before_action :find_project_by_project_id
   before_action :authorize
+  accept_api_auth :show
+
+  # The configuration in effect, possibly inherited from an ancestor (REST API only).
+  def show
+    @setting = ReportingProjectSetting.for(@project)
+    respond_to do |format|
+      format.html { redirect_to settings_project_path(@project, tab: "reporting") }
+      format.api
+    end
+  end
 
   def update
     setting = ReportingProjectSetting.update_for(@project, setting_params)

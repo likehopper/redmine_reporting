@@ -21,10 +21,31 @@ class ReportingCreditPoliciesController < ApplicationController
   menu_item :settings
   before_action :find_project_by_project_id
   before_action :authorize
-  before_action :find_policy, only: [:edit, :update, :destroy]
+  before_action :find_policy, only: [:show, :edit, :update, :destroy]
   before_action :load_settings_page
+  accept_api_auth :index, :show
 
   helper :reporting
+
+  # The policies are edited from the settings tab; the list and detail are REST API resources.
+  def index
+    respond_to do |format|
+      format.html { redirect_to_settings }
+      format.api do
+        @offset, @limit = api_offset_and_limit
+        scope = @project.reporting_credit_policies
+        @policy_count = scope.count
+        @policies = scope.includes(:project, :tracker, :reporting_credit_refills).order(:id).offset(@offset).limit(@limit).to_a
+      end
+    end
+  end
+
+  def show
+    respond_to do |format|
+      format.html { redirect_to edit_project_reporting_credit_policy_path(project_id: @project, id: @policy) }
+      format.api
+    end
+  end
 
   def new
     tracker = @settings_page.trackers_for_policy.first

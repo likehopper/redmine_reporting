@@ -32,9 +32,10 @@ case "$REDMINE_VERSION" in
     ;;
 esac
 # The image is disposable; only the screenshot artifact directory is writable on the host.
-rm -rf plugins/redmine_sla plugins/redmine_reporting
+rm -rf plugins/redmine_sla plugins/redmine_mirror plugins/redmine_reporting
 cp -a /plugin plugins/redmine_reporting
 if [ -d /sla ]; then cp -a /sla plugins/redmine_sla; fi
+if [ -d /mirror ]; then cp -a /mirror plugins/redmine_mirror; fi
 if [ "${COMPAT_DB:-sqlite}" = sqlite ]; then
   cat > config/database.yml <<'YAML'
 test:

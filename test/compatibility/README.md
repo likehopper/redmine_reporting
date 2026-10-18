@@ -6,6 +6,28 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.3.0 validation — 2026-10-18
+
+The full local matrix passed on the snapshot recorded in `runtime.sha256`,
+including browser tests, migrations and uninstall/reinstall:
+
+| Redmine | Database | Tests | Assertions | Skips | Result |
+|---|---|---:|---:|---:|---|
+| 5.0.14 | SQLite, with Mirror | 128 | 1093 | 0 | PASS |
+| 5.1.13 | SQLite, with Mirror | 128 | 1093 | 0 | PASS |
+| 6.0.11 | SQLite, with Mirror | 128 | 1095 | 0 | PASS |
+| 6.1.4 | SQLite, with Mirror | 128 | 1095 | 0 | PASS |
+| 7.0.1 | SQLite, with Mirror | 128 | 1103 | 0 | PASS |
+| 6.1.4 | PostgreSQL 16 | 128 | 1035 | 8 | PASS |
+| 6.1.4 | MariaDB 10.11, strict SQL mode | 128 | 1035 | 8 | PASS |
+| 6.1.4 | MySQL 8.0, strict SQL mode | 128 | 1035 | 8 | PASS |
+| 6.1.4 | PostgreSQL 16 + SLA 3.0.5 | 129 | 1044 | 8 | PASS |
+
+The skips are the Mirror adapter tests, which need a Mirror checkout
+(`COMPAT_MIRROR_PATH`). The disposable demo-data smoke check also passed.
+A symlinked `plugins/redmine_reporting` was verified separately on Redmine 6.1.4:
+eager loading no longer redefines the plugin constants.
+
 ## Release 1.2.2 validation — 2026-10-15
 
 GitHub Actions passed all ten compatibility jobs for application commit
@@ -230,6 +252,7 @@ COMPAT_DB=postgres bash test/compatibility/run.sh 6.1.4
 COMPAT_DB=mariadb bash test/compatibility/run.sh 6.1.4
 COMPAT_DB=mysql bash test/compatibility/run.sh 6.1.4
 COMPAT_DB=postgres COMPAT_SLA_PATH=/path/to/redmine_sla bash test/compatibility/run.sh 6.1.4
+COMPAT_MIRROR_PATH=/path/to/redmine_mirror bash test/compatibility/run.sh 6.1.4
 REPORTING_DEMO_SMOKE=1 bash test/compatibility/run.sh 6.1.4
 REPORTING_BENCHMARK=1 bash test/compatibility/run.sh 6.1.4
 ```
@@ -237,7 +260,8 @@ REPORTING_BENCHMARK=1 bash test/compatibility/run.sh 6.1.4
 External-database runs accept one Redmine version, defaulting to 6.1.4. They create
 an isolated Docker network and database container without published ports, and
 remove both on exit. PostgreSQL, MariaDB and MySQL are tested separately. SLA does
-not support SQLite. Only the explicitly supplied SLA checkout is mounted.
+not support SQLite. Only the explicitly supplied SLA checkout is mounted. The Mirror
+adapter tests are skipped unless a Mirror checkout is supplied.
 
 The demo check replaces the ordinary suite: on a fresh migrated database with
 Redmine default data, it generates twice, checks stable record counts and verifies

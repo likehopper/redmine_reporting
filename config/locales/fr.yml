@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 fr:
+  # Redmine Mirror modules (used only when Mirror is installed).
+  label_mirror_module_reporting_settings: "Réglages Reporting"
+  label_mirror_module_reporting_credit_policies: "Politiques de crédit Reporting"
   label_reporting_backlog_on: "Ouvert à la date (historique des statuts)"
   label_reporting_invalid_range: "Période invalide : utilisez des dates entre 1900 et 2200 et au plus %{count} périodes."
   label_reporting: Reporting
