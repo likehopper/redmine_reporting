@@ -21,7 +21,7 @@ permissions:
   contents: read
 jobs:
   redmine:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -36,7 +36,7 @@ jobs:
           name: redmine-${{ matrix.version }}
           path: /tmp/redmine-reporting-compat.*
   databases:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -53,7 +53,7 @@ jobs:
           name: database-${{ matrix.database }}
           path: /tmp/redmine-reporting-compat.*
   sla:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -72,7 +72,7 @@ jobs:
           name: sla-postgres
           path: /tmp/redmine-reporting-compat.*
   demo:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
