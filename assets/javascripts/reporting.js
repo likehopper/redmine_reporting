@@ -140,8 +140,8 @@ const mirroredFlowChart = (id, groups, colorMap, dimension) => draw(id, {
   data: {
     labels: flow.periodLabels,
     datasets: groups.flatMap(group => [
-      { label: group.label, data: group.opened, flowEvent: "created", backgroundColor: colorFor(group.label, colorMap), stack: "flow" },
-      { label: group.label, data: group.closed, flowEvent: "closed", backgroundColor: colorFor(group.label, colorMap), stack: "flow" }
+      { label: group.label, recordId: group.id, data: group.opened, flowEvent: "created", backgroundColor: colorFor(group.label, colorMap), stack: "flow" },
+      { label: group.label, recordId: group.id, data: group.closed, flowEvent: "closed", backgroundColor: colorFor(group.label, colorMap), stack: "flow" }
     ])
   },
   options: {
@@ -171,14 +171,14 @@ const mirroredFlowChart = (id, groups, colorMap, dimension) => draw(id, {
       const isClosed = dataset.flowEvent === "closed";
       return {
         title: `${dataset.label} — ${t(isClosed ? "closures" : "created")} — ${flow.periodLabels[element.index]}`,
-        filters: { records: "issues", [dimension]: dataset.label,
+        filters: { records: "issues", [dimension]: dataset.recordId,
           ...(isClosed ? { closed_from: range.from, closed_to: range.to } : { created_from: range.from, created_to: range.to }) }
       };
     }, flowPeriod)
   }
 });
-mirroredFlowChart("flow-tracker", flow.trackerFlow, TRACKER_COLORS, "tracker");
-mirroredFlowChart("flow-priority", flow.priorityFlow, PRIORITY_COLORS, "priority");
+mirroredFlowChart("flow-tracker", flow.trackerFlow, TRACKER_COLORS, "tracker_id");
+mirroredFlowChart("flow-priority", flow.priorityFlow, PRIORITY_COLORS, "priority_id");
 draw("flow-monthly", {
   type: "line",
   data: { labels: flow.periodLabels, datasets: [lineSeries(t("opened"), flow.opened, "#E74C3C", "rgba(231,76,60,.08)"), lineSeries(t("closed"), flow.closed, "#27AE60", "rgba(39,174,96,.08)")] },
@@ -213,8 +213,8 @@ draw("flow-cumulative", {
     })
   }
 });
-drawDonut("status-open", flow.openStatusLabels, flow.openStatusValues, (element) => ({ title: `${t("opened")} — ${flow.openStatusLabels[element.index]}`, filters: { records: "issues", status: flow.openStatusLabels[element.index], open: "true" } }));
-drawDonut("status-closed", flow.closedStatusLabels, flow.closedStatusValues, (element) => ({ title: `${t("closed")} — ${flow.closedStatusLabels[element.index]}`, filters: { records: "issues", status: flow.closedStatusLabels[element.index], closed_from: report.dateFrom, closed_to: report.dateTo } }));
+drawDonut("status-open", flow.openStatusLabels, flow.openStatusValues, (element) => ({ title: `${t("opened")} — ${flow.openStatusLabels[element.index]}`, filters: { records: "issues", status_id: flow.openStatusIds[element.index], open: "true" } }));
+drawDonut("status-closed", flow.closedStatusLabels, flow.closedStatusValues, (element) => ({ title: `${t("closed")} — ${flow.closedStatusLabels[element.index]}`, filters: { records: "issues", status_id: flow.closedStatusIds[element.index], closed_from: report.dateFrom, closed_to: report.dateTo } }));
 
 }
 
@@ -311,21 +311,21 @@ const backlog = report.backlog;
 if (backlog) {
 const stackedBacklog = (id, items, colorMap, dimension) => draw(id, {
   type: "bar",
-  data: { labels: backlog.periodLabels, datasets: items.map(item => ({ label: item.label, data: item.data, backgroundColor: colorFor(item.label, colorMap), stack: "backlog" })) },
+  data: { labels: backlog.periodLabels, datasets: items.map(item => ({ label: item.label, recordId: item.id, data: item.data, backgroundColor: colorFor(item.label, colorMap), stack: "backlog" })) },
   options: {
     plugins: { legend: legend() },
     scales: axes({ x: { stacked: true }, y: { stacked: true, ticks: { precision: 0 } } }),
     ...clickable((element, chart) => {
-      const label = chart.data.datasets[element.datasetIndex].label;
-      return { title: t("backlog_group", { group: label, period: backlog.periodLabels[element.index] }), filters: { records: "issues", backlog_at: periodRange(backlog.periodRanges, element.index).to, [dimension]: label } };
+      const dataset = chart.data.datasets[element.datasetIndex];
+      return { title: t("backlog_group", { group: dataset.label, period: backlog.periodLabels[element.index] }), filters: { records: "issues", backlog_at: periodRange(backlog.periodRanges, element.index).to, [dimension]: dataset.recordId } };
     }, backlogPeriod(backlog.periodLabels, backlog.periodRanges))
   }
 });
-stackedBacklog("backlog-tracker", backlog.trackerSeries, TRACKER_COLORS, "tracker");
-stackedBacklog("backlog-priority", backlog.prioritySeries, PRIORITY_COLORS, "priority");
+stackedBacklog("backlog-tracker", backlog.trackerSeries, TRACKER_COLORS, "tracker_id");
+stackedBacklog("backlog-priority", backlog.prioritySeries, PRIORITY_COLORS, "priority_id");
 const remainingPeriod = (index, tracker) => ({
-  title: `${t("remaining")}${tracker ? ` ${tracker}` : ""} — ${backlog.periodLabels[index]}`,
-  filters: { records: "issues", backlog_at: periodRange(backlog.periodRanges, index).to, times: "true", ...(tracker ? { tracker } : {}) }
+  title: `${t("remaining")}${tracker ? ` ${tracker.label}` : ""} — ${backlog.periodLabels[index]}`,
+  filters: { records: "issues", backlog_at: periodRange(backlog.periodRanges, index).to, times: "true", ...(tracker ? { tracker_id: tracker.recordId } : {}) }
 });
 if (backlog.remainingSeries) draw("estimated-remaining", {
   type: "bar",
@@ -333,13 +333,13 @@ if (backlog.remainingSeries) draw("estimated-remaining", {
     labels: backlog.periodLabels,
     datasets: [
       { type: "line", label: t("total"), data: backlog.remainingTotal, borderColor: "#5B6770", backgroundColor: "#5B6770", borderWidth: 2.5, pointRadius: 3, tension: 0.3, fill: false, order: 1 },
-      ...backlog.remainingSeries.map(item => ({ label: item.label, data: item.data, backgroundColor: colorFor(item.label, TRACKER_COLORS), stack: "remaining", order: 2 }))
+      ...backlog.remainingSeries.map(item => ({ label: item.label, recordId: item.id, data: item.data, backgroundColor: colorFor(item.label, TRACKER_COLORS), stack: "remaining", order: 2 }))
     ]
   },
   options: {
     plugins: { legend: legend(), tooltip: { callbacks: { label: context => t("remaining_hours", { label: context.dataset.label, value: formatHours(context.parsed.y) }) } } },
     scales: axes({ x: { stacked: true }, y: { stacked: true, ticks: { callback: value => t("hours_short", { value }) } } }),
-    ...clickable((element, chart) => remainingPeriod(element.index, element.datasetIndex ? chart.data.datasets[element.datasetIndex].label : null), remainingPeriod)
+    ...clickable((element, chart) => remainingPeriod(element.index, element.datasetIndex ? chart.data.datasets[element.datasetIndex] : null), remainingPeriod)
   }
 });
 
@@ -367,7 +367,7 @@ draw("resolution", {
     indexAxis: "y",
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: context => t("average_days_tooltip", { days: context.parsed.x, count: performance.resolutionCounts[context.dataIndex] }) } } },
     scales: { x: { grid: { color: "rgba(0,0,0,.05)" } }, y: { grid: { display: false } } },
-    ...clickable((element) => ({ title: `${t("resolution")} — ${performance.resolutionLabels[element.index]}`, filters: { records: "issues", closed: "true", closed_from: report.dateFrom, closed_to: report.dateTo, priority: performance.resolutionLabels[element.index] } }))
+    ...clickable((element) => ({ title: `${t("resolution")} — ${performance.resolutionLabels[element.index]}`, filters: { records: "issues", closed: "true", closed_from: report.dateFrom, closed_to: report.dateTo, priority_id: performance.resolutionIds[element.index] } }))
   }
 });
 draw("aging", {

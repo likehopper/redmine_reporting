@@ -40,9 +40,11 @@ module RedmineReporting
           cumulativeClosed: cumulate(closed_counts),
           trackerFlow: mirrored(sorted(timelines.map(&:tracker)), opened, closed, :tracker),
           priorityFlow: mirrored(sorted_priorities(timelines), opened, closed, :priority),
-          openStatusLabels: open_statuses.keys,
+          openStatusIds: open_statuses.keys.map(&:id),
+          openStatusLabels: open_statuses.keys.map(&:name),
           openStatusValues: open_statuses.values,
-          closedStatusLabels: closed_statuses.keys,
+          closedStatusIds: closed_statuses.keys.map(&:id),
+          closedStatusLabels: closed_statuses.keys.map(&:name),
           closedStatusValues: closed_statuses.values
         }
       end
@@ -53,6 +55,7 @@ module RedmineReporting
       def mirrored(groups, opened, closed, attribute)
         groups.map do |group|
           {
+            id: group.id,
             label: group.name,
             opened: counts_per_period(opened.select { |timeline| timeline.public_send(attribute) == group }, &:created_on),
             closed: counts_per_period(closed.select { |timeline| timeline.public_send(attribute) == group }, &:closed_on).map(&:-@)
@@ -62,7 +65,7 @@ module RedmineReporting
 
       # Most frequent status first, then Redmine's status order.
       def status_counts(items)
-        items.group_by(&:status).sort_by { |status, group| [-group.length, status] }.to_h { |status, group| [status.name, group.length] }
+        items.group_by(&:status).sort_by { |status, group| [-group.length, status] }.to_h { |status, group| [status, group.length] }
       end
 
       def cumulate(counts)

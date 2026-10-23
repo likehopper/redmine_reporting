@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.1 — 2026-10-23
+
+- Fix chart clicks opening an empty issue list when tracker, priority or status names
+  are translated or decorated by another plugin (e.g. Localizable): selections now
+  send record IDs instead of displayed names. Detail links no longer accept name
+  parameters (`tracker`, `priority`, `status`, `activity`, `user`).
+- Use straight apostrophes in the French translation.
+
 ## 1.3.0 — 2026-10-18
 
 - Add a read-only REST API for a project's reporting settings and credit policies.

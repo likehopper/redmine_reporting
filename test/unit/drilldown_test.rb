@@ -32,8 +32,17 @@ class ReportingDrilldownTest < ActiveSupport::TestCase
   def test_chart_selection_intersects_existing_filters
     reporting_query = build_query
     reporting_query.add_filter("tracker_id", "!", [@tracker.id.to_s])
-    query = native_query({tracker: @tracker.name}, reporting_query)
+    query = native_query({tracker_id: @tracker.id.to_s}, reporting_query)
     assert_empty query.issue_ids
+  end
+
+  # Plugins such as Localizable translate or decorate names: selections must not depend on them.
+  def test_status_selection_uses_identifiers_whatever_the_displayed_name
+    status = @parent_issue.status
+    status.define_singleton_method(:name) { "[Localized] #{super()}" }
+    query = native_query(status_id: status.id.to_s)
+    assert_equal ["=", [status.id.to_s]], [query.operator_for("status_id"), query.values_for("status_id")]
+    assert_includes query.issue_ids, @parent_issue.id
   end
 
   def test_empty_or_invalid_project_scope_never_expands_to_other_projects
@@ -125,7 +134,7 @@ class ReportingDrilldownTest < ActiveSupport::TestCase
 
   def test_user_selection_includes_inactive_contributors
     @administrator.update_columns(status: User::STATUS_LOCKED)
-    query = native_query(records: "time_entries", user: @administrator.name)
+    query = native_query(records: "time_entries", user_id: @administrator.id.to_s)
     assert_equal [@entry.id, @unassigned_entry.id].sort, time_entry_ids(query)
   end
 

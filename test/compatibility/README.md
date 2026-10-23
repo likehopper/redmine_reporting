@@ -6,6 +6,26 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.3.1 validation — 2026-10-23
+
+The full local matrix passed on the snapshot recorded in `runtime.sha256`,
+including browser tests, migrations and uninstall/reinstall:
+
+| Redmine | Database | Tests | Assertions | Skips | Result |
+|---|---|---:|---:|---:|---|
+| 5.0.14 | SQLite, with Mirror | 129 | 1099 | 0 | PASS |
+| 5.1.13 | SQLite, with Mirror | 129 | 1099 | 0 | PASS |
+| 6.0.11 | SQLite, with Mirror | 129 | 1101 | 0 | PASS |
+| 6.1.4 | SQLite, with Mirror | 129 | 1101 | 0 | PASS |
+| 7.0.1 | SQLite, with Mirror | 129 | 1109 | 0 | PASS |
+| 6.1.4 | PostgreSQL 16 | 129 | 1041 | 8 | PASS |
+| 6.1.4 | MariaDB 10.11, strict SQL mode | 129 | 1041 | 8 | PASS |
+| 6.1.4 | MySQL 8.0, strict SQL mode | 129 | 1041 | 8 | PASS |
+| 6.1.4 | PostgreSQL 16 + SLA 3.1.0 (`v3.1.0-18-gd9986fe`) | 130 | 1050 | 8 | PASS |
+
+The skips are the Mirror adapter tests, which need a Mirror checkout
+(`COMPAT_MIRROR_PATH`). The disposable demo-data smoke check also passed.
+
 ## Release 1.3.0 validation — 2026-10-18
 
 The full local matrix passed on the snapshot recorded in `runtime.sha256`,
