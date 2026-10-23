@@ -43,7 +43,7 @@ module RedmineReporting
 
       def series(groups, snapshots, attribute, &value)
         groups.map do |group|
-          {label: group.name, data: snapshots.map { |period, items| value.call(items.select { |item| item.public_send(attribute) == group }, period) }}
+          {id: group.id, label: group.name, data: snapshots.map { |period, items| value.call(items.select { |item| item.public_send(attribute) == group }, period) }}
         end
       end
 

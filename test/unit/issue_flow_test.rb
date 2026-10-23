@@ -30,8 +30,8 @@ class ReportingIssueFlowTest < ActiveSupport::TestCase
     flow = issue_flow(Date.new(2026, 1, 1), Date.new(2026, 1, 31))
     assert_equal [1], flow[:opened]
     assert_equal [2], flow[:closed]
-    assert_equal [{label: @tracker.name, opened: [1], closed: [-2]}], flow[:trackerFlow]
-    assert_equal [{label: @parent_issue.priority.name, opened: [1], closed: [-2]}], flow[:priorityFlow]
+    assert_equal [{id: @tracker.id, label: @tracker.name, opened: [1], closed: [-2]}], flow[:trackerFlow]
+    assert_equal [{id: @parent_issue.priority_id, label: @parent_issue.priority.name, opened: [1], closed: [-2]}], flow[:priorityFlow]
   end
 
   def test_closure_in_a_later_month_does_not_move_the_creation
@@ -62,8 +62,8 @@ class ReportingIssueFlowTest < ActiveSupport::TestCase
       issue.update_columns(created_on: Time.utc(2026, 1, 10), closed_on: Time.utc(2026, 1, 20), status_id: closed_status.id)
     end
     flow = issue_flow(Date.new(2026, 1, 1), Date.new(2026, 1, 31))
-    assert_equal [{label: @tracker.name, opened: [2], closed: [-2]}], flow[:trackerFlow]
-    assert_equal [{label: @parent_issue.priority.name, opened: [2], closed: [-2]}], flow[:priorityFlow]
+    assert_equal [{id: @tracker.id, label: @tracker.name, opened: [2], closed: [-2]}], flow[:trackerFlow]
+    assert_equal [{id: @parent_issue.priority_id, label: @parent_issue.priority.name, opened: [2], closed: [-2]}], flow[:priorityFlow]
   end
 
   def test_each_tracker_and_priority_keeps_its_own_event_counts

@@ -71,10 +71,10 @@ class ReportingNavigationTest < ActionDispatch::IntegrationTest
       assert_equal [-2], flow.fetch(dimension).first.fetch("closed")
     end
 
-    {tracker: @tracker.name, priority: @parent_issue.priority.name}.each do |dimension, name|
+    {tracker_id: @tracker.id, priority_id: @parent_issue.priority_id}.each do |dimension, identifier|
       [[:created, created_issues], [:closed, closed_issues]].each do |event, expected_issues|
         session.get "/projects/#{@project.identifier}/reporting/details", params: {
-          records: "issues", dimension => name,
+          records: "issues", dimension => identifier,
           "#{event}_from" => "2026-01-01", "#{event}_to" => "2026-01-31"
         }
         assert_equal 302, session.response.status

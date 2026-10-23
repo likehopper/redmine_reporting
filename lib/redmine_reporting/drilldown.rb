@@ -69,9 +69,10 @@ module RedmineReporting
       @query.add_filter(field, "=", identifiers.presence || ["0"])
     end
 
-    def restrict_named(field, model, parameter)
-      name = @parameters[parameter]
-      restrict(native_field(field), model.where(name: name).ids) if name.present?
+    # Chart selections send record IDs: displayed names may be localized by other plugins.
+    def restrict_selected(field, model, parameter)
+      identifier = @parameters[parameter]
+      restrict(native_field(field), model.where(id: identifier).ids) if identifier.present?
     end
 
     def date_parameter(name)
@@ -113,9 +114,9 @@ module RedmineReporting
 
     def apply_selection
       restrict("tracker_id", @reporting_query.run_tracker_ids) unless @reporting_query.run_tracker_ids.nil?
-      restrict_named("tracker_id", Tracker, :tracker)
-      restrict_named("priority_id", IssuePriority, :priority)
-      restrict_named("status_id", IssueStatus, :status)
+      restrict_selected("tracker_id", Tracker, :tracker_id)
+      restrict_selected("priority_id", IssuePriority, :priority_id)
+      restrict_selected("status_id", IssueStatus, :status_id)
       if @parameters[:version_at].present?
         if (date = date_parameter(:version_at))
           @query.add_filter("reporting_version_on", "=", [date.iso8601])
@@ -228,20 +229,13 @@ module RedmineReporting
         end
       end
       date_filter("spent_on", date_parameter(:from), date_parameter(:to))
-      restrict_named("tracker_id", Tracker, :tracker)
-      restrict_named("priority_id", IssuePriority, :priority)
-      if @parameters[:activity_id].present?
-        restrict("activity_id", TimeEntryActivity.where(id: @parameters[:activity_id]).ids)
-      elsif @parameters[:activity].present?
-        restrict("activity_id", TimeEntryActivity.where(name: @parameters[:activity]).ids)
-      end
+      restrict_selected("tracker_id", Tracker, :tracker_id)
+      restrict_selected("priority_id", IssuePriority, :priority_id)
+      # A time entry attribute: not prefixed by native_field like issue attributes.
+      restrict("activity_id", TimeEntryActivity.where(id: @parameters[:activity_id]).ids) if @parameters[:activity_id].present?
       if @parameters[:user_id].present?
+        # Restrict the lookup to contributors; inactive users still count.
         restrict("user_id", User.where(id: @reporting_query.time_entry_scope.select(:user_id)).where(id: @parameters[:user_id]).ids)
-      end
-      if @parameters[:user].present?
-        # Restrict the lookup to contributors; inactive users and namesakes still count.
-        contributors = User.where(id: @reporting_query.time_entry_scope.select(:user_id))
-        restrict("user_id", contributors.select { |user| user.name == @parameters[:user] }.map(&:id))
       end
     end
   end

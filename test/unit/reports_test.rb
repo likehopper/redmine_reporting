@@ -64,7 +64,7 @@ class ReportsTest < ActiveSupport::TestCase
     @child_issue.update_columns(created_on: Time.utc(2025, 12, 1), closed_on: Time.utc(2026, 1, 20), status_id: @closed_status.id)
     backlog = report(Date.new(2026, 1, 1), Date.new(2026, 2, 28))[:backlog]
     # The child was closed on January 20: only the parent is left at each month end.
-    assert_equal [{label: @tracker.name, data: [1, 1]}], backlog[:trackerSeries]
+    assert_equal [{id: @tracker.id, label: @tracker.name, data: [1, 1]}], backlog[:trackerSeries]
     assert_equal [10.0, 10.0], backlog[:remainingTotal]
     @entry.update_columns(spent_on: Date.new(2026, 2, 5), issue_id: @parent_issue.id, project_id: @project.id)
     assert_equal [10.0, 8.0], report(Date.new(2026, 1, 1), Date.new(2026, 2, 28)).dig(:backlog, :remainingTotal)
@@ -82,6 +82,7 @@ class ReportsTest < ActiveSupport::TestCase
     later.update_columns(created_on: Time.utc(2026, 1, 5), closed_on: Time.utc(2026, 2, 10), status_id: @closed_status.id)
     performance = report(Date.new(2026, 1, 1), Date.new(2026, 1, 31))[:performance]
     assert_equal [@child_issue.priority.name], performance[:resolutionLabels]
+    assert_equal [@child_issue.priority_id], performance[:resolutionIds]
     assert_equal [10.0], performance[:resolutionDays]
     assert_equal [1], performance[:resolutionCounts]
     assert_equal [1], performance[:velocity]
