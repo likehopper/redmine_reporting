@@ -39,11 +39,13 @@ class ReportingMirrorAdaptersTest < ActiveSupport::TestCase
     @store = RedmineMirror::DatabaseStore.new("reporting-test", project_id: @project.id)
     @second_tracker = Tracker.where.not(id: @tracker.id).first!
     @project.trackers << @second_tracker
-    @mappings = {"tracker" => {"10" => @tracker.id.to_s, "20" => @second_tracker.id.to_s}}
+    @activity = TimeEntryActivity.shared.active.first!
+    @mappings = {"tracker" => {"10" => @tracker.id.to_s, "20" => @second_tracker.id.to_s, "30" => "ignore"},
+                 "activity" => {"9" => @activity.id.to_s, "11" => "ignore"}}
   end
 
   def test_adapters_follow_the_mirror_contract
-    %w[reporting_settings reporting_credit_policies].each do |key|
+    %w[reporting_settings reporting_credit_contracts].each do |key|
       adapter = RedmineMirror::REGISTRY[key]
       assert_kind_of RedmineReporting::MirrorAdapters::Base, adapter
       assert adapter.available?
@@ -52,8 +54,9 @@ class ReportingMirrorAdaptersTest < ActiveSupport::TestCase
     # init.rb runs again after a code reload; registering twice is harmless.
     RedmineReporting::MirrorAdapters.register
     setting = MirrorProjectSetting.new(project: @project, source_url: "https://source.example", source_project_id: 7)
-    assert_equal "/projects/#{@project.identifier}/reporting/credit_policies/3/edit",
-                 RedmineMirror::REGISTRY["reporting_credit_policies"].local_path(3, @project)
+    assert_equal "/projects/#{@project.identifier}/reporting/credit_contracts/3/edit",
+                 RedmineMirror::REGISTRY["reporting_credit_contracts"].local_path(3, @project)
+    assert_equal %w[tracker activity], RedmineMirror::REGISTRY["reporting_credit_contracts"].mapping_tables.map(&:key)
     assert_equal "projects/7/settings/reporting", RedmineMirror::REGISTRY["reporting_settings"].remote_path(1, setting)
   end
 
@@ -101,53 +104,62 @@ class ReportingMirrorAdaptersTest < ActiveSupport::TestCase
     assert_nil ReportingProjectSetting.find_by(project: @project)
   end
 
-  def test_credit_policies_import_with_refills_and_detect_local_changes
-    adapter = RedmineReporting::MirrorAdapters::CreditPolicies.new
-    record = policy_record(refills: [refill(10, 1, 3, "2026-01-01"), refill(4, 1, 2.5)])
+  def test_contracts_import_with_envelopes_and_movements_and_detect_local_changes
+    adapter = RedmineReporting::MirrorAdapters::CreditContracts.new
+    record = contract_record(movements: [movement("2026-10-01", 3), movement("2026-04-01", -2.5)])
 
     assert_equal "create", sync(adapter, record, apply: false)[:action]
-    assert_empty @project.reporting_credit_policies
+    assert_empty @project.reporting_credit_contracts
 
     sync(adapter, record)
-    policy = @project.reporting_credit_policies.reload.first!
-    assert_equal [@tracker.id, "Support", 12.5, Date.new(2026, 4, 1), true],
-                 [policy.tracker_id, policy.name, policy.initial_credit_days.to_f, policy.active_from, policy.enabled]
-    assert_equal [[4, 1, 2.5, nil], [10, 1, 3.0, Date.new(2026, 1, 1)]],
-                 policy.sorted_refills.map { |item| [item.month, item.day, item.credit_days.to_f, item.starts_on] }
-    # Refill order in the source response does not matter.
-    record["refills"].reverse!
+    contract = @project.reporting_credit_contracts.reload.first!
+    # The ignored tracker and activity are left out.
+    assert_equal ["TMA", [@tracker.id], Date.new(2026, 1, 1), true], [contract.name, contract.tracker_ids, contract.starts_on, contract.include_subprojects]
+    envelope = contract.envelopes.first
+    assert_equal ["Development", 12.5, [@activity.id], "public"], [envelope.name, envelope.days.to_f, envelope.activity_ids, envelope.issue_privacy]
+    assert_equal [[Date.new(2026, 4, 1), -2.5], [Date.new(2026, 10, 1), 3.0]], envelope.movements.map { |item| [item.date, item.days.to_f] }
+    # Movement order in the source response does not matter.
+    record["envelopes"].first["movements"].reverse!
     assert_equal "unchanged", sync(adapter, record)[:action]
 
-    record["refills"] = [refill(7, 1, 5)]
-    record["enabled"] = false
+    record["envelopes"].first["movements"] = [movement("2026-07-01", 5)]
+    record["ends_on"] = "2026-09-30"
     assert_equal "update", sync(adapter, record)[:action]
-    policy.reload
-    assert_equal [[7, 1]], policy.sorted_refills.map { |item| [item.month, item.day] }
-    refute policy.enabled
+    contract.reload
+    assert_equal [Date.new(2026, 9, 30), [Date.new(2026, 7, 1)]], [contract.ends_on, contract.envelopes.first.movements.map(&:date)]
 
-    policy.reporting_credit_refills.first.update!(credit_days: 9)
+    contract.envelopes.first.update!(days: 9)
     error = assert_raises(RedmineMirror::Error) { sync(adapter, record.merge("name" => "Renamed")) }
     assert_match(/Local modification/, error.message)
-    assert_equal "Support", policy.reload.name
+    assert_equal "TMA", contract.reload.name
   end
 
-  def test_credit_policy_for_a_tracker_already_covered_locally_is_a_conflict
-    adapter = RedmineReporting::MirrorAdapters::CreditPolicies.new
-    @project.reporting_credit_policies.create!(tracker: @tracker, name: "Local", initial_credit_days: 1,
-                                               anniversary_month: 1, anniversary_day: 1)
-    error = assert_raises(RedmineMirror::Error) { sync(adapter, policy_record) }
+  def test_a_contract_with_only_ignored_trackers_is_ignored
+    adapter = RedmineReporting::MirrorAdapters::CreditContracts.new
+    record = contract_record
+    assert_nil adapter.ignored_reference(record, @mappings)
+    record["trackers"] = [{"id" => 30, "name" => "Ignored"}]
+    assert_equal "tracker", adapter.ignored_reference(record, @mappings)
+    assert_equal({"tracker" => [30], "activity" => [9, 11]}, adapter.used_references(record))
+  end
+
+  def test_a_contract_made_locally_with_the_same_name_and_start_is_a_conflict
+    adapter = RedmineReporting::MirrorAdapters::CreditContracts.new
+    @project.reporting_credit_contracts.create!(name: "TMA", starts_on: Date.new(2026, 1, 1), ends_on: Date.new(2026, 3, 31),
+                                                tracker_ids: [@second_tracker.id], envelopes_attributes: [{name: "All", days: 1, other_activities: true}])
+    error = assert_raises(RedmineMirror::Error) { sync(adapter, contract_record) }
     assert_match(/Existing local/, error.message)
-    assert_equal ["Local"], @project.reporting_credit_policies.map(&:name)
+    assert_equal [Date.new(2026, 3, 31)], @project.reporting_credit_contracts.map(&:ends_on)
   end
 
-  def test_credit_policies_are_read_page_by_page
-    pages = [[policy_record(id: 1)], [policy_record(id: 2)]]
+  def test_contracts_are_read_page_by_page
+    pages = [[contract_record(id: 1)], [contract_record(id: 2)]]
     requests = []
-    source = Source.new("projects/7/reporting/credit_policies.json" => lambda do |params|
+    source = Source.new("projects/7/reporting/credit_contracts.json" => lambda do |params|
       requests << params.fetch("offset")
-      {"reporting_credit_policies" => pages.fetch(requests.size - 1), "total_count" => 2}
+      {"reporting_credit_contracts" => pages.fetch(requests.size - 1), "total_count" => 2}
     end)
-    assert_equal [1, 2], RedmineReporting::MirrorAdapters::CreditPolicies.new.records(source, 7).map { |item| item.fetch("id") }
+    assert_equal [1, 2], RedmineReporting::MirrorAdapters::CreditContracts.new.records(source, 7).map { |item| item.fetch("id") }
     assert_equal [0, 1], requests
   end
 
@@ -164,13 +176,15 @@ class ReportingMirrorAdaptersTest < ActiveSupport::TestCase
      "build_trackers" => build.map { |id| {"id" => id, "name" => "Tracker #{id}"} }}
   end
 
-  def policy_record(id: 5, refills: [])
-    {"id" => id, "project" => {"id" => 7}, "tracker" => {"id" => 10, "name" => "Support"}, "name" => "Support",
-     "initial_credit_days" => 12.5, "anniversary_month" => 4, "anniversary_day" => 1, "active_from" => "2026-04-01",
-     "active_until" => nil, "enabled" => true, "refills" => refills}
+  def contract_record(id: 5, movements: [])
+    {"id" => id, "project" => {"id" => 7}, "name" => "TMA", "description" => nil, "starts_on" => "2026-01-01", "ends_on" => "2026-12-31",
+     "include_subprojects" => true, "trackers" => [{"id" => 10, "name" => "Support"}, {"id" => 30, "name" => "Ignored"}],
+     "envelopes" => [{"id" => 4, "name" => "Development", "days" => 12.5, "other_activities" => false, "issue_privacy" => "public",
+                      "position" => 0, "activities" => [{"id" => 9, "name" => "Design"}, {"id" => 11, "name" => "Ignored"}],
+                      "movements" => movements}]}
   end
 
-  def refill(month, day, credit_days, starts_on = nil)
-    {"id" => month, "month" => month, "day" => day, "credit_days" => credit_days, "starts_on" => starts_on, "ends_on" => nil}
+  def movement(date, days)
+    {"id" => date.delete("-").to_i, "date" => date, "days" => days, "comment" => "Amendment", "source_envelope_id" => nil}
   end
 end

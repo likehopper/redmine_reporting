@@ -1,0 +1,41 @@
+<%#
+File: redmine_reporting/app/views/reporting/_contract_bar.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<% options = @query.contract_filter_values %>
+<% all = options.map(&:last) %>
+<% selected = reporting_contract_selection(all) %>
+<% privacy = reporting_privacy %>
+<div class="reporting-contract-bar hide-when-print" id="reporting-contract-bar">
+  <% if all.length > 1 %>
+    <span class="reporting-bar-label"><%= l(:"reporting.contract_bar.contracts") %> <%= reporting_tip(l(:"reporting.contract_bar.contracts_tip")) %></span>
+    <%= link_to l(:"reporting.contract_bar.all"), reporting_filter_path("reporting_contract", nil),
+          class: "reporting-chip#{" selected" if selected.sort == all.sort}", id: "reporting-contract-all", aria: {pressed: selected.sort == all.sort} %>
+    <% options.each do |label, key| %>
+      <%= link_to label, reporting_contract_toggle_path(all, key), id: "reporting-contract-#{key}",
+            class: "reporting-chip#{" selected" if selected.include?(key)}#{" reporting-chip-bucket" unless key =~ /\A\d+\z/}",
+            aria: {pressed: selected.include?(key)} %>
+    <% end %>
+  <% end %>
+  <span class="reporting-bar-label"><%= l(:"reporting.contract_bar.private") %> <%= reporting_tip(l(:"reporting.contract_bar.private_tip")) %></span>
+  <% {"all" => nil, "exclude" => ["0"], "only" => ["1"]}.each do |key, values| %>
+    <%= link_to l(:"reporting.contract_bar.private_#{key}"), reporting_filter_path("reporting_private", values), id: "reporting-private-#{key}",
+          class: "reporting-chip#{" selected" if privacy == key}", aria: {pressed: privacy == key} %>
+  <% end %>
+  <%= reporting_help_link(@project, "report") %>
+</div>

@@ -18,10 +18,14 @@
 en:
   # Redmine Mirror modules (used only when Mirror is installed).
   label_mirror_module_reporting_settings: "Reporting settings"
-  label_mirror_module_reporting_credit_policies: "Reporting credit policies"
+  label_mirror_module_reporting_credit_contracts: "Reporting credit contracts"
   label_reporting_backlog_on: "Open at date (status history)"
   label_reporting_invalid_range: "Invalid date range: use dates between 1900 and 2200 and at most %{count} periods."
   label_reporting: Reporting
+  label_reporting_contract: "Contract"
+  label_reporting_private: "Private issue"
+  label_reporting_contract_parent: "Covered by the parent project"
+  label_reporting_contract_none: "Outside contract"
   project_module_reporting: Reporting
   permission_view_reporting: View reporting
   label_reporting_grouping: Period grouping
@@ -33,19 +37,23 @@ en:
   label_reporting_flow_on: "Created or closed on"
   permission_manage_reporting: Configure reporting
   field_hours_per_day: Hours per day
-  field_initial_credit_days: Initial credit (days)
-  field_anniversary_month: Anniversary month
-  field_anniversary_day: Anniversary day
-  field_active_from: Active from
-  field_active_until: Active until
-  field_credit_days: Credit (days)
-  field_starts_on: From
-  field_ends_on: Until
-  field_enabled: Enabled
-  field_month: Month
-  field_day: Day
+  field_starts_on: Start date
+  field_ends_on: End date
   field_section_ids: Displayed reports
   field_build_tracker_ids: Build trackers
+  field_tracker_ids: Trackers
+  field_activity_ids: Activities
+  field_other_activities: All other activities
+  field_issue_privacy: Issues
+  field_include_subprojects: Include subprojects
+  field_days: Days
+  activerecord:
+    errors:
+      messages:
+        reporting_contract_overlap: "Shares a tracker with the contract \"%{name}\" over the same dates."
+        reporting_envelope_required: "Add at least one envelope."
+        reporting_envelope_overlap: "Envelopes \"%{first}\" and \"%{second}\" cover the same time: give them different activities or issue privacy."
+        reporting_outside_contract: "must fall within the contract dates"
 
   label_reporting_version_on: "Scope as of"
   label_reporting_completed_on: "Completed as of"
@@ -76,7 +84,7 @@ en:
         missing: "SLA plugin not installed"
       time_unit: Time unit
       hours_per_day_desc: "Converts logged time and estimates into days, for credits and the banner."
-      trackers: Tracker scope
+      trackers: Run / Build trackers
       trackers_desc: "Run charts only count Run trackers. As long as no tracker is classified as Run, all of them count. Only trackers classified as Build feed Build & Projects charts; without Build trackers, they stay empty."
       tracker_role:
         run: Run
@@ -87,21 +95,51 @@ en:
       sla_type: SLA type
       sla_active_statuses: Statuses in which the delay elapses
       sla_waiting_statuses: Derived waiting statuses
-      credits: Time credits
-      credits_desc: "Yearly credit per tracker, granted on its anniversary date, with its refills. Logged time is converted at %{hours} h per day."
-      anniversary: Anniversary date
-      anniversary_hint: "The initial credit is granted every year on this date."
-      validity: Validity
-      validity_between: "from %{from} to %{to}"
-      validity_from: "since %{from}"
-      validity_until: "until %{to}"
-      validity_always: Permanent
-      refills: Refills
-      refill: "%{days} on %{date}"
-      refills_hint: "Credit added every year on the given date. Leave the credit empty to ignore a row."
-      new_policy: New credit
-      day_of_year: "%{month} %{day}"
-      days_hint: "At %{hours} h per day."
+      contracts: Contracts
+    contracts:
+      intro: "A contract grants credit days over its dates. Time logged on issues of its trackers is charged to the envelope matching its activity and the issue's privacy, at %{hours} h per day."
+      new: New contract
+      renew: Renew
+      renew_hint: "Create the next contract from the day after this one, with the same length, trackers and envelopes."
+      renewal_of: "Renewal of %{name}"
+      status:
+        current: Current
+        upcoming: Upcoming
+        finished: Finished
+      dates: Dates
+      dates_value: "%{from} – %{to}"
+      dates_hint: "Any length: 3 months, 6 months, a year… Renewing keeps the same length."
+      trackers_hint: "Time logged on issues of these trackers. A tracker belongs to one contract of the project at a time."
+      subprojects_hint: "Also count the subprojects' time. A subproject's own contract takes precedence on its trackers, and subprojects' reports do not show this contract."
+      closer_warning: "These subproject contracts take this contract's time on shared trackers and dates: %{contracts}."
+      with_subprojects: "and subprojects"
+      envelopes: Envelopes
+      envelopes_intro: "Split the credit by activity and issue privacy. Each logged hour goes to one envelope at most; time matching none is outside the contract."
+      all_activities: All activities
+      days_hint: "Granted on the contract's first day, at %{hours} h per day."
+      other_activities_hint: "Takes the contract's time that no other envelope matches."
+      privacy_hint: "Private issues let you charge flat-rate work (project management, reviews) or, with no envelope for them, keep internal work outside the contract."
+      privacy:
+        all: All issues
+        public: Public issues only
+        private: Private issues only
+      movements: Movements
+      movements_hint: "Dated refills (positive) or adjustments (negative), within the contract dates. Leave the days empty to ignore a row."
+      carry: Previous balance
+      carry_remaining: "Carry over the %{days} left"
+      carry_debt: "Deduct the %{days} overrun"
+      carry_over_comment: "Carried over from %{contract} (%{envelope})"
+      debt_comment: "Overrun of %{contract} (%{envelope})"
+      carried_from: "from %{contract}"
+      consumed: Consumed
+      consumed_hint: "Days charged to the contract up to today."
+      remaining: Remaining
+      remaining_hint: "Credit left today, refills and adjustments included. Negative when overrun."
+      envelope_number: "Envelope %{number}"
+    help:
+      more: Learn more
+      title: Help
+      intro: "How reporting counts time credits. The project settings (Reporting tab) hold the contracts; this page explains them to every member who can view the reports."
     title: "%{project} · Reporting"
     sections_label: Reporting sections
     unknown: Unknown
@@ -154,8 +192,8 @@ en:
     scope:
       flow: "Issues created and closed from %{from} to %{to}, by %{grouping}; statuses of issues open today and of issues closed over the period."
       activity: "Time logged from %{from} to %{to}, by collaborator and activity type."
-      consumption: "Credits and time charged from %{from} to %{to} (%{hours} h/d), starting from the credit carried over to %{from}%{contract}."
-      consumption_contract: "; contract started on %{date}"
+      consumption: "Contract credits and time charged from %{from} to %{to} (%{hours} h/d), starting from each contract's balance on %{from}%{contract}."
+      consumption_contract: "; first contract started on %{date}"
       backlog: "Issues not closed at the end of each period (%{grouping}) from %{from} to %{to}, and their time left (estimated − spent at that date)."
       performance: "Issues closed from %{from} to %{to} (velocity by %{grouping}, average lead time); age of issues open on %{to}."
       projects: "Projects: %{projects}"
@@ -166,17 +204,26 @@ en:
       other_projects: "%{count} others"
     consumption:
       opening: "Credit on %{date}"
-      opening_title: "Credit carried over to %{date}: credits granted since the contract start minus the time charged before that date. Negative on overruns."
+      opening_title: "Balance of the displayed contracts on %{date}: their credit since their start minus the time charged before that date. Negative on overruns."
       granted: Credits granted over the period
-      granted_title: "Yearly grants and refills falling between %{from} and %{to}"
+      granted_title: "Contract credits and movements falling between %{from} and %{to}"
       available: Available credit
-      available_title: "Carried-over credit plus the credits granted over the period"
+      available_title: "Balance on the first day plus the credits and movements of the period"
       consumed: Consumed
-      consumed_title: "Time charged from %{from} to %{to} (%{hours} h/d), from the contract start on"
+      consumed_title: "Time charged to the displayed contracts from %{from} to %{to} (%{hours} h/d)"
       remaining: "Left on %{date}"
-      remaining_title: "Available credit minus consumed; never negative, an overrun carries over"
+      remaining_title: "Available credit minus consumed, contract by contract; never negative. A finished contract has nothing left."
       progress: Share consumed
       progress_title: "Consumed ÷ available credit"
+      outside_title: "Time logged from %{from} to %{to} that no contract takes: trackers without a contract, dates between contracts, activities or private issues matching no envelope, time without an issue."
+      parent_title: "Time logged from %{from} to %{to} charged to a contract of a parent project, whose figures are not shown here."
+      closing: "At the end"
+      closing_tip: "For finished contracts: what the next contract took over, and what expired or was not taken over."
+      closing_carried: "%{days} carried over"
+      closing_debt_taken: "%{days} overrun taken over"
+      closing_expired: "%{days} expired"
+      closing_debt: "%{days} overrun not taken over"
+      closing_even: "Fully used"
     summary:
       issues: Issues
       time: Time
@@ -211,7 +258,7 @@ en:
       velocity_desc: "Number of issues closed in each period and still closed today."
       backlog_priority_desc: "Issues open at each period end, grouped by priority."
       backlog_tracker_desc: "Issues open at each period end, grouped by tracker."
-      consumption_contract_desc: "Monthly credit balance and consumption from the contract start to the selected end date."
+      consumption_contract_desc: "Monthly credit balance and consumption from the first displayed contract's start to the selected end date. The credit drops when a contract ends and rises when the next one starts."
       time_activity_desc: "Total hours per activity over the selected period; shared color legend for chart 2.1."
       time_user_desc: "Hours per collaborator, split by activity. Colors match chart 2.2; each segment opens the corresponding time entries."
       flow_tracker: "1.1 Opened / Closed by Tracker"
@@ -227,13 +274,10 @@ en:
       status_closed_desc: "Issues closed over the selected period"
       time_user: "2.1 Time spent by collaborator"
       time_activity: "2.2 Time spent by activity type"
-      consumption_desc: "What you had at the start of the period, what was granted and consumed, and what is left. Time converted to days (%{hours} h/day); time logged before the contract start is not charged."
+      consumption_desc: "What the displayed contracts had at the start of the period, what was granted and consumed, and what is left. Time converted to days (%{hours} h/day). Each contract starts from its own credit; nothing carries over unless the next contract takes it."
       consumption_period: "3.1 Over the selected period"
-      consumption_period_desc: "Monthly credit and consumption from %{from} to %{to}, starting from the credit carried over to %{from}."
-      consumption_contract: "3.2 Over the contract's duration"
-      consumption_projects: "Summary by project"
-      consumption_projects_desc: "Same figures for each subproject, its own subprojects included; the displayed project only counts its own credits and time. A click opens the subproject's reporting, which shows the same values."
-      consumption_own: "(own credits and time)"
+      consumption_period_desc: "Monthly credit and consumption from %{from} to %{to}, starting from the contracts' balance on %{from}."
+      consumption_contract: "3.2 Over the contracts' duration"
       backlog_desc: "Issues in progress over the period (reconstructed from creation / closing dates)"
       backlog_tracker: "4.1 Backlog by Tracker"
       backlog_priority: "4.2 Backlog by Priority"
@@ -243,6 +287,9 @@ en:
       resolution: "5.2 Average resolution time by priority (days)"
       aging: "5.3 Age of open issues"
       aging_desc: "Breakdown of currently open issues by age in days since creation, measured at the selected end date."
+      consumption_contracts: "Summary by contract"
+      consumption_contracts_desc: "Contracts running during the period, envelope by envelope. A click on a contract shows the report of that contract alone."
+      consumption_no_contract: "No contract runs during this period for the selection. Contracts are set in the project settings (Reporting tab)."
     hints:
       bar_issues: "↑ click a bar to see the issues"
       issues: "↑ click to see the issues"
@@ -274,10 +321,10 @@ en:
       build_remaining: "Calculated remaining"
       build_overrun: "Overrun"
       horizon_help: "Remaining positive balance divided by the number of months left in the displayed ledger, including this month. This is a monthly allowance, not a consumption forecast."
-      balance_help: "Balance carried forward plus grants and refills for this month, before deducting monthly consumption. It may be negative."
-      credit_help: "Balance after monthly grants, refills and consumption. Displayed at zero when overdrawn; debt carries forward."
+      balance_help: "Balance at the start of the month plus the month's credits and movements, before deducting its consumption. It may be negative."
+      credit_help: "Balance after the month's credits, movements and consumption. Displayed at zero when overdrawn; a contract's credit stops at its end."
       spent_help: "Time logged during the month, converted to days using each project’s hours-per-day setting."
-      refills_help: "Additional credit granted by refill rules during the month, in days; annual initial grants are included in the balance, not in these bars."
+      refills_help: "Refills and adjustments of the month, in days; contract credits granted on their first day are included in the balance, not in these bars."
       no_issue: No issue
       opened: Opened
       closed: Closed
@@ -313,3 +360,13 @@ en:
       resolution: Resolution
       open_issues: Open issues
       aging: Age
+
+    contract_bar:
+      contracts: "Contracts"
+      contracts_tip: "Selections add up and filter the whole page. From all, a click shows one contract alone; further clicks add or remove one."
+      all: "All"
+      private: "Private issues"
+      private_tip: "Include, exclude or show only the time and issues of private issues, on every chart."
+      private_all: "Included"
+      private_exclude: "Excluded"
+      private_only: "Only"

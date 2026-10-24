@@ -1,0 +1,67 @@
+<%#
+File: redmine_reporting/app/views/reporting/_consumption_contracts.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<% rows = @report_data.dig(:consumption, :contracts) %>
+<% from, to = @dashboard.date_from, @dashboard.date_to %>
+<article class="reporting-consumption-contracts">
+  <h4><%= l(:"reporting.charts.consumption_contracts") %> <%= reporting_help_link(@project, "report") %></h4>
+  <% if rows.empty? %>
+    <p class="nodata"><%= l(:"reporting.charts.consumption_no_contract") %></p>
+  <% else %>
+    <p class="reporting-desc"><%= l(:"reporting.charts.consumption_contracts_desc") %></p>
+    <table class="list">
+      <thead>
+        <tr>
+          <th><%= l(:label_reporting_contract) %></th><th><%= l(:"reporting.contracts.dates") %></th>
+          <th><%= l(:"reporting.consumption.opening", date: from) %></th><th><%= l(:"reporting.consumption.granted") %></th>
+          <th><%= l(:"reporting.consumption.available") %></th><th><%= l(:"reporting.consumption.consumed") %></th>
+          <th><%= l(:"reporting.consumption.remaining", date: to) %></th><th><%= l(:"reporting.consumption.progress") %></th>
+          <th><%= l(:"reporting.consumption.closing") %> <%= reporting_tip(l(:"reporting.consumption.closing_tip")) %></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.each do |row| %>
+          <% [row, *row[:envelopes]].each_with_index do |item, index| %>
+            <tr class="<%= index.zero? ? "reporting-contract-row" : "reporting-envelope-row" %>">
+              <td class="name">
+                <% if index.zero? %>
+                  <% label = row[:own] ? row[:name] : "#{row[:project]} · #{row[:name]}" %>
+                  <%= link_to label, reporting_filter_path("reporting_contract", [row[:id].to_s]) %>
+                <% else %>
+                  <span class="reporting-envelope-name"><%= item[:name] %></span>
+                <% end %>
+              </td>
+              <td><%= reporting_dates(Date.iso8601(row[:from]), Date.iso8601(row[:to])) if index.zero? %></td>
+              <td class="<%= "reporting-red" if item[:opening].negative? %>"><%= reporting_days(item[:opening]) %></td>
+              <td><%= reporting_days(item[:granted]) %></td>
+              <td><%= reporting_days(item[:available]) %></td>
+              <td><%= reporting_days(item[:consumed]) %></td>
+              <td class="<%= "reporting-red" if item[:remaining].zero? && item[:consumed].positive? %>"><%= reporting_days(item[:remaining]) %></td>
+              <td class="reporting-progress-cell">
+                <%= item[:progress] %>%
+                <span class="reporting-progress"><span style="width: <%= [item[:progress], 100].min %>%<%= "; background: #E74C3C" if item[:progress] > 100 %>"></span></span>
+              </td>
+              <td><%= reporting_closing(item) if row[:ended] %></td>
+            </tr>
+          <% end %>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</article>

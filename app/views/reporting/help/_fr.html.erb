@@ -1,0 +1,73 @@
+<%#
+File: redmine_reporting/app/views/reporting/help/_fr.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<p><%= l(:"reporting.help.intro") %></p>
+
+<h3 id="contracts">Contrats</h3>
+<p>Un contrat accorde des jours de crédit à un projet sur ses dates, pour le temps saisi sur les demandes de ses trackers.
+Toutes les durées sont possibles : une TMA de 6 mois, puis des contrats d'un an, puis un contrat de 3 mois pour se caler sur un exercice fiscal.
+Un tracker n'appartient qu'à un seul contrat du projet à une date donnée ; deux contrats peuvent coexister sur des trackers différents.</p>
+<p>Un contrat part de zéro le premier jour et s'arrête le dernier. Rien n'est reporté automatiquement : voir
+<a href="#renewal">Renouvellement</a>.</p>
+
+<h3 id="envelopes">Enveloppes</h3>
+<p>Le crédit d'un contrat est réparti en enveloppes. Chacune a des jours, accordés le premier jour du contrat, et des
+critères : des activités (ou <em>toutes les autres activités</em>) et les demandes qu'elle prend (toutes, publiques seulement ou privées seulement).</p>
+<p>Chaque heure saisie est imputée à une enveloppe au plus :</p>
+<ol>
+  <li>le tracker de la demande et la date désignent le contrat ;</li>
+  <li>l'activité et la confidentialité de la demande désignent l'enveloppe, d'abord celles qui listent des activités, puis l'enveloppe <em>toutes les autres activités</em> ;</li>
+  <li>une heure qui ne correspond à aucune enveloppe, ou saisie sans demande, est <strong>hors contrat</strong>.</li>
+</ol>
+<table class="list">
+  <thead><tr><th>Enveloppe</th><th>Activités</th><th>Demandes</th><th>Jours</th></tr></thead>
+  <tbody>
+    <tr><td>Développement</td><td>Conception, Développement, Tests</td><td>Publiques seulement</td><td>30</td></tr>
+    <tr><td>Pilotage</td><td>Gestion de projet</td><td>Privées seulement</td><td>10</td></tr>
+  </tbody>
+</table>
+<p>Avec ces enveloppes, le développement sur une demande publique va dans <em>Développement</em> ; le temps du chef de
+projet sur une demande privée récurrente va dans <em>Pilotage</em> ; le développement sur une demande privée (travail
+interne sur un environnement de test, par exemple) ne correspond à aucune enveloppe et n'est pas imputé au client.</p>
+
+<h3 id="movements">Recharges et ajustements</h3>
+<p>Les mouvements modifient le crédit d'une enveloppe à une date comprise dans le contrat : une recharge ajoute des
+jours (un avenant), un ajustement en retire (une dette reprise). Chacun porte un commentaire, visible dans l'historique.</p>
+
+<h3 id="renewal">Renouvellement</h3>
+<p><em>Renouveler</em> prépare le contrat suivant à partir du lendemain du contrat actuel, avec la même durée, les mêmes
+trackers et les mêmes enveloppes ; tout reste modifiable avant d'enregistrer. Pour chaque enveloppe qui a un solde, une
+case (décochée par défaut) reporte les jours restants ou déduit le dépassement. Dans les deux cas, cela crée un mouvement
+le premier jour du nouveau contrat.</p>
+<p>Le contrat précédent garde ses chiffres : les jours reportés n'apparaissent pas comme une consommation, et sa courbe
+s'arrête à sa date de fin.</p>
+
+<h3 id="subprojects">Sous-projets</h3>
+<p>Avec <em>Inclure les sous-projets</em>, un contrat compte aussi le temps de ses sous-projets. Un sous-projet peut
+toujours avoir ses propres contrats : sur un même tracker et une même date, le contrat le plus proche l'emporte. Le
+rapport d'un sous-projet n'affiche jamais le contrat de son parent : le temps couvert par le parent y apparaît comme
+<em>Couvert par le projet parent</em>, sans chiffres.</p>
+
+<h3 id="report">Lire le rapport</h3>
+<p>Les boutons de contrats au-dessus des rapports choisissent ce que montre toute la page. Les sélections s'additionnent :
+tout sélectionner montre chaque heure saisie une fois ; un seul contrat montre le rapport de ce contrat ; <em>Hors contrat</em>
+montre le temps qu'aucun contrat ne prend. Chaque contrat garde son propre solde : un dépassement sur l'un ne consomme
+jamais le crédit d'un autre.</p>
+<p>Les chiffres de crédit comptent toutes les heures imputées au contrat, quelle que soit la personne qui consulte, demandes
+privées comprises ; les listes de demandes respectent toujours les droits Redmine.</p>

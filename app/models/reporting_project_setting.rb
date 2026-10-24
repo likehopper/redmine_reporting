@@ -56,6 +56,15 @@ class ReportingProjectSetting < (defined?(ApplicationRecord) ? ApplicationRecord
       order("#{Project.table_name}.lft DESC").first || new(project: project)
   end
 
+  # Hours per day of each project, from its nearest configured ancestor: {project_id => hours}.
+  def self.hours_by_project(projects, default = DEFAULT_HOURS_PER_DAY)
+    settings = joins(:project).order("#{Project.table_name}.lft DESC").includes(:project).to_a
+    projects.to_h do |project|
+      inherited = settings.find { |setting| setting.project.lft <= project.lft && setting.project.rgt >= project.rgt }
+      [project.id, inherited ? inherited.hours_per_day.to_f : default.to_f]
+    end
+  end
+
   def inherited_by?(project)
     persisted? && project_id != project.id
   end

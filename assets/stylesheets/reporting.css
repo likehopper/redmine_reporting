@@ -329,3 +329,164 @@ td.reporting-red {
 
 /* Legend explanations stay inside the chart and never intercept chart clicks. */
 .reporting-legend-tooltip { position: absolute; z-index: 20; max-width: 240px; padding: 8px 10px; border-radius: 4px; background: #263238; color: #fff; font-size: 12px; line-height: 1.4; pointer-events: none; }
+
+/* Project settings: vertical sub-tabs, one form per pane. */
+.reporting-settings-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.reporting-settings-nav {
+  flex: 0 0 13em;
+}
+
+.reporting-settings-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  background: #f6f6f6;
+}
+
+.reporting-settings-nav li + li {
+  border-top: 1px solid #e4e4e4;
+}
+
+.reporting-settings-nav a {
+  display: block;
+  padding: 7px 10px;
+  border-left: 3px solid transparent;
+  color: #555;
+}
+
+.reporting-settings-nav a:hover {
+  background: #fff;
+  text-decoration: none;
+}
+
+.reporting-settings-nav a.selected {
+  border-left-color: #F7941D;
+  background: #fff;
+  color: #333;
+  font-weight: bold;
+}
+
+.reporting-settings-pane {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media screen and (max-width: 899px) {
+  .reporting-settings-layout {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .reporting-settings-nav {
+    flex-basis: auto;
+  }
+}
+
+/* Contracts: short explanations on hover or focus, envelope blocks and their movements. */
+.reporting-tip {
+  display: inline-block;
+  width: 1.3em;
+  height: 1.3em;
+  margin-left: 2px;
+  border-radius: 50%;
+  background: #e8e8e8;
+  color: #555;
+  font-size: 0.8em;
+  font-weight: bold;
+  line-height: 1.3em;
+  text-align: center;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.reporting-help-link {
+  font-size: 0.9em;
+  white-space: nowrap;
+}
+
+.reporting-envelope legend {
+  font-weight: bold;
+}
+
+.reporting-envelope label.inline {
+  margin-right: 1em;
+  white-space: nowrap;
+}
+
+.reporting-movements caption {
+  padding: 4px 0;
+  text-align: left;
+  font-weight: bold;
+}
+
+.reporting-help h3 {
+  margin-top: 1.5em;
+}
+
+/* Contract selection: buttons that add up, then the private issues switch. */
+.reporting-contract-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.reporting-bar-label {
+  margin-left: 8px;
+  color: #555;
+  font-weight: bold;
+}
+
+.reporting-bar-label:first-child {
+  margin-left: 0;
+}
+
+.reporting-chip {
+  padding: 3px 10px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  background: #fff;
+  color: #555;
+  white-space: nowrap;
+}
+
+.reporting-chip:hover {
+  border-color: #F7941D;
+  text-decoration: none;
+}
+
+.reporting-chip.selected {
+  border-color: #F7941D;
+  background: #FEF0DE;
+  color: #333;
+  font-weight: bold;
+}
+
+.reporting-chip-bucket {
+  font-style: italic;
+}
+
+.reporting-contract-bar .reporting-help-link {
+  margin-left: auto;
+}
+
+.reporting-stat-aside .value {
+  color: #888;
+}
+
+.reporting-consumption-contracts tr.reporting-envelope-row td {
+  color: #666;
+  font-size: 0.95em;
+}
+
+.reporting-consumption-contracts .reporting-envelope-name {
+  padding-left: 1.5em;
+}

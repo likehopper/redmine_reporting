@@ -17,7 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
 -%>
-<% totals = @report_data.dig(:consumption, :period, :totals) %>
+<% period = @report_data.dig(:consumption, :period) %>
+<% totals = period[:totals] %>
 <% from, to = @dashboard.date_from, @dashboard.date_to %>
 <div class="reporting-stats" id="consumption-stats">
   <div class="reporting-stat" title="<%= l(:"reporting.consumption.opening_title", date: from) %>">
@@ -30,7 +31,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
   <div class="reporting-stat" title="<%= l(:"reporting.consumption.available_title") %>">
     <span class="value"><%= reporting_days(totals[:available]) %></span><span class="label"><%= l(:"reporting.consumption.available") %></span>
   </div>
-  <%= link_to @dashboard.details_path(records: "time_entries"), class: "reporting-stat", target: "_blank", rel: "noopener",
+  <%= link_to @dashboard.details_path(records: "time_entries", contracts: period[:contractIds].join(",")), class: "reporting-stat", target: "_blank", rel: "noopener",
         title: l(:"reporting.consumption.consumed_title", from: from, to: to, hours: @dashboard.hours_per_day) do %>
     <span class="value reporting-red"><%= reporting_days(totals[:consumed]) %></span><span class="label"><%= l(:"reporting.consumption.consumed") %></span>
   <% end %>
@@ -42,4 +43,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
     <span class="value"><%= totals[:progress] %>%</span><span class="label"><%= l(:"reporting.consumption.progress") %></span>
     <span class="reporting-progress"><span style="width: <%= [totals[:progress], 100].min %>%<%= "; background: #E74C3C" if totals[:progress] > 90 %>"></span></span>
   </div>
+  <% if period[:outside] %>
+    <%= link_to @dashboard.details_path(records: "time_entries", bucket: "none"), class: "reporting-stat reporting-stat-aside", id: "consumption-outside",
+          target: "_blank", rel: "noopener", title: l(:"reporting.consumption.outside_title", from: from, to: to) do %>
+      <span class="value"><%= reporting_days(period[:outside]) %></span><span class="label"><%= l(:label_reporting_contract_none) %></span>
+    <% end %>
+  <% end %>
+  <% if period[:parent] %>
+    <%= link_to @dashboard.details_path(records: "time_entries", bucket: "parent"), class: "reporting-stat reporting-stat-aside", id: "consumption-parent",
+          target: "_blank", rel: "noopener", title: l(:"reporting.consumption.parent_title", from: from, to: to) do %>
+      <span class="value"><%= reporting_days(period[:parent]) %></span><span class="label"><%= l(:label_reporting_contract_parent) %></span>
+    <% end %>
+  <% end %>
 </div>

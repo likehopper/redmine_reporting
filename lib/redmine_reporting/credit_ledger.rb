@@ -18,9 +18,9 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 module RedmineReporting
-  # Month by month balance of credit policies against charged days, from an opening
-  # balance. The balance carries over: an overrun is paid back by later grants, while
-  # displayed credit never goes below zero.
+  # Month by month balance of credit envelopes against charged days, from an opening
+  # balance. The balance carries over within a contract: an overrun is paid back by later
+  # refills, while displayed credit never goes below zero.
   class CreditLedger
     Row = Struct.new(:period, :granted, :refilled, :spent, :credit_before, :balance, :credit, :horizon, :cumulative_spent,
                      keyword_init: true)
@@ -28,12 +28,12 @@ module RedmineReporting
     attr_reader :rows, :opening_balance
 
     # spent_days: {first day of month => charged days}
-    def self.build(policies:, spent_days:, months:, opening_balance: 0.0)
+    def self.build(envelopes:, spent_days:, months:, opening_balance: 0.0)
       balance = opening_balance
       cumulative = 0.0
       rows = months.each_with_index.map do |month, index|
-        granted = policies.sum { |policy| policy.granted_days_between(month.first_day, month.last_day) }
-        refilled = policies.sum { |policy| policy.refilled_days_between(month.first_day, month.last_day) }
+        granted = envelopes.sum { |envelope| envelope.granted_days_between(month.first_day, month.last_day) }
+        refilled = envelopes.sum { |envelope| envelope.refilled_days_between(month.first_day, month.last_day) }
         spent = spent_days.fetch(month.start_on, 0.0)
         balance += granted + refilled
         credit_before = balance
@@ -47,8 +47,8 @@ module RedmineReporting
       new(rows: rows, opening_balance: opening_balance)
     end
 
-    # Several accounts over the same months, added up row by row. Credit and availability
-    # add up per account, so an overrun on one account never eats another one's credit.
+    # Several envelopes or contracts over the same months, added up row by row. Credit and
+    # availability add up per part, so an overrun on one never eats another one's credit.
     def self.sum(ledgers)
       return new(rows: [], opening_balance: 0.0) if ledgers.empty?
 

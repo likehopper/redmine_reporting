@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+- Reorganize the project's Reporting settings tab into vertical sub-tabs: Displayed
+  reports, Time unit, Run / Build trackers, SLA statuses (with the SLA plugin) and
+  Contracts. Each one is saved on its own; saving returns to the same sub-tab.
+- Replace yearly credit policies with **credit contracts**: dates of any length, one or
+  more trackers, optional subprojects (the closest contract wins), and credit split
+  into envelopes by activity and public/private issues, with dated refills and
+  adjustments. **Renew** prepares the next contract and can carry the balance over or
+  deduct the overrun. Credit policies and refills are dropped by the migration.
+- Consumption works contract by contract: summary by contract and envelope, how
+  finished contracts closed, and the time outside contracts (or covered by a parent's).
+  Credit figures no longer depend on the reader's issue visibility.
+- Contract buttons and a private issues switch filter the whole report; both are also
+  native filters of Redmine's issue and time lists, used by chart clicks.
+- Add a help page for project members (`/projects/:id/reporting/help`), linked from the
+  report and the settings, with short explanations on hover.
+- REST API: `credit_contracts` replaces `credit_policies`. Redmine Mirror: the
+  *Reporting credit contracts* module replaces *Reporting credit policies* and maps
+  activities too.
+
 ## 1.3.1 — 2026-10-23
 
 - Fix chart clicks opening an empty issue list when tracker, priority or status names

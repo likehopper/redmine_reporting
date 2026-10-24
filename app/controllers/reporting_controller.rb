@@ -20,8 +20,8 @@
 class ReportingController < ApplicationController
   before_action :find_project_by_project_id
   before_action :authorize
-  before_action :load_reporting_setting
-  before_action :build_reporting_query
+  before_action :load_reporting_setting, except: :help
+  before_action :build_reporting_query, except: :help
 
   helper :queries
   helper :reporting
@@ -53,6 +53,9 @@ class ReportingController < ApplicationController
     drilldown = RedmineReporting::Drilldown.build(@query, params)
     redirect_to drilldown.path
   end
+
+  # How reporting and contracts work, for project members who cannot open the settings.
+  def help; end
 
   private
 

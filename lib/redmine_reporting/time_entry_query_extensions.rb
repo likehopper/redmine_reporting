@@ -19,8 +19,11 @@
 
 module RedmineReporting
   module TimeEntryQueryExtensions
+    include ContractFilters
+
     def initialize_available_filters
       super
+      add_contract_filters
       add_available_filter "issue.priority_id", type: :list,
         name: l(:label_attribute_of_issue, name: l(:field_priority)),
         values: -> { IssuePriority.active.sorted.map { |priority| [priority.name, priority.id.to_s] } }

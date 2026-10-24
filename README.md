@@ -44,7 +44,7 @@ Restart Redmine, then for each project (see the illustrated
 2. Give roles the permissions they need:
    - *View reporting* (`view_reporting`) to open the dashboard;
    - *Configure reporting* (`manage_reporting`) for the **Reporting** settings tab and
-     time credits.
+     credit contracts.
 
 ### Upgrading
 
@@ -69,7 +69,7 @@ against your existing data.
 
 ### Uninstalling
 
-Uninstalling deletes the plugin's stored settings, credit policies and refills.
+Uninstalling deletes the plugin's stored settings and credit contracts.
 Back up the database first, stop Redmine, and run from the Redmine root while the
 plugin directory is still present:
 
@@ -148,7 +148,7 @@ priority, target version):
 |---|---|
 | Issue flow | creations and closures per tracker and priority, per period, cumulated; open and closed issues by status |
 | Activity | time logged per collaborator and per activity |
-| Consumption | credit on the first day, credits granted, consumption and credit left over the selected period, and over the contract; summary per subproject |
+| Consumption | balance on the first day, credits granted, consumption and balance left, over the selected period and over the contracts; summary by contract and envelope; time outside contracts |
 | Backlog | issues not closed at each period end, per tracker and priority; time left to do |
 | Performance | velocity, average resolution time per priority, age of open issues |
 
@@ -177,7 +177,9 @@ visibility, private issues and projects. On the reporting subtree, issue charts
 *Issue tracking* is enabled; time charts (activity, consumption) need *View spent
 time* and *Time tracking*; the time left chart and banner cards need both. A tab
 without its data is not shown, and its payload is omitted from the page JSON.
-Credits additionally require reporting and time visibility on each contributing project.
+Credit figures additionally require reporting and time visibility on the project that
+owns the contract. They count every hour charged to the contract, private issues
+included, whoever reads them; issue and time lists keep Redmine's visibility.
 
 ## How figures are computed
 
@@ -203,35 +205,52 @@ Credits additionally require reporting and time visibility on each contributing 
 - **Resolution time and velocity**: issues closed over the period and still closed.
 - **Days**: activity and estimated time use the reporting project's hours per day
   (8 by default). Consumption converts each project's hours using its own inherited
-  settings before aggregating credit days.
+  settings before adding up contract days.
 - **Limits**: dates must be between 1900 and 2200, with at most 600 periods per
   report or credit ledger. Invalid ranges return a visible validation error.
 
-## Time credits
+## Credit contracts
 
-A credit policy belongs to a project and a tracker. Its initial credit is granted
-every year on its anniversary date, within its optional validity dates; refills add
-credit every year on their own date and validity. February 29 falls on February 28
-in non-leap years, and day 31 on the last day of shorter months.
+A contract belongs to a project. It has dates (any length), covered trackers and an
+optional **Include subprojects**. Its credit is split into **envelopes**: days granted
+on the contract's first day, for some activities (or all other activities) and for all,
+public or private issues. **Movements** are dated refills (positive) or adjustments
+(negative) of an envelope.
 
-The consumption tab follows the selected period. Credit starts on the earliest
-policy start (`active_from`); time logged before it is not charged. The period opens
-with the credit carried over to its first day, adds the grants and refills falling in
-it, and subtracts the time charged over it: for a 10-day yearly contract with 3 days
-used in the first half, a July–December report starts with 7 days. An overrun carries
-over and is paid back by later grants, while the displayed credit never goes below
-zero; the share consumed can exceed 100%. Without a policy start date, time is
-charged from the start of the selected period. The contract chart shows the whole
-contract up to the end of the period. The horizon spreads the remaining credit over
-the months left.
+Each logged hour is charged to one envelope at most: its issue's tracker and date select
+the contract, the closest project winning when a subproject has its own; its activity
+(a project-specific activity counts as the one it overrides) and the issue's privacy
+select the envelope, listed activities first. Time without an issue, or matching no
+envelope, is **outside the contract**. Private issues therefore serve both for
+flat-rate work (an envelope for them) and for internal work (no envelope for them).
+On a given date, a tracker belongs to one contract of a project.
 
-Each subproject is a credit account of its own, with its whole subtree and its own
-contract start; the displayed project is one more account for its own credits and
-time. A project's figures add its accounts up, so an overrun on one account never
-eats another one's credit. Below the global figures, **Summary by project** lists
-each account over the same period; a click opens that subproject's own reporting,
-which shows the same values. Its own filters and tracker scope can still differ from
-the parent report.
+A contract starts from zero and stops on its last day. **Renew** prepares the next one
+(same trackers, envelopes and length: whole months when it lasts whole months); for
+each envelope, an unchecked box carries the balance left, or deducts the overrun, as a
+movement on the new contract's first day. The carried days are computed by the server.
+
+The consumption tab follows the selected period: each displayed contract opens with
+its balance on the first day, adds the credits and movements falling in the period and
+subtracts the time charged over it. Contracts add up month by month without sharing
+credit, so the credit drops when one ends and rises when the next one starts. An
+overrun stays within its envelope; the displayed credit never goes below zero and the
+share consumed can exceed 100%. **Summary by contract** lists each contract and
+envelope, and how finished ones closed (carried over, expired, overrun not taken over).
+The contract chart starts with the first displayed contract. The horizon spreads the
+remaining credit over the months left.
+
+The **contract buttons** above the reports filter the whole page; selections add up.
+*Outside contract* and, in a subproject, *Covered by the parent project* show the rest,
+so selecting everything counts every hour once. A subproject's report never shows its
+parent's contract figures. A **Private issues** switch includes, excludes or isolates
+private issues. Both are native filters (`reporting_contract`, `reporting_private`),
+also offered on Redmine's issue and time lists, so chart clicks open the exact records.
+Issue lists follow a contract's projects, trackers and privacy, whatever its dates.
+
+Project members find the same explanations in the plugin's help page
+(`/projects/:id/reporting/help`, *View reporting* only), linked from the report and the
+settings.
 
 ## Project settings
 
@@ -241,19 +260,20 @@ The **Reporting** tab of the project settings holds:
   as coming soon. The SLA family will need redmine_sla, its module enabled on the
   project and at least one tracker with an SLA.
 - **Time unit**: hours per day, to convert logged time and estimates into days.
-- **Tracker scope**: each tracker is Run, Build or unclassified. Once a tracker is Run,
-  Run reports, credits and their lists only count Run trackers (time logged without an
-  issue still counts); until then, every tracker counts. Build trackers feed the
+- **Run / Build trackers**: each tracker is Run, Build or unclassified. Once a tracker is
+  Run, Run reports and their lists only count Run trackers (time logged without an
+  issue still counts); until then, every tracker counts. Contract figures do not depend
+  on this classification. Build trackers feed the
   Build & Projects reports, including their native detail lists.
 - **SLA statuses**: read-only, when redmine_sla is configured for the project. An SLA
   status is a status in which an SLA type's delay elapses; open statuses where no type
   of the project elapses are waiting statuses. Nothing SLA-related is entered here: it
   comes from redmine_sla only.
-- **Time credits**: policies and their refills.
+- **Contracts**: current, upcoming and finished contracts, with what each consumed and has left.
 
 A subproject without its own settings uses its nearest configured ancestor's; saving
-the tab on the subproject creates its own. Project copies keep the settings and
-credits; deleting a project removes them.
+the tab on the subproject creates its own. Contracts are never inherited. Project copies
+keep the settings and contracts; deleting a project removes them.
 
 ### REST API
 
@@ -263,17 +283,18 @@ configuration (read-only):
 | Request | Returns |
 | --- | --- |
 | `GET /projects/:id/reporting/settings.json` | Settings in effect; `inherited_from` names the ancestor that owns them, no `id` means defaults |
-| `GET /projects/:id/reporting/credit_policies.json` | Credit policies with their refills, paginated with `offset` and `limit` |
-| `GET /projects/:id/reporting/credit_policies/:policy_id.json` | One credit policy |
+| `GET /projects/:id/reporting/credit_contracts.json` | Contracts with their trackers, envelopes (activities, privacy) and movements, paginated with `offset` and `limit` |
+| `GET /projects/:id/reporting/credit_contracts/:contract_id.json` | One contract |
 
 ### Redmine Mirror
 
 When [Redmine Mirror](https://www.redmine.org/plugins/redmine_mirror) is installed on
 the destination, it offers two modules: **Reporting settings** and **Reporting credit
-policies**. They copy a project's own settings and its credit policies from a source
-Redmine running Reporting 1.3.0 or later, mapping trackers through Mirror's tracker
-table. Local changes are reported as Mirror conflicts, never overwritten; deletions
-are not copied.
+contracts**. They copy a project's own settings and its contracts from a source Redmine
+running the same Reporting release, mapping trackers and activities through Mirror's
+tables; an ignored tracker or activity is left out, and a contract left without tracker
+is ignored. Carry-over links stay on the source. Local changes are reported as Mirror
+conflicts, never overwritten; deletions are not copied.
 
 ## Demo data
 
@@ -292,7 +313,9 @@ to view the reports.
 Creates or refreshes a *Reporting Demo* project and two subprojects over the last 12
 months: several hundred issues with realistic workflow histories (status, assignee, done
 ratio and version changes, reopenings, postponed versions), time entries, five
-collaborators, two roles with their workflows, and credits on each project. It can be
+collaborators, two roles with their workflows, and contracts on each project:
+*Maintenance* chains a 6-month contract with a yearly one that takes over its balance,
+with development and support envelopes. It can be
 run again without duplicating anything: a later run replays the same stories up to
 the current date.
 
@@ -304,7 +327,7 @@ the current date.
 |---|---|
 | `ReportingQuery < Query` | native filters, visible project subtree, issue and time entry scopes |
 | `RedmineReporting::ReportBuilder` | assembles one report per tab over the same data |
-| `RedmineReporting::ReportData` | records loaded once per request: issue timelines, time entries, spent time, credit policies |
+| `RedmineReporting::ReportData` | records loaded once per request: issue timelines, time entries, spent time, displayed contracts |
 | `RedmineReporting::Reports::{Summary, Flow, Activity, Consumption, Backlog, Performance}` | one tab each |
 | `RedmineReporting::PeriodGrid`, `Period` | report periods: bounds, labels |
 | `RedmineReporting::IssueHistory` | historical status transitions and matching native query predicate |
@@ -312,9 +335,11 @@ the current date.
 | `RedmineReporting::QueryDescription` | localized presentation of selected filters and projects |
 | `RedmineReporting::IssueTimeline` | an issue's dates in the viewer's time zone, and the period rules above |
 | `RedmineReporting::SpentTime` | hours per issue, in total or up to a date |
-| `RedmineReporting::CreditAccount` | one project's or subproject's credits and charged time, from its contract start; opening balance at any date |
-| `RedmineReporting::CreditLedger` | monthly credit balance from an opening balance; accounts added up row by row |
-| `ReportingCreditPolicy`, `ReportingCreditRefill` | credit rules (grants, refills, validity) |
+| `ReportingCreditContract`, `ReportingCreditEnvelope`, `ReportingCreditMovement` | contracts, their envelopes and dated movements; validation and renewal |
+| `RedmineReporting::CreditScope` | SQL conditions of what each contract and envelope is charged with, viewer-independent |
+| `RedmineReporting::CreditContractAccount` | one contract's ledger, envelope by envelope; balance at any date, closing and carried days |
+| `RedmineReporting::CreditLedger` | monthly credit balance from an opening balance; parts added up row by row |
+| `RedmineReporting::ContractFilters` | the contract and private issue filters of the reporting query and native lists |
 | `RedmineReporting::Drilldown` | turns a chart selection into native `IssueQuery` / `TimeEntryQuery` parameters, never ID lists |
 | `RedmineReporting::Sections`, `Capabilities` | report families and tabs; what modules and permissions allow |
 | `ReportingProjectSetting`, `RedmineReporting::ProjectSettings` | per-project settings and the settings tab |
@@ -328,7 +353,7 @@ the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 The controllers coordinate authorization, parameter handling and responses. Report
 calculations live in the objects above. `DashboardPresenter` owns dashboard descriptions and detail links, using explicit
 dependencies instead of helper access to controller instance variables.
-`ReportingHelper` contains six view formatting methods and the REST API rendering of a credit policy; `ProjectsHelperPatch` adds the native project settings tab.
+`ReportingHelper` contains view formatting methods, the contract and filter links, and the REST API rendering of a contract; `ProjectsHelperPatch` adds the native project settings tab.
 The browser script uses small functions for chart rendering and interactions.
 Code, comments and demo content are written in English; only the French locale
 file is in French. Small Rails callbacks and similar model validations remain
@@ -336,9 +361,9 @@ local when extracting them would obscure their meaning.
 
 ### Tests
 
-Unit, integration and browser (system) tests use Redmine's test runner, its core
-fixtures and the plugin's fixtures (`test/fixtures`, credit policies and refills on
-Redmine's eCookbook projects). With a test database and the plugin migrated:
+Unit, integration and browser (system) tests use Redmine's test runner and its core
+fixtures; contracts are created by each test. With a test database and the plugin
+migrated:
 
 ```sh
 export GOOGLE_CHROME_OPTS_ARGS=headless,disable-gpu,no-sandbox,disable-dev-shm-usage

@@ -19,21 +19,6 @@
 
 require File.expand_path("../../../test/test_helper", __dir__)
 
-# The plugin's own tables have fixtures next to Redmine's; core tables keep Redmine's fixtures.
-if ActiveSupport::TestCase.respond_to?(:fixture_paths)
-  ActiveSupport::TestCase.fixture_paths += [File.expand_path("fixtures", __dir__)]
-else
-  # Rails 6.1 only accepts one fixture directory. Merge into a disposable directory
-  # so the Redmine checkout and its own fixtures remain unchanged.
-  require "tmpdir"
-  fixture_directory = Dir.mktmpdir("redmine-reporting-fixtures-")
-  [ActiveSupport::TestCase.fixture_path, File.expand_path("fixtures", __dir__)].each do |source|
-    FileUtils.cp_r(Dir.glob(File.join(source, "*")), fixture_directory)
-  end
-  ActiveSupport::TestCase.fixture_path = fixture_directory
-  Minitest.after_run { FileUtils.remove_entry(fixture_directory) }
-end
-
 # Redmine 5.0 does not load core fixtures globally as later releases do.
 if ActiveSupport::TestCase.fixture_table_names.empty?
   core_fixtures = Dir.glob(Rails.root.join("test/fixtures/*.yml")).map { |path| File.basename(path, ".yml") }

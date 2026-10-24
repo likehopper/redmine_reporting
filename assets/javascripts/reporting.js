@@ -277,7 +277,7 @@ const legendHelp = {
   }
 };
 const consumptionChart = (id, data, monthEntries = (index) => ({
-  title: `${t("spent")} — ${data.labels[index]}`, filters: { records: "time_entries", ...periodRange(data.periodRanges, index) }
+  title: `${t("spent")} — ${data.labels[index]}`, filters: { records: "time_entries", contracts: data.contractIds.join(","), ...periodRange(data.periodRanges, index) }
 })) => draw(id, {
   type: "bar",
   data: {

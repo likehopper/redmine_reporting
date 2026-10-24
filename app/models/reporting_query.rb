@@ -20,8 +20,13 @@
 # Reuse Redmine's filter widgets, parameter format and SQL operators.
 # Reporting dates are kept separate because each chart has its own date axis.
 class ReportingQuery < Query
+  include RedmineReporting::ContractFilters
+
   self.queried_class = Issue
   self.view_permission = :view_reporting
+
+  # Filters that apply to time entries by their own rules rather than through their issue.
+  TIME_ENTRY_FIELDS = %w[reporting_contract reporting_private].freeze
 
   LEGACY_FILTERS = {
     project_ids: "project_id", tracker_ids: "tracker_id",
@@ -48,6 +53,7 @@ class ReportingQuery < Query
       Version.visible(reporting_user).where(project_id: visible_projects.select(:id)).includes(:project).
         order(:project_id, :name).map { |version| ["#{version.project.name} · #{version.name}", version.id.to_s] }
     }
+    add_contract_filters
   end
 
   def build_from_params(params, defaults = {})
@@ -105,10 +111,10 @@ class ReportingQuery < Query
     scope.pluck(:id)
   end
 
-  def issue_scope
+  def issue_scope(without: [])
     return Issue.none unless valid?
 
-    scope = Issue.visible(reporting_user).where(project_id: selected_projects.select(:id)).where(statement)
+    scope = Issue.visible(reporting_user).where(project_id: selected_projects.select(:id)).where(statement_without(without))
     run_tracker_ids.nil? ? scope : scope.where(tracker_id: run_tracker_ids)
   end
 
@@ -122,12 +128,16 @@ class ReportingQuery < Query
     scope = TimeEntry.visible(reporting_user).where(project_id: selected_projects.select(:id))
     # Unassigned time entries remain included until an issue filter is applied; the Run
     # perimeter alone keeps them, as it only sorts issues out.
-    if section == "build" || filters.keys.any? { |field| field != "project_id" }
-      scope.where(issue_id: issue_scope.select(:id))
-    elsif !run_tracker_ids.nil?
-      scope.where(issue_id: nil).or(scope.where(issue_id: issue_scope.select(:id)))
-    else
-      scope
+    issues = issue_scope(without: TIME_ENTRY_FIELDS)
+    scope = if section == "build" || (filters.keys - ["project_id", *TIME_ENTRY_FIELDS]).any?
+              scope.where(issue_id: issues.select(:id))
+            elsif !run_tracker_ids.nil?
+              scope.where(issue_id: nil).or(scope.where(issue_id: issues.select(:id)))
+            else
+              scope
+            end
+    TIME_ENTRY_FIELDS.select { |field| has_filter?(field) }.inject(scope) do |filtered, field|
+      filtered.where(contract_filter_condition(field, operator_for(field), values_for(field), :time_entries))
     end
   end
 
@@ -137,6 +147,16 @@ class ReportingQuery < Query
   end
 
   private
+
+  def statement_without(fields)
+    return statement if fields.empty? || (filters.keys & fields).empty?
+
+    saved = filters
+    self.filters = filters.except(*fields)
+    statement
+  ensure
+    self.filters = saved if saved
+  end
 
   def reporting_user
     user || User.current
