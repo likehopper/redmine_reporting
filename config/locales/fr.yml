@@ -18,10 +18,14 @@
 fr:
   # Redmine Mirror modules (used only when Mirror is installed).
   label_mirror_module_reporting_settings: "Réglages Reporting"
-  label_mirror_module_reporting_credit_policies: "Politiques de crédit Reporting"
+  label_mirror_module_reporting_credit_contracts: "Contrats de crédit Reporting"
   label_reporting_backlog_on: "Ouvert à la date (historique des statuts)"
   label_reporting_invalid_range: "Période invalide : utilisez des dates entre 1900 et 2200 et au plus %{count} périodes."
   label_reporting: Reporting
+  label_reporting_contract: "Contrat"
+  label_reporting_private: "Demande privée"
+  label_reporting_contract_parent: "Couvert par le projet parent"
+  label_reporting_contract_none: "Hors contrat"
   project_module_reporting: Reporting
   permission_view_reporting: Voir le reporting
   label_reporting_grouping: Regroupement par période
@@ -33,19 +37,23 @@ fr:
   label_reporting_flow_on: "Créé ou fermé le"
   permission_manage_reporting: Configurer le reporting
   field_hours_per_day: Heures par jour
-  field_initial_credit_days: Crédit initial (jours)
-  field_anniversary_month: Mois anniversaire
-  field_anniversary_day: Jour anniversaire
-  field_active_from: Actif à partir du
-  field_active_until: Actif jusqu'au
-  field_credit_days: Crédit (jours)
-  field_starts_on: À partir du
-  field_ends_on: Jusqu'au
-  field_enabled: Actif
-  field_month: Mois
-  field_day: Jour
+  field_starts_on: Date de début
+  field_ends_on: Date de fin
   field_section_ids: Rapports affichés
   field_build_tracker_ids: Trackers Build
+  field_tracker_ids: Trackers
+  field_activity_ids: Activités
+  field_other_activities: Toutes les autres activités
+  field_issue_privacy: Demandes
+  field_include_subprojects: Inclure les sous-projets
+  field_days: Jours
+  activerecord:
+    errors:
+      messages:
+        reporting_contract_overlap: "Partage un tracker avec le contrat \"%{name}\" sur les mêmes dates."
+        reporting_envelope_required: "Ajoutez au moins une enveloppe."
+        reporting_envelope_overlap: "Les enveloppes \"%{first}\" et \"%{second}\" couvrent le même temps : donnez-leur des activités ou des demandes différentes."
+        reporting_outside_contract: "doit être comprise dans les dates du contrat"
 
   label_reporting_version_on: "Périmètre au"
   label_reporting_completed_on: "Terminé au"
@@ -76,7 +84,7 @@ fr:
         missing: "Plugin SLA non installé"
       time_unit: Unité de temps
       hours_per_day_desc: "Convertit le temps saisi et les estimations en jours, pour les crédits et le bandeau."
-      trackers: Périmètre des trackers
+      trackers: Trackers Run / Build
       trackers_desc: "Les graphiques Run ne comptent que les trackers Run. Tant qu'aucun tracker n'est classé Run, tous sont comptés. Seuls les trackers classés Build alimentent les graphiques Build & Projets ; sans classement Build, ils restent vides."
       tracker_role:
         run: Run
@@ -87,21 +95,51 @@ fr:
       sla_type: Type de SLA
       sla_active_statuses: Statuts où le délai court
       sla_waiting_statuses: Statuts en attente déduits
-      credits: Crédits temps
-      credits_desc: "Crédit annuel par tracker, accordé à la date anniversaire, avec ses recharges. Le temps saisi est converti à raison de %{hours} h par jour."
-      anniversary: Date anniversaire
-      anniversary_hint: "Le crédit initial est accordé chaque année à cette date."
-      validity: Validité
-      validity_between: "du %{from} au %{to}"
-      validity_from: "depuis le %{from}"
-      validity_until: "jusqu'au %{to}"
-      validity_always: Permanente
-      refills: Recharges
-      refill: "%{days} le %{date}"
-      refills_hint: "Crédit ajouté chaque année à la date indiquée. Laisser le crédit vide pour ignorer une ligne."
-      new_policy: Nouveau crédit
-      day_of_year: "%{day} %{month}"
-      days_hint: "À raison de %{hours} h par jour."
+      contracts: Contrats
+    contracts:
+      intro: "Un contrat accorde des jours de crédit sur ses dates. Le temps saisi sur les demandes de ses trackers est imputé à l'enveloppe qui correspond à son activité et à la confidentialité de la demande, à raison de %{hours} h par jour."
+      new: Nouveau contrat
+      renew: Renouveler
+      renew_hint: "Créer le contrat suivant à partir du lendemain de celui-ci, avec la même durée, les mêmes trackers et les mêmes enveloppes."
+      renewal_of: "Renouvellement de %{name}"
+      status:
+        current: En cours
+        upcoming: À venir
+        finished: Terminés
+      dates: Dates
+      dates_value: "%{from} – %{to}"
+      dates_hint: "Durée libre : 3 mois, 6 mois, un an… Le renouvellement garde la même durée."
+      trackers_hint: "Temps saisi sur les demandes de ces trackers. Un tracker n'appartient qu'à un seul contrat du projet à une date donnée."
+      subprojects_hint: "Compter aussi le temps des sous-projets. Le contrat propre d'un sous-projet prime sur ses trackers, et les rapports des sous-projets n'affichent pas ce contrat."
+      closer_warning: "Ces contrats de sous-projets prennent le temps de ce contrat sur des trackers et des dates en commun : %{contracts}."
+      with_subprojects: "et sous-projets"
+      envelopes: Enveloppes
+      envelopes_intro: "Répartissez le crédit par activité et par confidentialité des demandes. Chaque heure saisie va dans une enveloppe au plus ; le temps qui n'en trouve aucune est hors contrat."
+      all_activities: Toutes les activités
+      days_hint: "Accordés le premier jour du contrat, à raison de %{hours} h par jour."
+      other_activities_hint: "Reçoit le temps du contrat qu'aucune autre enveloppe ne prend."
+      privacy_hint: "Les demandes privées permettent d'imputer un forfait (pilotage, revues) ou, sans enveloppe pour elles, de garder le travail interne hors contrat."
+      privacy:
+        all: Toutes les demandes
+        public: Demandes publiques seulement
+        private: Demandes privées seulement
+      movements: Mouvements
+      movements_hint: "Recharges (positives) ou ajustements (négatifs) datés, compris dans les dates du contrat. Laisser les jours vides pour ignorer une ligne."
+      carry: Solde précédent
+      carry_remaining: "Reporter les %{days} restants"
+      carry_debt: "Déduire les %{days} de dépassement"
+      carry_over_comment: "Report de %{contract} (%{envelope})"
+      debt_comment: "Dépassement de %{contract} (%{envelope})"
+      carried_from: "depuis %{contract}"
+      consumed: Consommé
+      consumed_hint: "Jours imputés au contrat jusqu'à aujourd'hui."
+      remaining: Restant
+      remaining_hint: "Crédit restant aujourd'hui, recharges et ajustements compris. Négatif en cas de dépassement."
+      envelope_number: "Enveloppe %{number}"
+    help:
+      more: En savoir plus
+      title: Aide
+      intro: "Comment le reporting compte les crédits de temps. Les réglages du projet (onglet Reporting) contiennent les contrats ; cette page les explique à tous les membres qui peuvent consulter les rapports."
     title: "%{project} · Reporting"
     sections_label: Sections du reporting
     unknown: Inconnu
@@ -154,8 +192,8 @@ fr:
     scope:
       flow: "Tickets créés et fermés du %{from} au %{to}, par %{grouping} ; statuts des tickets ouverts aujourd'hui et des tickets fermés sur la période."
       activity: "Temps saisis du %{from} au %{to}, par collaborateur et par type d'activité."
-      consumption: "Crédits et temps imputé du %{from} au %{to} (%{hours} h/j), à partir du crédit reporté au %{from}%{contract}."
-      consumption_contract: " ; contrat démarré le %{date}"
+      consumption: "Crédits des contrats et temps imputé du %{from} au %{to} (%{hours} h/j), à partir du solde de chaque contrat au %{from}%{contract}."
+      consumption_contract: "; premier contrat commencé le %{date}"
       backlog: "Tickets non fermés à la fin de chaque période (%{grouping}) du %{from} au %{to}, et leur reste à passer (estimé − passé à cette date)."
       performance: "Tickets fermés du %{from} au %{to} (vélocité par %{grouping}, délai moyen) ; ancienneté des tickets ouverts au %{to}."
       projects: "Projets : %{projects}"
@@ -166,17 +204,26 @@ fr:
       other_projects: "%{count} autres"
     consumption:
       opening: "Crédit au %{date}"
-      opening_title: "Crédit reporté au %{date} : crédits accordés depuis le début du contrat moins le temps imputé avant cette date. Négatif en cas de dépassement."
+      opening_title: "Solde des contrats affichés au %{date} : leur crédit depuis leur début moins le temps imputé avant cette date. Négatif en cas de dépassement."
       granted: Crédits accordés sur la période
-      granted_title: "Dotations annuelles et recharges tombant entre le %{from} et le %{to}"
+      granted_title: "Crédits et mouvements des contrats compris entre le %{from} et le %{to}"
       available: Crédit disponible
-      available_title: "Crédit reporté plus crédits accordés sur la période"
+      available_title: "Solde du premier jour augmenté des crédits et mouvements de la période"
       consumed: Consommé
-      consumed_title: "Temps imputé du %{from} au %{to} (%{hours} h/j), à partir du début du contrat"
+      consumed_title: "Temps imputé aux contrats affichés du %{from} au %{to} (%{hours} h/j)"
       remaining: "Reste au %{date}"
-      remaining_title: "Crédit disponible moins consommé ; jamais négatif, un dépassement est reporté"
+      remaining_title: "Crédit disponible moins la consommation, contrat par contrat ; jamais négatif. Un contrat terminé n'a plus rien."
       progress: Part consommée
       progress_title: "Consommé ÷ crédit disponible"
+      outside_title: "Temps saisi du %{from} au %{to} qu'aucun contrat ne prend : trackers sans contrat, dates entre deux contrats, activités ou demandes privées sans enveloppe, temps sans demande."
+      parent_title: "Temps saisi du %{from} au %{to} imputé à un contrat d'un projet parent, dont les chiffres ne sont pas affichés ici."
+      closing: "À la fin"
+      closing_tip: "Pour les contrats terminés : ce que le contrat suivant a repris, et ce qui a expiré ou n'a pas été repris."
+      closing_carried: "%{days} reportés"
+      closing_debt_taken: "%{days} de dépassement repris"
+      closing_expired: "%{days} expirés"
+      closing_debt: "%{days} de dépassement non repris"
+      closing_even: "Entièrement consommé"
     summary:
       issues: Tickets
       time: Temps
@@ -211,7 +258,7 @@ fr:
       velocity_desc: "Nombre de tickets fermés dans chaque période et toujours fermés aujourd'hui."
       backlog_priority_desc: "Tickets ouverts à la fin de chaque période, répartis par priorité."
       backlog_tracker_desc: "Tickets ouverts à la fin de chaque période, répartis par tracker."
-      consumption_contract_desc: "Solde du crédit et consommation mensuelle depuis le début du contrat jusqu'à la date de fin sélectionnée."
+      consumption_contract_desc: "Solde et consommation mensuels du début du premier contrat affiché jusqu'à la date de fin choisie. Le crédit retombe à la fin d'un contrat et remonte au début du suivant."
       time_activity_desc: "Total des heures par activité sur la période sélectionnée ; légende de couleurs commune au graphique 2.1."
       time_user_desc: "Heures par collaborateur, réparties par activité. Les couleurs correspondent au graphique 2.2 ; chaque segment ouvre les temps concernés."
       flow_tracker: "1.1 Ouvert / Fermé par Tracker"
@@ -227,13 +274,10 @@ fr:
       status_closed_desc: "Tickets fermés sur la période sélectionnée"
       time_user: "2.1 Temps passé par collaborateur"
       time_activity: "2.2 Temps passé par type d'activité"
-      consumption_desc: "Ce que vous aviez au début de la période, ce qui a été accordé et consommé, et ce qu'il reste. Temps converti en jours (%{hours} h/jour) ; le temps saisi avant le début du contrat n'est pas imputé."
+      consumption_desc: "Ce que les contrats affichés avaient au début de la période, ce qui a été accordé et consommé, et ce qui reste. Temps converti en jours (%{hours} h/jour). Chaque contrat part de son propre crédit ; rien n'est reporté sauf si le contrat suivant le reprend."
       consumption_period: "3.1 Sur la période sélectionnée"
-      consumption_period_desc: "Crédit et consommation mois par mois du %{from} au %{to}, à partir du crédit reporté au %{from}."
-      consumption_contract: "3.2 Évolution sur la durée du contrat"
-      consumption_projects: "Synthèse par projet"
-      consumption_projects_desc: "Mêmes chiffres pour chaque sous-projet, avec ses propres sous-projets ; le projet affiché ne compte que ses propres crédits et temps. Un clic ouvre le reporting du sous-projet, qui affiche les mêmes valeurs."
-      consumption_own: "(crédits et temps propres)"
+      consumption_period_desc: "Crédit et consommation mensuels du %{from} au %{to}, à partir du solde des contrats au %{from}."
+      consumption_contract: "3.2 Sur la durée des contrats"
       backlog_desc: "Tickets en cours sur la période (reconstitués à partir des dates de création / clôture)"
       backlog_tracker: "4.1 Backlog par Tracker"
       backlog_priority: "4.2 Backlog par Priorité"
@@ -243,6 +287,9 @@ fr:
       resolution: "5.2 Temps moyen de résolution par priorité (jours)"
       aging: "5.3 Ancienneté des tickets ouverts"
       aging_desc: "Répartition des tickets actuellement ouverts selon leur âge en jours depuis la création, mesuré à la date de fin sélectionnée."
+      consumption_contracts: "Synthèse par contrat"
+      consumption_contracts_desc: "Contrats en cours pendant la période, enveloppe par enveloppe. Un clic sur un contrat affiche le rapport de ce seul contrat."
+      consumption_no_contract: "Aucun contrat ne court sur cette période pour la sélection. Les contrats se règlent dans les paramètres du projet (onglet Reporting)."
     hints:
       bar_issues: "↑ clic sur une barre pour voir les tickets"
       issues: "↑ clic pour voir les tickets"
@@ -274,10 +321,10 @@ fr:
       build_remaining: "Restant calculé"
       build_overrun: "Dépassement"
       horizon_help: "Solde positif restant divisé par le nombre de mois restant dans l'échéancier affiché, mois courant inclus. C'est une allocation mensuelle, pas une prévision de consommation."
-      balance_help: "Solde reporté augmenté des dotations et recharges du mois, avant déduction de la consommation mensuelle. Il peut être négatif."
-      credit_help: "Solde après dotations, recharges et consommation du mois. Affiché à zéro en cas de dépassement ; la dette est reportée."
+      balance_help: "Solde au début du mois augmenté des crédits et mouvements du mois, avant déduction de sa consommation. Il peut être négatif."
+      credit_help: "Solde après crédits, mouvements et consommation du mois. Affiché à zéro en cas de dépassement ; le crédit d'un contrat s'arrête à sa fin."
       spent_help: "Temps saisi pendant le mois, converti en jours selon les heures par jour de chaque projet."
-      refills_help: "Crédit supplémentaire accordé par les recharges du mois, en jours. Les dotations initiales annuelles sont intégrées au solde, pas à ces barres."
+      refills_help: "Recharges et ajustements du mois, en jours ; les crédits accordés au premier jour d'un contrat sont intégrés au solde, pas à ces barres."
       no_issue: Aucun ticket
       opened: Ouverts
       closed: Fermés
@@ -313,3 +360,13 @@ fr:
       resolution: Résolution
       open_issues: Tickets ouverts
       aging: Ancienneté
+
+    contract_bar:
+      contracts: "Contrats"
+      contracts_tip: "Les sélections s'additionnent et filtrent toute la page. Depuis « Tout », un clic affiche un seul contrat ; les clics suivants en ajoutent ou en retirent."
+      all: "Tout"
+      private: "Demandes privées"
+      private_tip: "Inclure, exclure ou n'afficher que le temps et les demandes des demandes privées, sur tous les graphiques."
+      private_all: "Incluses"
+      private_exclude: "Exclues"
+      private_only: "Seulement"

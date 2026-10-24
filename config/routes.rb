@@ -19,9 +19,12 @@
 
 get "projects/:project_id/reporting", to: "reporting#index", as: "project_reporting"
 get "projects/:project_id/reporting/details", to: "reporting#details", as: "project_reporting_details"
+get "projects/:project_id/reporting/help", to: "reporting#help", as: "project_reporting_help"
 
 get "projects/:project_id/reporting/settings", to: "reporting_settings#show", as: "project_reporting_settings"
 patch "projects/:project_id/reporting/settings", to: "reporting_settings#update"
 scope "projects/:project_id/reporting", as: "project_reporting" do
-  resources :credit_policies, controller: "reporting_credit_policies", only: [:index, :show, :new, :create, :edit, :update, :destroy]
+  resources :credit_contracts, controller: "reporting_credit_contracts", only: [:index, :show, :new, :create, :edit, :update, :destroy] do
+    get :renew, on: :member
+  end
 end

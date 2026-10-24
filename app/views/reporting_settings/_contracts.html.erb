@@ -1,0 +1,62 @@
+<%#
+File: redmine_reporting/app/views/reporting_settings/_contracts.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<% today = User.current.today %>
+<p class="info"><%= l(:"reporting.contracts.intro", hours: reporting_hours(page.setting.hours_per_day)) %>
+  <%= reporting_help_link(@project, "contracts") %></p>
+<% if page.contracts.any? %>
+  <% page.contracts_by_status(today).each do |status, contracts| %>
+    <h3><%= l(:"reporting.contracts.status.#{status}") %></h3>
+    <table class="list reporting-contracts" id="reporting-contracts-<%= status %>">
+      <thead>
+        <tr>
+          <th><%= l(:field_name) %></th><th><%= l(:"reporting.contracts.dates") %></th><th><%= l(:field_tracker_ids) %></th>
+          <th><%= l(:"reporting.contracts.envelopes") %></th>
+          <th><%= l(:"reporting.contracts.consumed") %> <%= reporting_tip(l(:"reporting.contracts.consumed_hint")) %></th>
+          <th><%= l(:"reporting.contracts.remaining") %> <%= reporting_tip(l(:"reporting.contracts.remaining_hint")) %></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% contracts.each do |contract| %>
+          <% usage = page.usage(contract, today) %>
+          <tr>
+            <td class="name"><%= link_to contract.name, edit_project_reporting_credit_contract_path(project_id: @project, id: contract) %></td>
+            <td><%= reporting_dates(contract.starts_on, contract.ends_on) %></td>
+            <td><%= contract.trackers.map(&:name).join(", ") %>
+              <% if contract.include_subprojects %><em class="info"><%= l(:"reporting.contracts.with_subprojects") %></em><% end %></td>
+            <td><%= safe_join(contract.envelopes.map { |envelope| "#{envelope.name} : #{reporting_days(envelope.days)}" }, tag.br) %></td>
+            <td><%= reporting_days(usage[:consumed]) %></td>
+            <td class="<%= "reporting-red" if usage[:remaining].negative? %>"><%= reporting_days(usage[:remaining]) %></td>
+            <td class="buttons">
+              <%= link_to reporting_icon("edit", l(:button_edit)), edit_project_reporting_credit_contract_path(project_id: @project, id: contract), class: "icon icon-edit" %>
+              <%= link_to reporting_icon("reload", l(:"reporting.contracts.renew")), renew_project_reporting_credit_contract_path(project_id: @project, id: contract),
+                    class: "icon icon-reload", title: l(:"reporting.contracts.renew_hint") %>
+              <%= link_to reporting_icon("del", l(:button_delete)), project_reporting_credit_contract_path(project_id: @project, id: contract), method: :delete,
+                    data: {confirm: l(:text_are_you_sure)}, class: "icon icon-del" %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+<% else %>
+  <p class="nodata"><%= l(:label_no_data) %></p>
+<% end %>
+<p><%= link_to reporting_icon("add", l(:"reporting.contracts.new")), new_project_reporting_credit_contract_path(project_id: @project), class: "icon icon-add" %></p>

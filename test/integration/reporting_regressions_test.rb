@@ -38,8 +38,7 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
   def test_hidden_consumption_does_not_publish_credit_amounts
     viewer = create_viewer
     viewer.members.first.roles.first.update!(permissions: [:view_reporting, :view_issues])
-    @project.reporting_credit_policies.create!(tracker: @tracker, name: 'Confidential budget',
-      initial_credit_days: 123, anniversary_month: 1, anniversary_day: 1)
+    contract!(@project, 'Confidential budget', 123)
     session = authenticated_session(viewer)
     session.get "/projects/#{@project.identifier}/reporting"
     assert_equal 200, session.response.status
@@ -47,6 +46,9 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
     assert_nil page.at_css('#tab-consumption')
     report = JSON.parse(page.at_css('#report-data').text)
     assert_nil report['consumption']
+    # The contract buttons still filter the page, without any amount.
+    assert page.at_css('#reporting-contract-bar a.reporting-chip', text: 'Confidential budget')
+    refute_includes session.response.body, '123'
   end
 
   def test_current_backlog_contains_a_reopened_issue
@@ -56,8 +58,7 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
     assert timeline.in_backlog_on?(Date.new(2026, 3, 31))
   end
   def test_period_credit_matches_contract_closing_balance
-    @project.reporting_credit_policies.create!(tracker: @tracker, name: 'Annual budget',
-      initial_credit_days: 100, anniversary_month: 1, anniversary_day: 1, active_from: Date.new(2025, 1, 1))
+    contract!(@project, 'Annual budget', 100, from: Date.new(2025, 7, 1), to: Date.new(2026, 6, 30))
     report = RedmineReporting::ReportBuilder.new(query: build_query,
       first_day: Date.new(2026, 1, 1), last_day: Date.new(2026, 3, 31)).build.fetch(:consumption)
     assert_equal report[:contract][:credit].last, report[:period][:credit].last
@@ -65,17 +66,17 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
   end
 
   def test_subproject_consumption_matches_its_own_report
-    @child.reporting_credit_policies.create!(tracker: @tracker, name: 'Child budget',
-      initial_credit_days: 100, anniversary_month: 1, anniversary_day: 1, active_from: Date.current.beginning_of_year)
+    contract!(@child, 'Child budget', 100, from: Date.current.beginning_of_year, to: Date.current.end_of_year)
     ReportingProjectSetting.create!(project: @child, hours_per_day: 4)
     root_report = RedmineReporting::ReportBuilder.new(query: build_query,
       first_day: Date.current.beginning_of_year, last_day: Date.current, hours_per_day: 8).build.fetch(:consumption)
     child_query = ReportingQuery.new(name: 'Reporting', project: @child, user: @administrator)
     child_report = RedmineReporting::ReportBuilder.new(query: child_query,
       first_day: Date.current.beginning_of_year, last_day: Date.current, hours_per_day: 4).build.fetch(:consumption)
-    branch = root_report[:projects].find { |project| project[:id] == @child.id }
-    assert_equal child_report[:contract][:cumulativeSpent].last, branch[:consumed]
-    assert_equal child_report[:period][:totals].except(:progress), branch.slice(*child_report[:period][:totals].keys).except(:progress)
+    branch = root_report[:contracts].find { |row| row[:project] == @child.name }
+    # 2 h on the child at its own 4 h per day.
+    assert_equal [0.5, 0.5], [branch[:consumed], child_report[:contract][:cumulativeSpent].last]
+    assert_equal child_report[:period][:totals], branch.slice(*child_report[:period][:totals].keys)
   end
 
   def test_invalid_and_excessive_periods_are_rejected_without_report_data
@@ -91,11 +92,18 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
   def test_child_credit_requires_time_and_reporting_permissions_on_that_child
     viewer = create_viewer
     @child.update!(is_public: true)
-    @child.reporting_credit_policies.create!(tracker: @tracker, name: "Private child credit", initial_credit_days: 987,
-      anniversary_month: 1, anniversary_day: 1)
+    contract!(@child, "Private child credit", 987, from: Date.current.beginning_of_year, to: Date.current.end_of_year)
     query = build_query(user: viewer)
     report = RedmineReporting::ReportBuilder.new(query: query, first_day: Date.current.beginning_of_year, last_day: Date.current).build
     assert_equal 0, report[:consumption][:period][:totals][:available]
+    refute_includes query.contract_filter_values.map(&:first), "Private child credit"
+  end
+
+  private
+
+  def contract!(project, name, days, from: Date.current.beginning_of_year, to: Date.current.end_of_year)
+    ReportingCreditContract.create!(project: project, name: name, starts_on: from, ends_on: to, tracker_ids: [@tracker.id],
+                                    envelopes_attributes: [{name: "All", days: days, other_activities: true}])
   end
 
 end

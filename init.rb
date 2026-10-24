@@ -24,7 +24,7 @@ require File.expand_path("lib/redmine_reporting", File.dirname(__FILE__))
 Redmine::Plugin.register :redmine_reporting do
   name "Redmine Reporting"
   author "Redmine Reporting contributors"
-  description "Project reporting with configurable time-credit policies."
+  description "Project reporting with time-credit contracts."
   version RedmineReporting::VERSION
   url "https://github.com/likehopper/redmine_reporting"
 
@@ -36,10 +36,10 @@ Redmine::Plugin.register :redmine_reporting do
     param: :project_id
 
   project_module :reporting do
-    permission :view_reporting, { reporting: [:index, :details] }, require: :member
+    permission :view_reporting, { reporting: [:index, :details, :help] }, require: :member
     permission :manage_reporting, {
       reporting_settings: [:show, :update],
-      reporting_credit_policies: [:index, :show, :new, :create, :edit, :update, :destroy]
+      reporting_credit_contracts: [:index, :show, :new, :create, :edit, :update, :destroy, :renew]
     }, require: :member
   end
 end

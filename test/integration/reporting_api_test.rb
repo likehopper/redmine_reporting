@@ -71,37 +71,38 @@ class ReportingApiTest < ActionDispatch::IntegrationTest
     assert_equal @project.id, setting.fetch("inherited_from").fetch("id")
   end
 
-  def test_credit_policies_are_listed_with_their_refills_and_paginated
-    policy = @project.reporting_credit_policies.create!(tracker: @tracker, name: "Support", initial_credit_days: 12.5,
-      anniversary_month: 4, anniversary_day: 1, active_from: Date.new(2026, 4, 1), enabled: true,
-      reporting_credit_refills_attributes: [{month: 10, day: 1, credit_days: 3, starts_on: Date.new(2026, 1, 1)}])
-    second_tracker = Tracker.where.not(id: @tracker.id).first!
-    @project.trackers << second_tracker
-    @project.reporting_credit_policies.create!(tracker: second_tracker, name: "Bugs", initial_credit_days: 2,
-      anniversary_month: 1, anniversary_day: 1, enabled: false)
-    @outside.reporting_credit_policies.create!(tracker: @tracker, name: "Elsewhere", initial_credit_days: 1,
-      anniversary_month: 1, anniversary_day: 1)
+  def test_contracts_are_listed_with_their_envelopes_and_paginated
+    activity = TimeEntryActivity.shared.active.first!
+    contract = @project.reporting_credit_contracts.create!(name: "Support", starts_on: Date.new(2026, 4, 1), ends_on: Date.new(2027, 3, 31),
+      tracker_ids: [@tracker.id], include_subprojects: true, envelopes_attributes: [
+        {name: "Development", days: 12.5, activity_ids: [activity.id], issue_privacy: "public",
+         movements_attributes: [{date: Date.new(2026, 10, 1), days: 3, comment: "Amendment"}]}
+      ])
+    @project.reporting_credit_contracts.create!(name: "Bugs", starts_on: Date.new(2027, 4, 1), ends_on: Date.new(2027, 6, 30),
+      tracker_ids: [@tracker.id], envelopes_attributes: [{name: "All", days: 2, other_activities: true}])
+    @outside.reporting_credit_contracts.create!(name: "Elsewhere", starts_on: Date.new(2026, 1, 1), ends_on: Date.new(2026, 12, 31),
+      tracker_ids: [@tracker.id], envelopes_attributes: [{name: "All", days: 1, other_activities: true}])
 
-    get "/projects/#{@project.identifier}/reporting/credit_policies.json", params: {limit: 1}, headers: @key
+    get "/projects/#{@project.identifier}/reporting/credit_contracts.json", params: {limit: 1}, headers: @key
     assert_response :success
     body = response.parsed_body
     assert_equal [2, 0, 1], body.values_at("total_count", "offset", "limit")
-    assert_equal 1, body.fetch("reporting_credit_policies").size
-    listed = body.fetch("reporting_credit_policies").first
-    assert_equal policy.id, listed.fetch("id")
-    assert_equal({"id" => @tracker.id, "name" => @tracker.name}, listed.fetch("tracker"))
-    assert_equal [12.5, 4, 1, "2026-04-01", nil, true],
-                 listed.values_at("initial_credit_days", "anniversary_month", "anniversary_day", "active_from", "active_until", "enabled")
-    assert_equal [[10, 1, 3.0, "2026-01-01", nil]],
-                 listed.fetch("refills").map { |refill| refill.values_at("month", "day", "credit_days", "starts_on", "ends_on") }
+    listed = body.fetch("reporting_credit_contracts").first
+    assert_equal [contract.id, "2026-04-01", "2027-03-31", true], listed.values_at("id", "starts_on", "ends_on", "include_subprojects")
+    assert_equal [{"id" => @tracker.id, "name" => @tracker.name}], listed.fetch("trackers")
+    envelope = listed.fetch("envelopes").first
+    assert_equal ["Development", 12.5, false, "public", [{"id" => activity.id, "name" => activity.name}]],
+                 envelope.values_at("name", "days", "other_activities", "issue_privacy", "activities")
+    assert_equal [["2026-10-01", 3.0, "Amendment", nil]],
+                 envelope.fetch("movements").map { |movement| movement.values_at("date", "days", "comment", "source_envelope_id") }
 
-    get "/projects/#{@project.identifier}/reporting/credit_policies.json", params: {offset: 1}, headers: @key
-    assert_equal ["Bugs"], response.parsed_body.fetch("reporting_credit_policies").map { |item| item.fetch("name") }
+    get "/projects/#{@project.identifier}/reporting/credit_contracts.json", params: {offset: 1}, headers: @key
+    assert_equal ["Bugs"], response.parsed_body.fetch("reporting_credit_contracts").map { |item| item.fetch("name") }
 
-    get "/projects/#{@project.identifier}/reporting/credit_policies/#{policy.id}.json", headers: @key
-    assert_equal "Support", response.parsed_body.fetch("reporting_credit_policy").fetch("name")
-    # Another project's policy is not reachable through this project.
-    get "/projects/#{@outside.identifier}/reporting/credit_policies/#{policy.id}.json", headers: @key
+    get "/projects/#{@project.identifier}/reporting/credit_contracts/#{contract.id}.json", headers: @key
+    assert_equal "Support", response.parsed_body.fetch("reporting_credit_contract").fetch("name")
+    # Another project's contract is not reachable through this project.
+    get "/projects/#{@outside.identifier}/reporting/credit_contracts/#{contract.id}.json", headers: @key
     assert_response :not_found
   end
 
@@ -110,15 +111,17 @@ class ReportingApiTest < ActionDispatch::IntegrationTest
     skip "Redmine Mirror is not installed" unless Redmine::Plugin.installed?(:redmine_mirror)
     ReportingProjectSetting.update_for(@project, hours_per_day: 7, section_ids: %w[run workload],
                                                  tracker_roles: {@tracker.id.to_s => "run"})
-    @project.reporting_credit_policies.create!(tracker: @tracker, name: "Support", initial_credit_days: 10,
-      anniversary_month: 1, anniversary_day: 1, reporting_credit_refills_attributes: [{month: 7, day: 1, credit_days: 2}])
+    activity = TimeEntryActivity.shared.active.first!
+    @project.reporting_credit_contracts.create!(name: "Support", starts_on: Date.new(2026, 1, 1), ends_on: Date.new(2026, 12, 31),
+      tracker_ids: [@tracker.id], envelopes_attributes: [{name: "Dev", days: 10, activity_ids: [activity.id],
+                                                         movements_attributes: [{date: Date.new(2026, 7, 1), days: 2}]}])
     source = api_client
-    adapters = %w[reporting_settings reporting_credit_policies].map { |key| RedmineMirror::REGISTRY[key] }
+    adapters = %w[reporting_settings reporting_credit_contracts].map { |key| RedmineMirror::REGISTRY[key] }
     catalog = RedmineMirror::SourceCatalog.new(client: source, project_id: @project.id, adapters: adapters).fetch
     assert_equal @tracker.name, catalog.fetch("tracker").fetch(@tracker.id.to_s)
 
     store = RedmineMirror::DatabaseStore.new("reporting-api-contract", project_id: @outside.id)
-    mappings = {"tracker" => {@tracker.id.to_s => @tracker.id.to_s}}
+    mappings = {"tracker" => {@tracker.id.to_s => @tracker.id.to_s}, "activity" => {activity.id.to_s => activity.id.to_s}}
     adapters.each do |adapter|
       records = adapter.records(source, @project.id).to_a
       assert_equal 1, records.size, adapter.key
@@ -128,13 +131,14 @@ class ReportingApiTest < ActionDispatch::IntegrationTest
     end
     copied = ReportingProjectSetting.find_by!(project: @outside)
     assert_equal [7.0, %w[run workload], [@tracker.id]], [copied.hours_per_day.to_f, copied.section_ids, copied.run_tracker_ids]
-    policy = @outside.reporting_credit_policies.first!
-    assert_equal ["Support", [[7, 1, 2.0]]], [policy.name, policy.sorted_refills.map { |refill| [refill.month, refill.day, refill.credit_days.to_f] }]
+    contract = @outside.reporting_credit_contracts.first!
+    assert_equal ["Support", [activity.id], [2.0]],
+                 [contract.name, contract.envelopes.first.activity_ids, contract.envelopes.first.movements.map { |movement| movement.days.to_f }]
   end
 
   def test_reading_the_configuration_requires_the_manage_permission
     viewer = create_viewer
-    get "/projects/#{@project.identifier}/reporting/credit_policies.json", headers: {"X-Redmine-API-Key" => viewer.api_key}
+    get "/projects/#{@project.identifier}/reporting/credit_contracts.json", headers: {"X-Redmine-API-Key" => viewer.api_key}
     assert_response :forbidden
     get "/projects/#{@project.identifier}/reporting/settings.json", headers: {"X-Redmine-API-Key" => viewer.api_key}
     assert_response :forbidden
@@ -142,7 +146,7 @@ class ReportingApiTest < ActionDispatch::IntegrationTest
     assert_response :unauthorized
 
     session = authenticated_session(@administrator)
-    session.get "/projects/#{@project.identifier}/reporting/credit_policies"
+    session.get "/projects/#{@project.identifier}/reporting/credit_contracts"
     assert_equal "/projects/#{@project.identifier}/settings/reporting", URI(session.response.location).path
   end
 end

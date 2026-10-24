@@ -124,80 +124,113 @@ module RedmineReporting
       end
     end
 
-    # One credit policy per tracker, with its refills; the refills belong to the policy
-    # and are replaced together with it.
-    class CreditPolicies < Base
-      def key; "reporting_credit_policies"; end
+    # Credit contracts with their envelopes and movements, replaced together. Trackers and
+    # activities go through Mirror's mappings; an ignored one is left out of the contract,
+    # and a contract left without any tracker is ignored. Carry-over links stay on the source.
+    class CreditContracts < Base
+      def key; "reporting_credit_contracts"; end
+
+      def mapping_tables
+        super + [RedmineMirror::MappingTable.new("activity")]
+      end
+
+      def catalog_references(client, project_id)
+        super.merge("activity" => client.get("enumerations/time_entry_activities.json").fetch("time_entry_activities"))
+      end
 
       def records(client, project_id)
-        path = "projects/#{Integer(project_id)}/reporting/credit_policies.json"
+        path = "projects/#{Integer(project_id)}/reporting/credit_contracts.json"
         Enumerator.new do |records|
           offset = 0
           loop do
             page = client.get(path, "offset" => offset, "limit" => 100)
-            policies = page.fetch("reporting_credit_policies")
-            policies.each { |policy| records << policy }
-            offset += policies.size
+            contracts = page.fetch("reporting_credit_contracts")
+            contracts.each { |contract| records << contract }
+            offset += contracts.size
             break if offset >= Integer(page.fetch("total_count"))
-            raise RedmineMirror::Error, "Pagination made no progress" if policies.empty?
+            raise RedmineMirror::Error, "Pagination made no progress" if contracts.empty?
           end
         end
       end
 
+      def used_references(record)
+        {"tracker" => record.fetch("trackers").map { |tracker| tracker.fetch("id") },
+         "activity" => record.fetch("envelopes").flat_map { |envelope| envelope.fetch("activities").map { |activity| activity.fetch("id") } }.uniq}
+      end
+
+      def ignored_reference(record, mappings)
+        trackers = record.fetch("trackers")
+        "tracker" if trackers.any? && trackers.all? { |tracker| ignored_mapping?(mappings, "tracker", tracker.fetch("id")) }
+      end
+
       def imported_attributes(record, mappings)
-        {"tracker_id" => tracker_id(mappings, record.fetch("tracker")), "name" => record.fetch("name"),
-         "initial_credit_days" => record.fetch("initial_credit_days").to_f,
-         "anniversary_month" => record.fetch("anniversary_month"), "anniversary_day" => record.fetch("anniversary_day"),
-         "active_from" => record["active_from"], "active_until" => record["active_until"], "enabled" => record.fetch("enabled"),
-         "refills" => normalize_refills(record.fetch("refills").map do |refill|
-           {"month" => refill.fetch("month"), "day" => refill.fetch("day"), "credit_days" => refill.fetch("credit_days").to_f,
-            "starts_on" => refill["starts_on"], "ends_on" => refill["ends_on"]}
-         end)}
+        {"name" => record.fetch("name"), "description" => record["description"],
+         "starts_on" => record.fetch("starts_on"), "ends_on" => record.fetch("ends_on"),
+         "include_subprojects" => record.fetch("include_subprojects"),
+         "tracker_ids" => mapped_ids(mappings, "tracker", record.fetch("trackers")),
+         "envelopes" => record.fetch("envelopes").sort_by { |envelope| [envelope.fetch("position"), envelope.fetch("id")] }.map do |envelope|
+           {"name" => envelope.fetch("name"), "days" => envelope.fetch("days").to_f, "other_activities" => envelope.fetch("other_activities"),
+            "issue_privacy" => envelope.fetch("issue_privacy"), "activity_ids" => mapped_ids(mappings, "activity", envelope.fetch("activities")),
+            "movements" => normalize_movements(envelope.fetch("movements").map do |movement|
+              {"date" => movement.fetch("date"), "days" => movement.fetch("days").to_f, "comment" => movement["comment"]}
+            end)}
+         end}
       end
 
-      def local_attributes(policy)
-        {"tracker_id" => policy.tracker_id, "name" => policy.name, "initial_credit_days" => policy.initial_credit_days.to_f,
-         "anniversary_month" => policy.anniversary_month, "anniversary_day" => policy.anniversary_day,
-         "active_from" => policy.active_from&.iso8601, "active_until" => policy.active_until&.iso8601, "enabled" => policy.enabled,
-         "refills" => normalize_refills(policy.reporting_credit_refills.map do |refill|
-           {"month" => refill.month, "day" => refill.day, "credit_days" => refill.credit_days.to_f,
-            "starts_on" => refill.starts_on&.iso8601, "ends_on" => refill.ends_on&.iso8601}
-         end)}
+      def local_attributes(contract)
+        {"name" => contract.name, "description" => contract.description, "starts_on" => contract.starts_on&.iso8601,
+         "ends_on" => contract.ends_on&.iso8601, "include_subprojects" => contract.include_subprojects,
+         "tracker_ids" => contract.tracker_ids.sort,
+         "envelopes" => contract.envelopes.reject(&:marked_for_destruction?).map do |envelope|
+           {"name" => envelope.name, "days" => envelope.days.to_f, "other_activities" => envelope.other_activities,
+            "issue_privacy" => envelope.issue_privacy, "activity_ids" => envelope.activity_ids.sort,
+            "movements" => normalize_movements(envelope.movements.reject(&:marked_for_destruction?).map do |movement|
+              {"date" => movement.date&.iso8601, "days" => movement.days.to_f, "comment" => movement.comment}
+            end)}
+         end}
       end
 
-      def normalize_refills(refills)
-        refills.sort_by { |refill| refill.values.map(&:to_s) }
+      def normalize_movements(movements)
+        movements.sort_by { |movement| movement.values.map(&:to_s) }
+      end
+
+      def mapped_ids(mappings, kind, references)
+        references.reject { |reference| ignored_mapping?(mappings, kind, reference.fetch("id")) }.
+          map { |reference| map(mappings, kind, reference.fetch("id")) }.uniq.sort
       end
 
       def find_local(project, id)
-        project.reporting_credit_policies.find_by(id: id)
+        project.reporting_credit_contracts.find_by(id: id)
       end
 
-      # The destination accepts one policy per tracker.
+      # A local contract of the same name and start was made by hand: keeping it is the project's call.
       def unmapped_local(project, imported)
-        project.reporting_credit_policies.find_by(tracker_id: imported.fetch("tracker_id"))
+        project.reporting_credit_contracts.find_by(name: imported.fetch("name"), starts_on: imported.fetch("starts_on"))
       end
 
       def build(project)
-        project.reporting_credit_policies.build
+        project.reporting_credit_contracts.build
       end
 
-      def assign(policy, imported)
-        policy.assign_attributes(imported.except("refills"))
-        policy.reporting_credit_refills.each(&:mark_for_destruction)
-        imported.fetch("refills").each { |refill| policy.reporting_credit_refills.build(refill) }
+      def assign(contract, imported)
+        contract.assign_attributes(imported.except("envelopes"))
+        contract.envelopes.each(&:mark_for_destruction)
+        imported.fetch("envelopes").each_with_index do |envelope, index|
+          built = contract.envelopes.build(envelope.except("movements").merge("position" => index))
+          envelope.fetch("movements").each { |movement| built.movements.build(movement) }
+        end
       end
 
       def local_path(id, project)
-        "/projects/#{project.identifier}/reporting/credit_policies/#{Integer(id)}/edit"
+        "/projects/#{project.identifier}/reporting/credit_contracts/#{Integer(id)}/edit"
       end
 
       def remote_path(id, setting)
-        "#{remote_project_path(setting)}/reporting/credit_policies/#{Integer(id)}/edit"
+        "#{remote_project_path(setting)}/reporting/credit_contracts/#{Integer(id)}/edit"
       end
     end
 
-    ALL = [Settings, CreditPolicies].freeze
+    ALL = [Settings, CreditContracts].freeze
 
     # init.rb runs again after each code reload: register each module once.
     def self.register

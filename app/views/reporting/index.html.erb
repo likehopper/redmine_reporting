@@ -26,6 +26,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
   <% end %></ul>
 </nav>
 <%= render "filters" %>
+<%= render "contract_bar" %>
 
 <div class="reporting-sticky">
   <div class="tabs reporting-tabs" role="tablist" aria-label="<%= l(:"reporting.sections_label") %>">
@@ -123,7 +124,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
     <div class="reporting-section-body">
       <p class="reporting-desc"><%= l(:"reporting.charts.consumption_desc", hours: @dashboard.hours_per_day) %></p>
       <%= render "consumption_totals" %>
-      <%= render "consumption_projects" %>
+      <%= render "consumption_contracts" %>
       <div class="reporting-chart-grid">
         <article class="reporting-wide">
           <h4><%= l(:"reporting.charts.consumption_period") %></h4>

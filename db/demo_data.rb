@@ -36,12 +36,27 @@ module RedmineReporting
       ["reporting-emma", "Emma", "Moreau"]
     ].freeze
     ACTIVITY_NAMES = ["Analysis", "Development", "Testing", "Support"].freeze
-    # Initial days and July 1 refill per project and tracker: the parent project keeps a small
-    # credit of its own, each subproject has the credits of its activity.
-    CREDIT_DAYS = {
-      "reporting-demo" => {"Feature request" => [30, 5], "Support request" => [20, nil], "Bug" => [20, nil]},
-      "reporting-demo-maintenance" => {"Bug" => [70, 10], "Support request" => [40, nil]},
-      "reporting-demo-evolution" => {"Feature request" => [80, 20]}
+    DEVELOPMENT_ACTIVITIES = ["Analysis", "Development", "Testing"].freeze
+    # Contracts per project, in months from the first demo month. Maintenance chains a
+    # 6-month contract with a yearly one that takes over its balance; envelopes split the
+    # credit by activity; each project's own report shows its own contracts.
+    CONTRACTS = {
+      "reporting-demo" => [
+        {name: "Run & support", months: [0, 12], trackers: ["Bug", "Feature request", "Support request"],
+         envelopes: [{name: "All activities", days: 50}]}
+      ],
+      "reporting-demo-maintenance" => [
+        {name: "Maintenance H1", months: [0, 6], trackers: ["Bug", "Support request"],
+         envelopes: [{name: "Development", days: 40, activities: DEVELOPMENT_ACTIVITIES}, {name: "Support", days: 25, activities: ["Support"]}]},
+        {name: "Maintenance", months: [6, 12], trackers: ["Bug", "Support request"], carry_over: true,
+         envelopes: [{name: "Development", days: 75, activities: DEVELOPMENT_ACTIVITIES, refill: [3, 10, "Amendment no. 1"]},
+                     {name: "Support", days: 45, activities: ["Support"]}]}
+      ],
+      "reporting-demo-evolution" => [
+        {name: "Evolution package", months: [0, 12], trackers: ["Feature request"],
+         envelopes: [{name: "Development", days: 80, activities: DEVELOPMENT_ACTIVITIES, refill: [6, 20, "Amendment no. 1"]},
+                     {name: "Other activities", days: 10}]}
+      ]
     }.freeze
 
     MANAGER_ROLE = "Reporting Manager"
@@ -182,9 +197,9 @@ module RedmineReporting
         create_follow_up_entries(subproject, definition, members.first, activities.index_by(&:name))
         subproject.versions.where.not(id: versions.map(&:id)).each { |version| version.destroy if version.fixed_issues.empty? }
         close_past_versions(versions)
-        create_credit_policies(subproject, trackers)
+        create_credit_contracts(subproject, trackers, activities)
       end
-      create_credit_policies(project, trackers)
+      create_credit_contracts(project, trackers, activities)
       users.each { |collaborator| collaborator.update!(status: User::STATUS_LOCKED) }
       project
     end
@@ -649,35 +664,42 @@ module RedmineReporting
       weights.keys.last
     end
 
-    def create_credit_policies(project, trackers)
-      cycle_start = Date.current.beginning_of_year
-      credits = CREDIT_DAYS.fetch(project.identifier)
-      project.reporting_credit_policies.where.not(tracker_id: trackers.select { |tracker| credits.key?(tracker.name) }.map(&:id)).destroy_all
-
-      trackers.each do |tracker|
-        next unless credits.key?(tracker.name)
-
-        initial_days, refill_days = credits.fetch(tracker.name)
-        policy = ReportingCreditPolicy.find_or_initialize_by(project: project, tracker: tracker)
-        policy.assign_attributes(
-          name: tracker.name,
-          initial_credit_days: initial_days,
-          anniversary_month: 1,
-          anniversary_day: 1,
-          active_from: cycle_start,
-          enabled: true
-        )
-        policy.save!
-        policy.reporting_credit_refills.destroy_all
-        next unless refill_days
-
-        policy.reporting_credit_refills.create!(
-          month: 7,
-          day: 1,
-          credit_days: refill_days,
-          starts_on: cycle_start
-        )
+    def create_credit_contracts(project, trackers, activities)
+      project.reporting_credit_contracts.destroy_all
+      tracker_ids = trackers.index_by(&:name).transform_values(&:id)
+      activity_ids = activities.index_by(&:name).transform_values(&:id)
+      previous = nil
+      CONTRACTS.fetch(project.identifier).each do |definition|
+        first, length = definition[:months]
+        starts_on = @first_month >> first
+        contract = project.reporting_credit_contracts.build(name: definition[:name], starts_on: starts_on, ends_on: (starts_on >> length) - 1,
+                                                            tracker_ids: tracker_ids.values_at(*definition[:trackers]))
+        definition[:envelopes].each_with_index do |item, index|
+          envelope = contract.envelopes.build(name: item[:name], days: item[:days], position: index,
+                                              other_activities: item[:activities].nil?, activity_ids: activity_ids.values_at(*Array(item[:activities])))
+          if (refill = item[:refill])
+            month, days, comment = refill
+            envelope.movements.build(date: starts_on >> month, days: days, comment: comment)
+          end
+          carry_over(envelope, previous, starts_on) if definition[:carry_over] && previous
+        end
+        contract.save!
+        previous = contract
       end
+    end
+
+    # The previous contract's balance for the envelope of the same name, as at renewal.
+    def carry_over(envelope, previous, starts_on)
+      source = previous.envelopes.find { |item| item.name == envelope.name }
+      return unless source
+
+      scope = RedmineReporting::CreditScope.for_projects([previous.project])
+      hours = ReportingProjectSetting.hours_by_project(previous.project.self_and_descendants.to_a)
+      days = RedmineReporting::CreditContractAccount.new(previous, scope: scope, hours: hours).closing_balance(source).round(2)
+      return if days.zero?
+
+      comment = days.positive? ? "Carried over from #{previous.name}" : "Overrun of #{previous.name}"
+      envelope.movements.build(date: starts_on, days: days, comment: comment, source_envelope: source)
     end
   end
 end

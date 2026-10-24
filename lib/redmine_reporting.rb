@@ -24,14 +24,14 @@ require "delegate"
 %w[
   query_description
   dashboard_presenter
-  yearly_date
   period_grid
   issue_history
   version_history
   issue_timeline
   spent_time
   credit_ledger
-  credit_account
+  credit_scope
+  credit_contract_account
   report_data
   reports/base
   reports/summary
@@ -45,6 +45,7 @@ require "delegate"
   reports/performance
   report_builder
   drilldown
+  contract_filters
   issue_query_extensions
   time_entry_query_extensions
   sections
