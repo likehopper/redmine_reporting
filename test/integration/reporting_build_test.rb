@@ -29,7 +29,7 @@ class ReportingBuildTest < ActionDispatch::IntegrationTest
     session.get "/projects/#{@project.identifier}/reporting", params: {section: "build"}
     assert_equal 200, session.response.status
     page = Nokogiri::HTML(session.response.body)
-    refute_includes session.response.body, "translation missing"
+    refute_match(/translation missing/i, session.response.body)
     assert page.at_css("#panel-build #build-progress")
     report = JSON.parse(page.at_css("#report-data").text)
     rows = report.fetch("build").fetch("versions")

@@ -38,7 +38,7 @@ class ReportingNavigationTest < ActionDispatch::IntegrationTest
     assert_equal 200, session.response.status, session.response.body.first(500)
     assert_includes session.response.body, 'id="add_filter_select"'
     assert_includes session.response.body, 'id="query_form"'
-    refute_includes session.response.body, "translation missing"
+    refute_match(/translation missing/i, session.response.body)
     session.get "/projects/#{@project.identifier}/reporting/details", params: parameters
     assert_equal 302, session.response.status
     assert_equal "/issues", URI(session.response.location).path
@@ -156,7 +156,7 @@ class ReportingNavigationTest < ActionDispatch::IntegrationTest
       assert_equal 200, session.response.status
       body = session.response.body
       texts.each { |text| assert_includes body, text, language }
-      refute_includes body, "translation missing"
+      refute_match(/translation missing/i, body)
       page = Nokogiri::HTML5(body)
       strings = JSON.parse(page.at_css("#report-i18n").text)
       assert_equal ::I18n.t("reporting.js", locale: language).keys.map(&:to_s).sort, strings.keys.sort

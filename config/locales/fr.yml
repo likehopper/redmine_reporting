@@ -28,6 +28,8 @@ fr:
   label_reporting_contract_none: "Hors contrat"
   project_module_reporting: Reporting
   permission_view_reporting: Voir le reporting
+  label_reporting_date_from: Du
+  label_reporting_date_to: Au
   label_reporting_grouping: Regroupement par période
   label_reporting_grouping_day: Jour
   label_reporting_grouping_week: Semaine

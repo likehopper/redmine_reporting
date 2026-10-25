@@ -32,9 +32,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
         <legend onclick="toggleFieldset(this);" class="icon icon-expanded"><%= sprite_icon("angle-down") if respond_to?(:sprite_icon) %><%= l(:label_options) %></legend>
         <div>
           <p>
-            <%= label_tag :from, l(:label_date_from) %>
+            <%= label_tag :from, l(:label_reporting_date_from) %>
             <%= date_field_tag :from, @date_from, size: 10 %><%= calendar_for("from") %>
-            <%= label_tag :to, l(:label_date_to) %>
+            <%= label_tag :to, l(:label_reporting_date_to) %>
             <%= date_field_tag :to, @date_to, size: 10 %><%= calendar_for("to") %>
           </p>
           <p>

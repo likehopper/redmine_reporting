@@ -37,7 +37,7 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     # One pane at a time: the other settings are not part of this form.
     refute page.at_css("#reporting_setting_hours_per_day")
     refute page.at_css("a[href$='/reporting/credit_contracts/new']")
-    refute_includes session.response.body, "translation missing"
+    refute_match(/translation missing/i, session.response.body)
 
     { "time_unit" => "#reporting_setting_hours_per_day", "trackers" => "table.reporting-tracker-roles",
       "contracts" => "a[href$='/reporting/credit_contracts/new']", "sla_statuses" => "#reporting_section_run" }.each do |pane, selector|
@@ -48,7 +48,7 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
       assert page.at_css("a#reporting-pane-#{selected}.selected"), pane
       assert page.at_css(selector), pane
       refute page.at_css("table.reporting-sla-statuses"), pane
-      refute_includes session.response.body, "translation missing"
+      refute_match(/translation missing/i, session.response.body)
     end
 
     viewer = create_viewer
@@ -133,7 +133,7 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     session = authenticated_session(@administrator)
     session.get "/projects/#{@project.identifier}/reporting/credit_contracts/new"
     assert_equal 200, session.response.status
-    refute_includes session.response.body, "translation missing"
+    refute_match(/translation missing/i, session.response.body)
     page = Nokogiri::HTML5(session.response.body)
     # A new contract is prefilled with one envelope for all activities.
     assert_equal "All activities", page.at_css("#reporting_credit_contract_envelopes_attributes_0_name")["value"]
@@ -158,7 +158,7 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     session.get "/projects/#{@project.identifier}/settings/reporting", params: {reporting_pane: "contracts"}
     page = Nokogiri::HTML5(session.response.body)
     assert_includes page.css("#reporting-contracts-upcoming td.name").map(&:text), "TMA 2027"
-    refute_includes session.response.body, "translation missing"
+    refute_match(/translation missing/i, session.response.body)
 
     envelope = contract.envelopes.first
     session.patch "/projects/#{@project.identifier}/reporting/credit_contracts/#{contract.id}", params: {reporting_credit_contract: {
