@@ -77,6 +77,12 @@ module RedmineReporting
       "Rejected" => ["New"]
     }.freeze
     MANAGER_ONLY_STATUSES = ["Closed", "Rejected"].freeze
+    # With the SLA plugin: support trackers get response and resolution delays, elapsing in
+    # business hours; terms are business minutes per priority (response, resolution).
+    SLA_TRACKER_NAMES = ["Bug", "Support request"].freeze
+    SLA_TYPES = {"Response" => ["New"], "Resolution" => ["New", "In Progress"]}.freeze
+    SLA_TERMS = {"Immediate" => [60, 480], "Urgent" => [120, 960], "High" => [240, 1440],
+                 "Normal" => [480, 2700], "Low" => [960, 5400]}.freeze
 
     # Two subprojects with distinct shapes: a busy maintenance run and a slower release-driven product.
     SUBPROJECTS = [
@@ -135,6 +141,11 @@ module RedmineReporting
 
     def self.load
       new.load
+    end
+
+    # The SLA plugin computes its delays with database functions, not available on SQLite.
+    def self.sla_available?
+      RedmineReporting::SlaFigures.installed? && !ActiveRecord::Base.connection.adapter_name.downcase.include?("sqlite")
     end
 
     def load
@@ -200,6 +211,8 @@ module RedmineReporting
         create_credit_contracts(subproject, trackers, activities)
       end
       create_credit_contracts(project, trackers, activities)
+      # Reloaded: the in-memory nested set does not see the subprojects created above.
+      ensure_sla(project.reload.self_and_descendants.to_a, trackers, statuses, priorities, roles) if self.class.sla_available?
       users.each { |collaborator| collaborator.update!(status: User::STATUS_LOCKED) }
       project
     end
@@ -685,6 +698,39 @@ module RedmineReporting
         end
         contract.save!
         previous = contract
+      end
+    end
+
+    # SLA definitions are global: the demo adds its own, then lets the SLA plugin compute
+    # the delays of the demo issues from their status history.
+    def ensure_sla(projects, trackers, statuses, priorities, roles)
+      calendar = ::SlaCalendar.find_or_create_by!(name: "Demo business hours")
+      unless ::SlaSchedule.where(sla_calendar_id: calendar.id).exists?
+        (1..5).each { |dow| ::SlaSchedule.create!(sla_calendar: calendar, dow: dow, start_time: "09:00:00", end_time: "17:59:59", match: true) }
+      end
+      sla = ::Sla.find_or_create_by!(name: "Demo support")
+      level = ::SlaLevel.find_or_create_by!(name: "Demo standard") { |item| item.assign_attributes(sla: sla, sla_calendar: calendar) }
+      priorities = priorities.index_by(&:name)
+      types = SLA_TYPES.each_with_index.map do |(name, status_names), index|
+        type = ::SlaType.find_or_create_by!(name: name)
+        statuses.values_at(*status_names).each { |status| ::SlaStatus.find_or_create_by!(sla_type: type, status: status) }
+        SLA_TERMS.each do |priority_name, terms|
+          priority = priorities.fetch(priority_name)
+          term = ::SlaLevelTerm.find_or_initialize_by(sla_level: level, sla_type: type, sla_priority_id: priority.id)
+          term.update!(priority: priority, term: terms[index])
+        end
+        type
+      end
+      roles.each_value { |role| role.add_permission!(:view_sla) }
+      sla_trackers = trackers.select { |tracker| SLA_TRACKER_NAMES.include?(tracker.name) }
+      projects.each do |project|
+        project.enabled_module_names = (project.enabled_module_names + %w[sla]).uniq
+        project.save!
+        sla_trackers.each { |tracker| ::SlaProjectTracker.find_or_create_by!(project: project, tracker: tracker) { |item| item.sla = sla } }
+      end
+      Issue.where(project_id: projects.map(&:id), tracker_id: sla_trackers.map(&:id)).find_each do |issue|
+        ::SlaCache.find_by_issue_id(issue.id)
+        types.each { |type| ::SlaCacheSpent.find_by_issue_and_type_id(issue, type.id) }
       end
     end
 

@@ -16,8 +16,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
-# Usage: bash test/documentation/run.sh [6.1.4]
+# Usage: [COMPAT_SLA_PATH=/path/to/redmine_sla] bash test/documentation/run.sh [6.1.4]
 # Regenerates doc/screenshots/configuration in a disposable container and database.
+# With COMPAT_SLA_PATH, the SLA plugin computes the demo's delays on PostgreSQL, which
+# the SLA screenshots need; without it, SQLite is used and the SLA step is skipped.
 set -euo pipefail
 plugin_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 version="${1:-6.1.4}"
@@ -33,15 +35,39 @@ image="${COMPAT_IMAGE_PREFIX:-reporting-compat}:$version"
 if [ -z "${COMPAT_IMAGE_PREFIX:-}" ]; then
   docker build --build-arg "REDMINE_IMAGE=$base" -t "$image" "$plugin_root/test/compatibility" > "$results/build.log" 2>&1
 fi
-docker run --rm --cpus=2 --memory=2g --entrypoint sh \
+runtime_args=()
+if [ -n "${COMPAT_SLA_PATH:-}" ]; then
+  network="reporting-doc-$(basename "$results")"
+  database_container="$network-db"
+  trap 'docker rm -f "$database_container" >/dev/null 2>&1 || true; docker network rm "$network" >/dev/null 2>&1 || true' EXIT
+  docker network create "$network" > /dev/null
+  docker run -d --name "$database_container" --network "$network" --network-alias db \
+    -e POSTGRES_DB=redmine_test -e POSTGRES_USER=redmine -e POSTGRES_PASSWORD=reporting-test-only \
+    --health-cmd='pg_isready -U redmine -d redmine_test' --health-interval=2s --health-retries=60 postgres:16 > /dev/null
+  ready=0
+  for attempt in $(seq 1 90); do
+    if [ "$(docker inspect -f '{{.State.Health.Status}}' "$database_container")" = healthy ]; then ready=1; break; fi
+    sleep 2
+  done
+  [ "$ready" = 1 ] || { echo "Database startup failed" >&2; exit 1; }
+  runtime_args+=(--network "$network" -v "$(cd "$COMPAT_SLA_PATH" && pwd):/sla:ro")
+fi
+docker run --rm --cpus=2 --memory=2g --entrypoint sh "${runtime_args[@]}" \
   -v "$results/plugin:/plugin:ro" -v "$results/screenshots:/screenshots" "$image" -c '
 set -eu
 # Section titles use emoji: without a color emoji font, Chromium draws empty boxes.
 (apt-get update && apt-get install -y --no-install-recommends fonts-noto-color-emoji) > /dev/null
 rm -rf plugins/redmine_sla plugins/redmine_reporting
 cp -a /plugin plugins/redmine_reporting
-printf "test:\n  adapter: sqlite3\n  database: db/reporting_doc.sqlite3\n" > config/database.yml
-echo "Rails.application.config.active_record.schema_format = :ruby" > config/initializers/reporting_test_schema.rb
+if [ -d /sla ]; then
+  cp -a /sla plugins/redmine_sla
+  printf "test:\n  adapter: postgresql\n  host: db\n  database: redmine_test\n  username: redmine\n  password: reporting-test-only\n" > config/database.yml
+else
+  printf "test:\n  adapter: sqlite3\n  database: db/reporting_doc.sqlite3\n" > config/database.yml
+fi
+# The database is migrated just below: reloading schema.rb before the test would drop
+# the SQL functions of the SLA plugin, which it cannot hold.
+printf "Rails.application.config.active_record.schema_format = :ruby\nRails.application.config.active_record.maintain_test_schema = false\n" > config/initializers/reporting_test_schema.rb
 export RAILS_ENV=test CHROMEDRIVER_PATH=/usr/bin/chromedriver
 export GOOGLE_CHROME_OPTS_ARGS=headless,disable-gpu,no-sandbox,disable-dev-shm-usage
 export REPORTING_DEMO_DATABASE=disposable REPORTING_DOC_SCREENSHOTS=/screenshots

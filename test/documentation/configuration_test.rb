@@ -77,6 +77,11 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
   end
 
   def test_04_settings_tab
+    if RedmineReporting::DemoData.sla_available?
+      project = Project.find_by!(identifier: PROJECT)
+      assert RedmineReporting::SlaSource.new(project).configured?,
+        "SLA not configured: modules #{project.enabled_module_names.inspect}, trackers #{SlaProjectTracker.where(project_id: project.id).count}"
+    end
     visit "/projects/#{PROJECT}/settings/reporting"
     assert_selector "#reporting-settings"
     screenshot "05-settings-default", "#tab-content-reporting"
@@ -84,6 +89,8 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
       check "reporting_section_run"
       check "reporting_section_build"
       check "reporting_section_workload"
+      # The SLA family needs the SLA plugin, which only computes on PostgreSQL or MySQL.
+      check "reporting_section_sla" if RedmineReporting::DemoData.sla_available?
       click_button "Save"
     end
     assert_selector "#flash_notice"
@@ -106,7 +113,7 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
     assert_selector "#flash_notice"
     setting = ReportingProjectSetting.find_by!(project: Project.find_by!(identifier: PROJECT))
     assert_equal 7.5, setting.hours_per_day
-    assert_equal %w[build run workload], setting.section_ids.sort
+    assert_equal (%w[build run workload] + (RedmineReporting::DemoData.sla_available? ? %w[sla] : [])).sort, setting.section_ids.sort
   end
 
   def test_05_contract
@@ -208,6 +215,14 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
     visit "/projects/#{PROJECT}/reporting/help"
     assert_selector ".reporting-help h3#envelopes"
     screenshot "21-help", "#content", max_height: 1100
+  end
+
+  def test_11_sla_dashboard
+    skip "SLA screenshots need the SLA plugin on PostgreSQL" unless RedmineReporting::DemoData.sla_available?
+
+    open_reporting(section: "sla", tab: "sla")
+    assert_selector ".reporting-sla-type", count: 2
+    screenshot "22-sla", "#content", max_height: 1500
   end
 
   private

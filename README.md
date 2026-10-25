@@ -1,6 +1,6 @@
 # <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.5.0-orange)
+![Version](https://img.shields.io/badge/Version-1.5.1-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,7 +17,7 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.5.0 covers **Run**, **Run & Support (SLA)**, **Build & Projects** and
+Version 1.5.1 covers **Run**, **Run & Support (SLA)**, **Build & Projects** and
 **Workload & Team** reports.
 
 ## Requirements
@@ -343,6 +343,11 @@ collaborators, two roles with their workflows, and contracts on each project:
 with development and support envelopes. It can be
 run again without duplicating anything: a later run replays the same stories up to
 the current date.
+
+With redmine_sla on PostgreSQL or MySQL, the generator also adds a *Demo support* SLA
+(business hours Monday to Friday, response and resolution terms per priority) on the
+Bug and Support request trackers of every demo project, then lets the SLA plugin compute
+the delays of their issues. SLA definitions are global, like the other dictionaries.
 
 ## Development
 
