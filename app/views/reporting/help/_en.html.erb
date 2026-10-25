@@ -67,3 +67,20 @@ logged hour once; one contract shows that contract's report; <em>Outside contrac
 Each contract keeps its own balance: an overrun on one never uses another one's credit.</p>
 <p>Credit figures count every hour charged to the contract, whoever reads them, private issues included; issue lists
 still follow Redmine's permissions.</p>
+
+<h3 id="sla">SLA delays</h3>
+<p>With the SLA plugin configured for the project, the <em>Run &amp; Support (SLA)</em> report shows, for each SLA type
+(response, resolution…), whether delays met their term. Reporting computes nothing itself: the time used (in business
+hours of the SLA calendar) and the term of the issue's level and priority come from the SLA plugin, so figures are as
+recent as its cache.</p>
+<ul>
+  <li>A delay <strong>ends</strong> when the issue last leaves the statuses in which it elapses (for a response delay,
+  usually when it leaves <em>New</em>). It counts in the period where it ended; if the issue comes back to one of
+  these statuses, the delay runs again and no longer counts as ended.</li>
+  <li>A delay is <strong>respected</strong> when its time used does not exceed the term (100 % included), as in the SLA
+  plugin's own <em>Respect</em> column.</li>
+  <li><strong>Running delays</strong> are those of open issues in these statuses now. The SLA plugin keeps no history
+  of time used, so they are only shown when the selected period includes today.</li>
+</ul>
+<p>Clicks open the matching issues, with the filters <em>SLA … : end of the delay</em> and <em>SLA … : time used
+against the term</em>, which can also be used in any issue list.</p>

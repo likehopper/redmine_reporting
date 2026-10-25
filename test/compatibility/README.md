@@ -6,6 +6,20 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.5.0 validation — 2026-10-25
+
+GitHub Actions passed all ten compatibility jobs for application commit
+`a039abe` in [PR #11](https://github.com/likehopper/redmine_reporting/pull/11):
+Redmine 5.0.14, 5.1.13, 6.0.11, 6.1.4 and 7.0.1 with SQLite; Redmine 6.1.4
+with PostgreSQL 16, MySQL 8.0 and MariaDB 10.11; SLA coexistence and SLA report on
+PostgreSQL with redmine_sla v3.0.5; and the disposable demo-data smoke check. Browser
+tests are included. Locally, Redmine 7.0.1 with SQLite ran 141 tests (1260 assertions)
+and Redmine 6.1.4 with PostgreSQL 16 and redmine_sla v3.3.3 ran 146 tests (1317
+assertions), without failures or errors; the 9 skips are the Mirror adapter tests.
+
+The release-finalization changes only bump the version, date the changelog and
+update release validation documentation. Runtime fingerprints match the application files.
+
 ## Release 1.4.1 validation — 2026-10-25
 
 The tests now detect missing translations whatever their case. On Redmine 7.0.1

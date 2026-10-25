@@ -49,6 +49,11 @@ module RedmineReporting
       end
     end
 
+    # SLA time used and terms of the loaded issues, from the SLA plugin's caches.
+    def sla_figures
+      @sla_figures ||= SlaFigures.new(timelines.map(&:issue), user)
+    end
+
     def time_entries
       @time_entries ||= query.time_entry_scope.where(spent_on: first_day..last_day).includes(:user, :activity).to_a
     end

@@ -1,6 +1,6 @@
 # <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.4.1-orange)
+![Version](https://img.shields.io/badge/Version-1.5.0-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,15 +17,15 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.4.1 covers **Run**, **Build & Projects** and **Workload & Team** reports.
-Run & Support (SLA) reports are planned.
+Version 1.5.0 covers **Run**, **Run & Support (SLA)**, **Build & Projects** and
+**Workload & Team** reports.
 
 ## Requirements
 
 - Redmine 5.0 through 7.0, with Ruby 3.1 or later supported by that Redmine release.
   See the [compatibility matrix](test/compatibility/README.md) for the exact tested combinations.
 - No external service: Chart.js 4.4.0 (MIT) is bundled with the plugin's assets.
-- Optional, from 1.1.0: the redmine_sla plugin for SLA reports.
+- Optional: the redmine_sla plugin (3.0.5 or later) for the Run & Support (SLA) report.
 
 ## Installation
 
@@ -80,6 +80,30 @@ RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_repor
 Remove `plugins/redmine_reporting`, then restart Redmine.
 
 ## The dashboard
+
+### Run & Support (SLA)
+
+Enable **Run & Support (SLA)** in the project settings. The family needs the redmine_sla
+plugin, its module enabled on the project, at least one tracker with an SLA, and the
+*View SLA* permission. It shows one block per SLA type (response, resolution…):
+
+- **Respect by period**: delays that ended in each period, respected or overrun, and
+  the respect rate.
+- **Overruns by period**: number of overrun delays and their average overrun, in
+  business hours of the SLA calendar.
+- **Respect by priority**: by the priority, or the custom field value, that sets the term.
+- **Time used against the term**: < 50 %, 50-80 %, 80-100 %, > 100 %.
+- **Running delays**: open issues whose delay runs now, late, over 80 % of the term or on
+  time. The SLA plugin keeps no history of time used, so this block only appears when
+  the period includes today.
+
+Reporting computes no SLA figure: the time used and the term of each issue come from
+the SLA plugin's cache, and are as recent as that cache. A delay **ends** when the
+issue last leaves the statuses in which it elapses, according to its status journals;
+it counts in that period. It is **respected** when its time used does not exceed the
+term, 100 % included, as in the SLA plugin's *Respect* column. Clicks open native issue
+lists with two filters added by Reporting for each SLA type: *SLA …: end of the delay*
+and *SLA …: time used against the term*.
 
 ### Workload & Team
 
@@ -177,7 +201,8 @@ visibility, private issues and projects. On the reporting subtree, issue charts
 *Issue tracking* is enabled; time charts (activity, consumption) need *View spent
 time* and *Time tracking*; the time left chart and banner cards need both. A tab
 without its data is not shown, and its payload is omitted from the page JSON.
-Credit figures additionally require reporting and time visibility on the project that
+The SLA family also needs *View SLA*; issues of projects where the viewer lacks it are
+left out of its figures. Credit figures additionally require reporting and time visibility on the project that
 owns the contract. They count every hour charged to the contract, private issues
 included, whoever reads them; issue and time lists keep Redmine's visibility.
 
@@ -256,9 +281,9 @@ settings.
 
 The **Reporting** tab of the project settings holds:
 
-- **Displayed reports**: the report families. Run, Build & Projects and Workload & Team are available; SLA is listed
-  as coming soon. The SLA family will need redmine_sla, its module enabled on the
-  project and at least one tracker with an SLA.
+- **Displayed reports**: the report families: Run, Run & Support (SLA), Build & Projects and
+  Workload & Team. The SLA family can only be enabled once redmine_sla is configured for
+  the project (module enabled, at least one tracker with an SLA).
 - **Time unit**: hours per day, to convert logged time and estimates into days.
 - **Run / Build trackers**: each tracker is Run, Build or unclassified. Once a tracker is
   Run, Run reports and their lists only count Run trackers (time logged without an
@@ -343,11 +368,12 @@ the current date.
 | `RedmineReporting::Drilldown` | turns a chart selection into native `IssueQuery` / `TimeEntryQuery` parameters, never ID lists |
 | `RedmineReporting::Sections`, `Capabilities` | report families and tabs; what modules and permissions allow |
 | `ReportingProjectSetting`, `RedmineReporting::ProjectSettings` | per-project settings and the settings tab |
-| `RedmineReporting::SlaSource` | read-only access to redmine_sla |
+| `RedmineReporting::SlaSource` | read-only access to redmine_sla: SLA types and the statuses in which they elapse |
+| `RedmineReporting::SlaFigures` | time used and term of each issue and SLA type, read from the SLA plugin's cache; the SQL of the matching filter |
 | `RedmineReporting::MirrorAdapters` (`mirror/adapters.rb`) | Redmine Mirror modules; loaded only with Mirror, outside the eager-loaded `app/` and `lib/` |
 
 Query extensions add editable native filters for period membership, historical
-backlog and creation/closure dates. The page script is `assets/javascripts/reporting.js`; like Chart.js and
+backlog, creation/closure dates and, with redmine_sla, the end and time used of SLA delays. The page script is `assets/javascripts/reporting.js`; like Chart.js and
 the stylesheet, it is served as a fingerprinted, cacheable plugin asset.
 
 The controllers coordinate authorization, parameter handling and responses. Report
@@ -406,8 +432,8 @@ estimate and historical time entries; it does not reconstruct earlier estimates.
 Reports load visible records into memory. The compatibility document includes a
 volume measurement; installations with larger datasets should measure their own
 report ranges. Only the stock Redmine theme and the documented plugin/database
-combinations have been validated. SLA reports
-are not implemented in this release; Redmine 7.1 is not certified.
+combinations have been validated. SLA figures are as recent as the SLA plugin's cache;
+Redmine 7.1 is not certified.
 
 For a reproducible issue report, include the plugin commit/version, Redmine, Ruby,
 Rails and database versions, enabled modules and relevant role permissions, chosen

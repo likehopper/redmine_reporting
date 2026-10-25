@@ -37,6 +37,8 @@ en:
   label_reporting_grouping_quarter: Quarter
   label_reporting_closed_on: "Closed on (or not closed)"
   label_reporting_flow_on: "Created or closed on"
+  label_reporting_sla_end: "SLA %{type}: end of the delay"
+  label_reporting_sla_time: "SLA %{type}: time used against the term"
   permission_manage_reporting: Configure reporting
   field_hours_per_day: Hours per day
   field_starts_on: Start date
@@ -141,7 +143,7 @@ en:
     help:
       more: Learn more
       title: Help
-      intro: "How reporting counts time credits. The project settings (Reporting tab) hold the contracts; this page explains them to every member who can view the reports."
+      intro: "How reporting counts time credits and SLA delays. The project settings (Reporting tab) hold the contracts; this page explains them to every member who can view the reports."
     title: "%{project} · Reporting"
     sections_label: Reporting sections
     unknown: Unknown
@@ -171,6 +173,7 @@ en:
       limitations: "Only currently visible issues are included. Non-version filters and BUILD classification use current values. Without version journals, current membership is assumed constant; missing status history falls back to current status and last closure. Deleted issues cannot be reconstructed."
       empty: "No visible historical data over this period."
     tabs:
+      sla: SLA
       workload: "Current workload"
       team_activity: "Team activity"
       burnup: "Burnup by version"
@@ -192,6 +195,7 @@ en:
       "90-180": "90-180 d"
       gt180: "> 180 d"
     scope:
+      sla: "SLA delays that ended from %{from} to %{to}, by %{grouping}, as computed by the SLA plugin; delays still running are shown as of today."
       flow: "Issues created and closed from %{from} to %{to}, by %{grouping}; statuses of issues open today and of issues closed over the period."
       activity: "Time logged from %{from} to %{to}, by collaborator and activity type."
       consumption: "Contract credits and time charged from %{from} to %{to} (%{hours} h/d), starting from each contract's balance on %{from}%{contract}."
@@ -362,7 +366,49 @@ en:
       resolution: Resolution
       open_issues: Open issues
       aging: Age
+      sla_respected: Respected
+      sla_overrun: Overrun
+      sla_rate: Respect rate
+      sla_overruns: Overruns
+      sla_excess: Average overrun
+      sla_ended: Ended delays
+      sla_late: Late
+      sla_warning: "Over 80 % of the term"
+      sla_on_time: On time
+      sla_bucket_lt50: "< 50 % of the term"
+      sla_bucket_50-80: "50-80 %"
+      sla_bucket_80-100: "80-100 %"
+      sla_bucket_gt100: "> 100 % (overrun)"
+      sla_percent: "%{value} %"
+      sla_hours: "%{value} h"
 
+    sla:
+      no_type: "No SLA type applies to the trackers of this project."
+      ended: Ended delays
+      ended_title: "Delays that ended from %{from} to %{to}: the issue left the statuses in which the delay elapses."
+      rate: "Respected (%{count})"
+      rate_title: "Share of the ended delays whose time used stayed within the term."
+      overruns: Overruns
+      overruns_title: "Ended delays whose time used exceeded the term."
+      late: Running, already late
+      late_title: "Open issues whose delay is still running and has already exceeded its term, as of today."
+      respect_period: Respect by period
+      respect_period_desc: "Ended delays, respected or overrun, in the period they ended; the line gives the respect rate."
+      overrun_period: Overruns by period
+      overrun_period_desc: "Number of overrun delays and their average overrun, in business hours of the SLA calendar."
+      pivots: Respect by priority
+      pivots_desc: "Respect rate of the ended delays, by the priority (or custom field value) that sets the term."
+      distribution: Time used against the term
+      distribution_desc: "Ended delays by share of the term used: the margin left, or the size of the overrun."
+      running: Running delays
+      running_desc: "Open issues whose delay is running now, by share of the term already used."
+      no_ended: "No delay of this type ended from %{from} to %{to}."
+      running_today_only: "Running delays are only known now: select a period that includes today (%{date})."
+      buckets:
+        lt50: "< 50 % of the term"
+        "50-80": "50-80 %"
+        "80-100": "80-100 %"
+        gt100: "> 100 % (overrun)"
     contract_bar:
       contracts: "Contracts"
       contracts_tip: "Selections add up and filter the whole page. From all, a click shows one contract alone; further clicks add or remove one."

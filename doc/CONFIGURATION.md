@@ -41,7 +41,8 @@ tracker counts, and a day is 8 hours.
 
 ![Default settings](screenshots/configuration/05-settings-default.png)
 
-- **Displayed reports**: the dashboard's report families. *Run & Support (SLA)* is not available yet.
+- **Displayed reports**: the dashboard's report families. *Run & Support (SLA)* can be enabled once the SLA plugin
+  is configured for the project.
 - **Time unit**: hours per day, to convert hours into days.
 - **Run / Build trackers**:
   - Once a tracker is **Run**, Run reports count only Run trackers.

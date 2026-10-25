@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.0 — 2026-10-25
+
+- Add the **Run & Support (SLA)** report, with the redmine_sla plugin: for each SLA type,
+  the respect rate of the delays that ended in each period, overruns and their average
+  size, respect by priority (or by the custom field value that sets the term), time
+  used against the term, and the delays running today. Figures are read from the SLA
+  plugin's cache; a delay ends when the issue last leaves the statuses in which it
+  elapses. The family needs the *View SLA* permission.
+- Issue lists get two filters per SLA type, used by the report's clicks: *SLA …: end of
+  the delay* and *SLA …: time used against the term*.
+- The help page explains SLA delays.
+
 ## 1.4.1 — 2026-10-25
 
 - Fix the "Translation missing" labels of the report's date options on Redmine 7.0,

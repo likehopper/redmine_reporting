@@ -459,6 +459,95 @@ if (workload && workload.mix) {
     if (canvas) canvas.closest(".reporting-chart").textContent = t("work_mix_empty");
   }
 }
+// SLA delays: selections open the issues whose delay ended in the period, or runs now.
+const sla = report.sla;
+if (sla) sla.types.forEach(type => {
+  const ended = (filters, range = { from: report.dateFrom, to: report.dateTo }) => ({
+    records: "issues", sla_type: type.id, sla_end_from: range.from, sla_end_to: range.to, ...filters
+  });
+  const periodTitle = (label, index) => `${type.name} — ${label} — ${sla.periodLabels[index]}`;
+  const periodSelection = (index, buckets, label) => ({
+    title: periodTitle(label, index), filters: ended(buckets ? { sla_buckets: buckets.join(",") } : {}, periodRange(sla.periodRanges, index))
+  });
+  draw(`sla-${type.id}-respect`, {
+    type: "bar",
+    data: { labels: sla.periodLabels, datasets: [
+      { type: "line", label: t("sla_rate"), data: type.periodRate, borderColor: "#5B6770", backgroundColor: "#5B6770", borderWidth: 2.5, pointRadius: 3, tension: 0.3, fill: false, yAxisID: "rate", order: 1 },
+      { label: t("sla_respected"), data: type.periodRespected, backgroundColor: "#27AE60", stack: "sla", order: 2, buckets: sla.respectedBuckets },
+      { label: t("sla_overrun"), data: type.periodOverruns, backgroundColor: "#E74C3C", stack: "sla", order: 2, buckets: ["gt100"] }
+    ] },
+    options: {
+      plugins: { legend: legend(), tooltip: { callbacks: { label: context => t("value", { label: context.dataset.label,
+        value: context.dataset.yAxisID ? t("sla_percent", { value: formatDays(context.parsed.y) }) : context.parsed.y }) } } },
+      scales: { ...axes({ x: { stacked: true }, y: { stacked: true, ticks: { precision: 0 } } }),
+        rate: { position: "right", min: 0, max: 100, grid: { display: false }, ticks: { callback: value => t("sla_percent", { value }) } } },
+      ...clickable((element, chart) => {
+        const dataset = chart.data.datasets[element.datasetIndex];
+        return periodSelection(element.index, dataset.buckets, dataset.buckets ? dataset.label : t("sla_ended"));
+      }, index => periodSelection(index, null, t("sla_ended")))
+    }
+  });
+  draw(`sla-${type.id}-overruns`, {
+    type: "bar",
+    data: { labels: sla.periodLabels, datasets: [
+      { type: "line", label: t("sla_excess"), data: type.periodExcessHours, borderColor: "#8E44AD", backgroundColor: "#8E44AD", borderWidth: 2, pointRadius: 3, tension: 0.3, fill: false, yAxisID: "hours", order: 1 },
+      { label: t("sla_overruns"), data: type.periodOverruns, backgroundColor: "#E74C3C", order: 2 }
+    ] },
+    options: {
+      plugins: { legend: legend(), tooltip: { callbacks: { label: context => t("value", { label: context.dataset.label,
+        value: context.dataset.yAxisID ? t("sla_hours", { value: formatHours(context.parsed.y) }) : context.parsed.y }) } } },
+      scales: { ...axes({ y: { beginAtZero: true, ticks: { precision: 0 } } }),
+        hours: { position: "right", beginAtZero: true, grid: { display: false }, ticks: { callback: value => t("hours_short", { value }) } } },
+      ...clickable(({ index }) => periodSelection(index, ["gt100"], t("sla_overruns")), index => periodSelection(index, ["gt100"], t("sla_overruns")))
+    }
+  });
+  if (type.pivots.length) draw(`sla-${type.id}-pivots`, {
+    type: "bar",
+    data: { labels: type.pivots.map(pivot => pivot.label), datasets: [
+      { label: t("sla_respected"), data: type.pivots.map(pivot => pivot.respected), backgroundColor: "#27AE60", buckets: sla.respectedBuckets },
+      { label: t("sla_overrun"), data: type.pivots.map(pivot => pivot.ended - pivot.respected), backgroundColor: "#E74C3C", buckets: ["gt100"] }
+    ] },
+    options: {
+      indexAxis: "y",
+      plugins: { legend: legend(), tooltip: { callbacks: { afterTitle: contexts =>
+        t("value", { label: t("sla_rate"), value: t("sla_percent", { value: formatDays(type.pivots[contexts[0].dataIndex].rate) }) }) } } },
+      scales: { x: { stacked: true, grid: { color: "rgba(0,0,0,.05)" }, ticks: { precision: 0 } }, y: { stacked: true, grid: { display: false } } },
+      ...clickable((element, chart) => {
+        const dataset = chart.data.datasets[element.datasetIndex];
+        const pivot = type.pivots[element.index];
+        return { title: `${type.name} — ${pivot.label} — ${dataset.label}`, filters: ended({ sla_pivot: pivot.key, sla_buckets: dataset.buckets.join(",") }) };
+      })
+    }
+  });
+  else {
+    const canvas = document.getElementById(`sla-${type.id}-pivots`);
+    if (canvas) canvas.closest(".reporting-chart").textContent = t("no_issue");
+  }
+  const bucketLabels = sla.bucketKeys.map(key => t(`sla_bucket_${key}`));
+  draw(`sla-${type.id}-distribution`, {
+    type: "bar",
+    data: { labels: bucketLabels, datasets: [{ label: t("sla_ended"), data: type.distribution, backgroundColor: ["#27AE60", "#F7941D", "#E67E22", "#E74C3C"], borderRadius: 3 }] },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: axes({ y: { beginAtZero: true, ticks: { precision: 0 } } }),
+      ...clickable(({ index }) => ({ title: `${type.name} — ${bucketLabels[index]}`, filters: ended({ sla_buckets: sla.bucketKeys[index] }) }))
+    }
+  });
+  if (type.running) {
+    const risks = Object.keys(sla.riskBuckets);
+    draw(`sla-${type.id}-running`, {
+      type: "bar",
+      data: { labels: risks.map(risk => t(`sla_${risk}`)), datasets: [{ label: t("open_issues"), data: risks.map(risk => type.running[risk]), backgroundColor: ["#E74C3C", "#F7941D", "#27AE60"], borderRadius: 3 }] },
+      options: {
+        indexAxis: "y",
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true, grid: { color: "rgba(0,0,0,.05)" }, ticks: { precision: 0 } }, y: { grid: { display: false } } },
+        ...clickable(({ index }) => ({ title: `${type.name} — ${t(`sla_${risks[index]}`)}`,
+          filters: { records: "issues", sla_type: type.id, sla_running: "true", sla_buckets: sla.riskBuckets[risks[index]].join(",") } }))
+      }
+    });
+  }
+});
 if (report.burnup) report.burnup.versions.forEach((version, index) => {
   draw(`burnup-${index}`, {
     type: "line",

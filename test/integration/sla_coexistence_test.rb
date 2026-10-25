@@ -22,7 +22,7 @@ if Redmine::Plugin.installed?(:redmine_sla)
   class ReportingSlaCoexistenceTest < ActionDispatch::IntegrationTest
     include ReportingTestData
 
-    def test_real_sla_models_and_reporting_load_together_without_enabling_future_reports
+    def test_real_sla_models_and_reporting_load_together_without_enabling_the_sla_report_by_default
       @project.enable_module!(:sla)
       sla = Sla.create!(name: "Reporting coexistence")
       SlaProjectTracker.create!(project: @project, tracker: @tracker, sla: sla)

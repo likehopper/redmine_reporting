@@ -68,6 +68,23 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     list.close
   end
 
+  if Redmine::Plugin.installed?(:redmine_sla)
+    include ReportingSlaData
+
+    def test_sla_charts_render_and_open_the_overrun_delays
+      prepare_sla_data
+      log_user(@administrator.login, "Reporting-test-123!")
+      visit "/projects/#{@project.identifier}/reporting?section=sla&from=#{@today - 10}&to=#{@today}"
+      assert_selector "#panel-sla"
+      wait_for_charts
+      %w[respect overruns pivots distribution running].each do |chart|
+        assert page.evaluate_script("!!Chart.getChart(document.getElementById('sla-#{@response.id}-#{chart}'))"), chart
+      end
+      point = chart_value("sla-#{@response.id}-distribution", "chart.getDatasetMeta(0).data[3].getProps(['x', 'y'], true)")
+      assert_issue_list(count: 1) { click_chart("sla-#{@response.id}-distribution", point) }
+    end
+  end
+
   def test_burnup_renders_and_opens_historical_version_list
     ReportingProjectSetting.create!(project: @project, section_ids: %w[build], build_tracker_ids: [@tracker.id])
     log_user(@administrator.login, "Reporting-test-123!")

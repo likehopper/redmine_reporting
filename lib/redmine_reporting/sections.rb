@@ -37,7 +37,7 @@ module RedmineReporting
 
     ALL = [
       Section.new(id: "run", permission: :view_reporting, tabs: RUN_TABS),
-      Section.new(id: "sla", permission: :view_reporting, requires: :sla, planned: true),
+      Section.new(id: "sla", permission: :view_reporting, requires: :sla, tabs: [Tab.new("sla", [:issues])]),
       Section.new(id: "build", permission: :view_reporting, tabs: [Tab.new("build", [:issues]), Tab.new("burnup", [:issues])]),
       Section.new(id: "workload", permission: :view_reporting, tabs: [Tab.new("workload", [:issues]), Tab.new("team_activity", [:time])])
     ].freeze
@@ -58,7 +58,7 @@ module RedmineReporting
     def self.visible(project, user, setting)
       ALL.select do |section|
         section.selectable? && setting.section_enabled?(section.id) && available?(section, project) &&
-          user.allowed_to?(section.permission, project)
+          user.allowed_to?(section.permission, project) && (section.requires != :sla || user.allowed_to?(:view_sla, project))
       end
     end
   end

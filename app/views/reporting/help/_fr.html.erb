@@ -71,3 +71,21 @@ montre le temps qu'aucun contrat ne prend. Chaque contrat garde son propre solde
 jamais le crédit d'un autre.</p>
 <p>Les chiffres de crédit comptent toutes les heures imputées au contrat, quelle que soit la personne qui consulte, demandes
 privées comprises ; les listes de demandes respectent toujours les droits Redmine.</p>
+
+<h3 id="sla">Délais SLA</h3>
+<p>Quand le plugin SLA est configuré pour le projet, le rapport <em>Run &amp; Support (SLA)</em> montre, pour chaque
+type de SLA (réponse, résolution…), si les délais ont tenu leur échéance. Le reporting ne calcule rien lui-même : le
+temps consommé (en heures ouvrées du calendrier SLA) et l'échéance du niveau et de la priorité du ticket viennent du
+plugin SLA ; les chiffres sont donc aussi récents que son cache.</p>
+<ul>
+  <li>Un délai <strong>se termine</strong> quand le ticket quitte pour la dernière fois les statuts dans lesquels il
+  s'écoule (pour un délai de réponse, en général quand il quitte <em>Nouveau</em>). Il compte dans la période où il
+  s'est terminé ; si le ticket revient dans l'un de ces statuts, le délai repart et ne compte plus comme terminé.</li>
+  <li>Un délai est <strong>respecté</strong> quand son temps consommé ne dépasse pas l'échéance (100 % compris), comme
+  dans la colonne <em>Respect</em> du plugin SLA.</li>
+  <li>Les <strong>délais en cours</strong> sont ceux des tickets ouverts qui sont actuellement dans ces statuts. Le
+  plugin SLA ne garde pas d'historique du temps consommé : ils ne sont montrés que si la période choisie inclut
+  aujourd'hui.</li>
+</ul>
+<p>Les clics ouvrent les tickets correspondants, avec les filtres <em>SLA … : fin du délai</em> et <em>SLA … : temps
+consommé par rapport à l'échéance</em>, utilisables aussi dans toute liste de tickets.</p>

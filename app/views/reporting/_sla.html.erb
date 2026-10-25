@@ -1,0 +1,100 @@
+<%#
+File: redmine_reporting/app/views/reporting/_sla.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<% sla = @report_data[:sla] %>
+<% period = {records: "issues", sla_end_from: @date_from, sla_end_to: @date_to} %>
+<section class="reporting-section" role="tabpanel" id="panel-sla" aria-labelledby="tab-sla" data-reporting-panel="sla">
+  <h3 class="reporting-section-hdr">⏱ <%= l(:"reporting.tabs.sla") %></h3>
+  <div class="reporting-section-body">
+    <p class="reporting-desc"><%= @dashboard.scope("sla") %> <%= reporting_help_link(@project, "sla") %></p>
+    <% if sla[:types].empty? %>
+      <p class="reporting-empty"><%= l(:"reporting.sla.no_type") %></p>
+    <% end %>
+    <% sla[:types].each do |type| %>
+      <article class="reporting-sla-type" id="sla-type-<%= type[:id] %>">
+        <h4><%= type[:name] %></h4>
+        <div class="reporting-stats">
+          <%= link_to @dashboard.details_path(**period, sla_type: type[:id]), class: "reporting-stat", target: "_blank", rel: "noopener",
+                title: l(:"reporting.sla.ended_title", from: @dashboard.date_from, to: @dashboard.date_to) do %>
+            <span class="value"><%= type[:ended] %></span><span class="label"><%= l(:"reporting.sla.ended") %></span>
+          <% end %>
+          <%= link_to @dashboard.details_path(**period, sla_type: type[:id], sla_buckets: sla[:respectedBuckets].join(",")), class: "reporting-stat",
+                target: "_blank", rel: "noopener", title: l(:"reporting.sla.rate_title") do %>
+            <span class="value<%= " reporting-green" if type[:rate] %>"><%= type[:rate] ? "#{reporting_hours(type[:rate])} %" : "—" %></span>
+            <span class="label"><%= l(:"reporting.sla.rate", count: type[:respected]) %></span>
+          <% end %>
+          <%= link_to @dashboard.details_path(**period, sla_type: type[:id], sla_buckets: "gt100"), class: "reporting-stat", target: "_blank", rel: "noopener",
+                title: l(:"reporting.sla.overruns_title") do %>
+            <span class="value<%= " reporting-red" if type[:ended] > type[:respected] %>"><%= type[:ended] - type[:respected] %></span>
+            <span class="label"><%= l(:"reporting.sla.overruns") %></span>
+          <% end %>
+          <% if type[:running] %>
+            <%= link_to @dashboard.details_path(records: "issues", sla_type: type[:id], sla_running: "true", sla_buckets: "gt100"), class: "reporting-stat",
+                  target: "_blank", rel: "noopener", title: l(:"reporting.sla.late_title") do %>
+              <span class="value<%= " reporting-red" if type[:running]["late"].positive? %>"><%= type[:running]["late"] %></span>
+              <span class="label"><%= l(:"reporting.sla.late") %></span>
+            <% end %>
+          <% end %>
+        </div>
+        <div class="reporting-chart-grid">
+          <% if type[:ended].zero? %>
+          <article class="reporting-wide">
+            <p class="reporting-empty"><%= l(:"reporting.sla.no_ended", from: @dashboard.date_from, to: @dashboard.date_to) %></p>
+          </article>
+          <% else %>
+          <article>
+            <h4><%= l(:"reporting.sla.respect_period") %></h4>
+            <p class="reporting-desc"><%= l(:"reporting.sla.respect_period_desc") %></p>
+            <div class="reporting-chart"><canvas id="sla-<%= type[:id] %>-respect"></canvas></div>
+            <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+          </article>
+          <article>
+            <h4><%= l(:"reporting.sla.overrun_period") %></h4>
+            <p class="reporting-desc"><%= l(:"reporting.sla.overrun_period_desc") %></p>
+            <div class="reporting-chart"><canvas id="sla-<%= type[:id] %>-overruns"></canvas></div>
+            <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+          </article>
+          <article>
+            <h4><%= l(:"reporting.sla.pivots") %></h4>
+            <p class="reporting-desc"><%= l(:"reporting.sla.pivots_desc") %></p>
+            <div class="reporting-chart short"><canvas id="sla-<%= type[:id] %>-pivots"></canvas></div>
+            <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+          </article>
+          <article>
+            <h4><%= l(:"reporting.sla.distribution") %></h4>
+            <p class="reporting-desc"><%= l(:"reporting.sla.distribution_desc") %></p>
+            <div class="reporting-chart short"><canvas id="sla-<%= type[:id] %>-distribution"></canvas></div>
+            <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+          </article>
+          <% end %>
+          <article class="reporting-wide">
+            <h4><%= l(:"reporting.sla.running") %></h4>
+            <% if type[:running] %>
+              <p class="reporting-desc"><%= l(:"reporting.sla.running_desc") %></p>
+              <div class="reporting-chart short"><canvas id="sla-<%= type[:id] %>-running"></canvas></div>
+              <p class="reporting-hint"><%= l(:"reporting.hints.issues") %></p>
+            <% else %>
+              <p class="reporting-empty"><%= l(:"reporting.sla.running_today_only", date: format_date(Date.iso8601(sla[:today]))) %></p>
+            <% end %>
+          </article>
+        </div>
+      </article>
+    <% end %>
+  </div>
+</section>

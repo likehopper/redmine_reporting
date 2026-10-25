@@ -33,7 +33,8 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
                  page.css(".reporting-settings-nav a").map { |link| link["id"].delete_prefix("reporting-pane-") }
     assert page.at_css(".reporting-settings-nav a#reporting-pane-sections.selected[aria-current='page']")
     assert page.at_css("form.reporting-settings-form input#reporting_section_run[checked]")
-    assert page.at_css("input#reporting_section_sla[disabled]"), "planned families cannot be enabled"
+    assert_equal !RedmineReporting::SlaSource.new(@project).configured?, page.at_css("input#reporting_section_sla[disabled]").present?,
+                 "the SLA family needs the SLA plugin configured for the project"
     # One pane at a time: the other settings are not part of this form.
     refute page.at_css("#reporting_setting_hours_per_day")
     refute page.at_css("a[href$='/reporting/credit_contracts/new']")
