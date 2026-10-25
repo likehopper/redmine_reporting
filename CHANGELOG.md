@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.4.0 — 2026-10-25
 
 - Reorganize the project's Reporting settings tab into vertical sub-tabs: Displayed
   reports, Time unit, Run / Build trackers, SLA statuses (with the SLA plugin) and
