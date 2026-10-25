@@ -38,7 +38,7 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
   def test_hidden_consumption_does_not_publish_credit_amounts
     viewer = create_viewer
     viewer.members.first.roles.first.update!(permissions: [:view_reporting, :view_issues])
-    contract!(@project, 'Confidential budget', 123)
+    contract!(@project, 'Confidential budget', 7531)
     session = authenticated_session(viewer)
     session.get "/projects/#{@project.identifier}/reporting"
     assert_equal 200, session.response.status
@@ -48,7 +48,10 @@ class ReportingRegressionsTest < ActionDispatch::IntegrationTest
     assert_nil report['consumption']
     # The contract buttons still filter the page, without any amount.
     assert page.at_css('#reporting-contract-bar a.reporting-chip', text: 'Confidential budget')
-    refute_includes session.response.body, '123'
+    # Text, tooltips and report data only: tokens and asset fingerprints may contain any digits.
+    page.css('script:not(#report-data), meta, link').remove
+    refute_includes page.text, '7531'
+    refute_includes page.xpath('//@title | //@aria-label').map(&:value).join(' '), '7531'
   end
 
   def test_current_backlog_contains_a_reopened_issue
