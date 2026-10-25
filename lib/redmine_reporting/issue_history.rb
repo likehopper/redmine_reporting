@@ -33,6 +33,24 @@ module RedmineReporting
       !@issue.closed? || (@issue.closed_on && @user.time_to_date(@issue.closed_on) > date)
     end
 
+    # Date the issue last left the given statuses, unless it is in one of them now. An SLA
+    # delay ends there: its clock only runs in these statuses. Same rule as sql_left.
+    def left_on(status_ids)
+      return if status_ids.include?(@issue.status_id)
+
+      event = @events.reverse.find { |_, old, new| status_ids.include?(old.to_i) && !status_ids.include?(new.to_i) }
+      event && @user.time_to_date(event[0])
+    end
+
+    # Issue IDs with the time they last left the given statuses (ended_on), for filters.
+    def self.sql_left(status_ids)
+      values = status_ids.map { |id| Issue.connection.quote(id.to_s) }.join(",")
+      "SELECT j.journalized_id AS issue_id, MAX(j.created_on) AS ended_on FROM journals j " \
+        "INNER JOIN journal_details d ON d.journal_id = j.id WHERE j.journalized_type = 'Issue' " \
+        "AND d.property = 'attr' AND d.prop_key = 'status_id' AND d.old_value IN (#{values}) " \
+        "AND d.value NOT IN (#{values}) GROUP BY j.journalized_id"
+    end
+
     # Correlated SQL keeps native pagination/exports and never materializes issue IDs.
     # Both Ruby and SQL use the last transition before the viewer's end of day.
     def self.sql_open_on(date, user)

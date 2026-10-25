@@ -85,3 +85,46 @@ module ReportingTestData
                    status: IssueStatus.first!, priority: IssuePriority.active.first!}.merge(attributes)).reload
   end
 end
+
+# A real SLA configuration (redmine_sla installed): a response delay elapsing in New and a
+# resolution one in New and Assigned, both with a 60-minute term. Cache rows are written
+# directly, as the SLA plugin leaves them, whatever its calendars would compute.
+module ReportingSlaData
+  def prepare_sla_data
+    @project.enable_module!(:sla)
+    ReportingProjectSetting.create!(project: @project, section_ids: %w[run sla])
+    @new, @assigned = IssueStatus.find(1), IssueStatus.find(2)
+    @response = SlaType.create!(name: "Reporting response")
+    @resolution = SlaType.create!(name: "Reporting resolution")
+    SlaStatus.create!(sla_type: @response, status: @new)
+    [@new, @assigned].each { |status| SlaStatus.create!(sla_type: @resolution, status: status) }
+    sla = Sla.create!(name: "Reporting SLA")
+    @level = SlaLevel.create!(name: "Reporting level", sla: sla, sla_calendar: SlaCalendar.create!(name: "Reporting calendar"))
+    @priority = IssuePriority.active.first!
+    [@response, @resolution].each do |type|
+      SlaLevelTerm.create!(sla_level: @level, sla_type: type, sla_priority_id: @priority.id, priority: @priority, term: 60)
+    end
+    SlaProjectTracker.create!(project: @project, tracker: @tracker, sla: sla)
+    @today = @administrator.today
+    @respected = sla_issue(3.days.ago, 30)
+    @overrun = sla_issue(3.days.ago, 90)
+    @earlier = sla_issue(40.days.ago, 10)
+    @running = sla_issue(nil, 70)
+  end
+
+  # An issue whose response delay ended at the given time (nil: still New), with its time used.
+  def sla_issue(ended_at, spent)
+    issue = create_issue(@project, status: @new, priority: @priority)
+    if ended_at
+      journal = Journal.new(journalized: issue, user: @administrator)
+      journal.details << JournalDetail.new(property: "attr", prop_key: "status_id", old_value: @new.id.to_s, value: @assigned.id.to_s)
+      journal.save!
+      journal.update_columns(created_on: ended_at)
+      issue.update_columns(status_id: @assigned.id)
+    end
+    cache = SlaCache.create!(id: issue.id, project: @project, issue: issue, tracker_id: @tracker.id, sla_level: @level,
+                             start_date: issue.created_on)
+    SlaCacheSpent.create!(sla_cache: cache, project: @project, issue: issue, sla_type: @response, spent: spent)
+    issue
+  end
+end

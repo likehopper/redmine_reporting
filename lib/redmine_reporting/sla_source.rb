@@ -51,9 +51,19 @@ module RedmineReporting
     def active_statuses_by_type
       return {} unless configured?
 
+      self.class.statuses_by_type(project_trackers)
+    end
+
+    # The same for a report: SLA types of every project in scope where the SLA is configured.
+    def self.active_statuses_by_type(projects)
+      project_ids = projects.select { |project| new(project).configured? }.map(&:id)
+      project_ids.any? ? statuses_by_type(::SlaProjectTracker.where(project_id: project_ids)) : {}
+    end
+
+    def self.statuses_by_type(project_trackers)
       types = ::SlaType.where(id: project_trackers.joins(:sla_types).select("#{::SlaType.table_name}.id")).sorted
       statuses = ::SlaStatus.where(sla_type_id: types.map(&:id)).includes(:status).group_by(&:sla_type_id)
-      types.to_h { |type| [type, Array(statuses[type.id]).map(&:status).sort_by(&:position)] }
+      types.to_h { |type| [type, Array(statuses[type.id]).map(&:status).compact.sort_by(&:position)] }
     end
 
     def active_status_ids

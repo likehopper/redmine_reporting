@@ -32,6 +32,7 @@ require "delegate"
   credit_ledger
   credit_scope
   credit_contract_account
+  sla_figures
   report_data
   reports/base
   reports/summary
@@ -43,6 +44,7 @@ require "delegate"
   reports/workload
   reports/burnup
   reports/performance
+  reports/sla
   report_builder
   drilldown
   contract_filters

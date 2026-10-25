@@ -30,6 +30,6 @@ permissions and link to native filtered lists. Available in English and French.
 
 ## Release scope
 
-Run, Build & Projects and Workload & Team reports are included. SLA reports
-remain a future feature. Redmine 7.1 is not certified. Compatibility claims refer to
+Run, Run & Support (SLA), Build & Projects and Workload & Team reports are included.
+SLA figures need redmine_sla and follow its cache. Redmine 7.1 is not certified. Compatibility claims refer to
 the exact tested patch and runtime combinations, not every possible installation.

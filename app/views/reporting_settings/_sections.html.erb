@@ -23,7 +23,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
     <p>
       <label for="reporting_section_<%= section.id %>"><%= l(:"reporting.settings.section.#{section.id}") %></label>
       <%= check_box_tag "reporting_setting[section_ids][]", section.id, setting.section_enabled?(section.id),
-            id: "reporting_section_#{section.id}", disabled: !section.selectable? %>
+            id: "reporting_section_#{section.id}", disabled: !section.selectable? || (section.requires == :sla && !sla.configured?) %>
       <em class="info">
         <%= l(:"reporting.settings.section_desc.#{section.id}") %>
         <% if section.requires == :sla %>

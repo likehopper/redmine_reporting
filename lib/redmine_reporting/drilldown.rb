@@ -191,6 +191,29 @@ module RedmineReporting
         minimum_age, maximum_age = bounds
         date_filter("created_on", maximum_age && reference_date - maximum_age, reference_date - minimum_age)
       end
+      apply_sla if @parameters[:sla_type].present?
+    end
+
+    # SLA selections: delays ended in a range, time used against the term, running delays
+    # and the priority (or custom field value) that sets the term.
+    def apply_sla
+      type_id = @parameters[:sla_type].to_i
+      return restrict("project_id", []) unless SlaFigures.installed? && ::SlaType.exists?(type_id)
+
+      date_filter("reporting_sla_end_#{type_id}", date_parameter(:sla_end_from), date_parameter(:sla_end_to))
+      buckets = @parameters[:sla_buckets].to_s.split(",") & SlaFigures::BUCKETS.keys
+      @query.add_filter("reporting_sla_time_#{type_id}", "=", buckets) if buckets.any?
+      if @parameters[:sla_running] == "true"
+        restrict("status_id", ::SlaStatus.where(sla_type_id: type_id).pluck(:status_id) & IssueStatus.where(is_closed: false).ids)
+      end
+      kind, field_id, value = @parameters[:sla_pivot].to_s.split(":")
+      if kind == "priority"
+        restrict("priority_id", IssuePriority.where(id: field_id).ids)
+      elsif kind == "cf"
+        field = "cf_#{field_id.to_i}"
+        # A field the list cannot filter on would widen the selection: open an empty list.
+        @query.available_filters.key?(field) ? @query.add_filter(field, "=", [value.to_i.to_s]) : restrict("project_id", [])
+      end
     end
   end
 

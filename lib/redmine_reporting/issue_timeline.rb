@@ -51,6 +51,11 @@ module RedmineReporting
       created_on.present? && created_on <= last_day && (!closed? || closed_on.nil? || closed_on >= first_day)
     end
 
+    # End of an SLA delay whose clock runs in these statuses, or nil while it still runs.
+    def left_on(status_ids)
+      @history.left_on(status_ids)
+    end
+
     def age_on(date)
       (date - created_on).to_i
     end

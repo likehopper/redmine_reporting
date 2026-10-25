@@ -490,3 +490,7 @@ td.reporting-red {
 .reporting-consumption-contracts .reporting-envelope-name {
   padding-left: 1.5em;
 }
+
+/* SLA: one block per SLA type */
+.reporting-sla-type { margin: 0 0 24px; }
+.reporting-sla-type > h4 { font-size: 1.15em; margin: 8px 0 12px; }

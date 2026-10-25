@@ -55,8 +55,8 @@ class ReportingProjectSettingTest < ActiveSupport::TestCase
     setting = ReportingProjectSetting.new(project: @project, hours_per_day: 0)
     refute setting.valid?
     assert setting.errors.key?(:hours_per_day)
-    # Planned families cannot be enabled until their charts exist.
-    setting.assign_attributes(hours_per_day: 7.5, section_ids: %w[run sla])
+    # Only known families can be enabled.
+    setting.assign_attributes(hours_per_day: 7.5, section_ids: %w[run bogus])
     refute setting.valid?
     assert setting.errors.key?(:section_ids)
     setting.section_ids = ["run", ""]
@@ -83,7 +83,7 @@ class ReportingProjectSettingTest < ActiveSupport::TestCase
     refute RedmineReporting::Sections.available?(sla, @project)
     RedmineReporting::SlaSource.any_instance.stubs(:configured?).returns(true)
     assert RedmineReporting::Sections.available?(sla, @project)
-    assert_equal %w[run build workload], RedmineReporting::Sections.selectable_ids
+    assert_equal %w[run sla build workload], RedmineReporting::Sections.selectable_ids
   end
 
   def test_visible_sections_follow_settings_and_permissions
