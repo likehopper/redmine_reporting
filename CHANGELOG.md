@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.0 — 2026-10-25
 
 - Add the **Run & Support (SLA)** report, with the redmine_sla plugin: for each SLA type,
   the respect rate of the delays that ended in each period, overruns and their average
