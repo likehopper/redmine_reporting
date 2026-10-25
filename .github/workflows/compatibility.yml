@@ -84,3 +84,23 @@ jobs:
         with:
           name: demo
           path: /tmp/redmine-reporting-compat.*
+  demo-sla:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: likehopper/redmine_sla
+          ref: v3.0.5
+          path: .compat-sla
+      - run: bash test/compatibility/run.sh 6.1.4
+        env:
+          COMPAT_DB: postgres
+          COMPAT_SLA_PATH: .compat-sla
+          REPORTING_DEMO_SMOKE: '1'
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: demo-sla-postgres
+          path: /tmp/redmine-reporting-compat.*

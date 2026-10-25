@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Demo data: with redmine_sla on PostgreSQL or MySQL, a demo SLA on the support trackers,
+  whose delays the SLA plugin computes.
+- The configuration guide shows the SLA report; its screenshots are regenerated with
+  the SLA plugin on PostgreSQL (`COMPAT_SLA_PATH=… test/documentation/run.sh`).
+
 ## 1.5.0 — 2026-10-25
 
 - Add the **Run & Support (SLA)** report, with the redmine_sla plugin: for each SLA type,

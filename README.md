@@ -344,6 +344,11 @@ with development and support envelopes. It can be
 run again without duplicating anything: a later run replays the same stories up to
 the current date.
 
+With redmine_sla on PostgreSQL or MySQL, the generator also adds a *Demo support* SLA
+(business hours Monday to Friday, response and resolution terms per priority) on the
+Bug and Support request trackers of every demo project, then lets the SLA plugin compute
+the delays of their issues. SLA definitions are global, like the other dictionaries.
+
 ## Development
 
 ### Architecture
