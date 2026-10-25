@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1 — 2026-10-25
+
+- Fix the "Translation missing" labels of the report's date options on Redmine 7.0,
+  which no longer defines `label_date_from` and `label_date_to` (#7). Tests now
+  detect missing translations whatever their case.
+
 ## 1.4.0 — 2026-10-25
 
 - Reorganize the project's Reporting settings tab into vertical sub-tabs: Displayed

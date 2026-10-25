@@ -6,6 +6,17 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.4.1 validation — 2026-10-25
+
+The tests now detect missing translations whatever their case. On Redmine 7.0.1
+with SQLite, they failed on the 1.4.0 date labels (9 failures) and pass with the fix:
+139 tests, 1198 assertions, no failures or errors; the 9 skips are the Mirror adapter
+tests, which need a Mirror checkout (`COMPAT_MIRROR_PATH`). GitHub Actions results
+for the full matrix are linked from the release pull request.
+
+The release-finalization changes only bump the version, date the changelog and
+update release validation documentation. Runtime fingerprints match the application files.
+
 ## Release 1.4.0 validation — 2026-10-25
 
 GitHub Actions passed all ten compatibility jobs for application commit

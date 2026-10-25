@@ -28,6 +28,8 @@ en:
   label_reporting_contract_none: "Outside contract"
   project_module_reporting: Reporting
   permission_view_reporting: View reporting
+  label_reporting_date_from: From
+  label_reporting_date_to: To
   label_reporting_grouping: Period grouping
   label_reporting_grouping_day: Day
   label_reporting_grouping_week: Week

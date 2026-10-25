@@ -32,7 +32,7 @@ class ReportingWorkloadTest < ActionDispatch::IntegrationTest
     session = authenticated_session(user)
     session.get "/projects/#{@project.identifier}/reporting", params: {section: "workload", **parameters}
     assert_equal 200, session.response.status
-    refute_includes session.response.body, "translation missing"
+    refute_match(/translation missing/i, session.response.body)
     page = Nokogiri::HTML(session.response.body)
     [JSON.parse(page.at_css("#report-data").text).fetch("workload"), page, session]
   end
