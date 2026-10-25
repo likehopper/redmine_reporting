@@ -38,7 +38,8 @@ class ReportingSettingsController < ApplicationController
     else
       flash[:error] = setting.errors.full_messages.to_sentence
     end
-    redirect_to settings_project_path(@project, tab: "reporting")
+    redirect_to settings_project_path(@project, tab: "reporting",
+                                      reporting_pane: RedmineReporting::ProjectSettings.pane_param(params[:reporting_pane]))
   end
 
   private

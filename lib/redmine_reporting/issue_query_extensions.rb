@@ -19,8 +19,11 @@
 
 module RedmineReporting
   module IssueQueryExtensions
+    include ContractFilters
+
     def initialize_available_filters
       super
+      add_contract_filters
       add_available_filter "reporting_version_on", type: :date, name: l(:label_reporting_version_on)
       add_available_filter "reporting_completed_on", type: :date, name: l(:label_reporting_completed_on)
       add_available_filter "reporting_historical_version_id", type: :list_optional, name: l(:label_reporting_historical_version),

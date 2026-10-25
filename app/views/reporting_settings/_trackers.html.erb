@@ -1,0 +1,41 @@
+<%#
+File: redmine_reporting/app/views/reporting_settings/_trackers.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<div class="box">
+  <p class="info"><%= l(:"reporting.settings.trackers_desc") %></p>
+  <table class="list reporting-tracker-roles">
+    <thead>
+      <tr>
+        <th><%= l(:field_tracker) %></th>
+        <% %w[run build none].each do |role| %><th><%= l(:"reporting.settings.tracker_role.#{role}") %></th><% end %>
+      </tr>
+    </thead>
+    <tbody>
+      <% page.trackers.each do |tracker| %>
+        <tr>
+          <td class="name"><%= tracker.name %></td>
+          <% {"run" => "run", "build" => "build", "none" => ""}.each do |role, value| %>
+            <td><%= radio_button_tag "reporting_setting[tracker_roles][#{tracker.id}]", value, setting.tracker_role(tracker) == value,
+                      id: "reporting_tracker_#{tracker.id}_#{role}", aria: {label: "#{tracker.name} · #{l(:"reporting.settings.tracker_role.#{role}")}"} %></td>
+          <% end %>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

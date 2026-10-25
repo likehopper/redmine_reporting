@@ -236,6 +236,38 @@ class ReportingDashboardSystemTest < ApplicationSystemTestCase
     page.current_window.resize_to(1024, 900)
   end
 
+  def test_contract_buttons_filter_the_page_and_bars_open_the_charged_time
+    contract = ReportingCreditContract.create!(project: @project, name: "TMA", starts_on: Date.current.beginning_of_year,
+                                               ends_on: Date.current.end_of_year, tracker_ids: [@tracker.id],
+                                               envelopes_attributes: [{name: "All", days: 10, other_activities: true}])
+    charged = TimeEntry.create!(project: @project, issue: @parent_issue, user: @administrator, activity: TimeEntryActivity.active.first!,
+                                hours: 4, spent_on: Date.current)
+    log_user(@administrator.login, "Reporting-test-123!")
+    visit "/projects/#{@project.identifier}/reporting?tab=consumption"
+    assert_selector "#reporting-contract-all.selected"
+    assert_selector "#consumption-outside .value", text: "0.4d"
+    wait_for_charts
+    last = chart_value("consumption-period", "chart.data.labels.length - 1")
+    point = chart_value("consumption-period", "(() => { const bar = chart.getDatasetMeta(1).data[#{last}]; return {x: bar.x, y: (bar.y + bar.base) / 2}; })()")
+    list = window_opened_by { click_chart("consumption-period", point) }
+    within_window(list) do
+      assert_current_path "/time_entries", ignore_query: true
+      assert_selector "table.time-entries tbody tr", count: 1
+      assert_selector "tr#time-entry-#{charged.id}"
+    end
+    list.close
+    # From all, a button shows that contract alone, and the page follows.
+    find("#reporting-contract-#{contract.id}").click
+    assert_selector "#reporting-contract-#{contract.id}.selected"
+    assert_no_selector "#reporting-contract-all.selected"
+    assert_no_selector "#consumption-outside"
+    find("#reporting-contract-none").click
+    assert_selector "#reporting-contract-all.selected"
+    find("#reporting-private-only").click
+    assert_selector "#reporting-private-only.selected"
+    assert_selector "#consumption-stats"
+  end
+
   private
 
   # Redmine 5.0's helper compares current_path without waiting for navigation.

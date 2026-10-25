@@ -1,0 +1,69 @@
+<%#
+File: redmine_reporting/app/views/reporting/help/_en.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<p><%= l(:"reporting.help.intro") %></p>
+
+<h3 id="contracts">Contracts</h3>
+<p>A contract grants credit days to a project over its dates, for the time logged on issues of its trackers.
+Any length works: a 6-month maintenance, then one-year contracts, then a 3-month one to align on a fiscal year.
+A tracker belongs to one contract of the project at a time; two contracts can run side by side on different trackers.</p>
+<p>A contract starts from zero on its first day and stops on its last one. Nothing carries over by itself: see
+<a href="#renewal">Renewal</a>.</p>
+
+<h3 id="envelopes">Envelopes</h3>
+<p>The credit of a contract is split into envelopes. Each one has days, granted on the contract's first day, and
+criteria: some activities (or <em>all other activities</em>) and which issues it takes (all, public only or private only).</p>
+<p>Each logged hour is charged to one envelope at most:</p>
+<ol>
+  <li>the issue's tracker and the date select the contract;</li>
+  <li>the activity and the issue's privacy select the envelope, listed activities first, then the <em>all other activities</em> envelope;</li>
+  <li>an hour matching no envelope, or logged without an issue, is <strong>outside the contract</strong>.</li>
+</ol>
+<table class="list">
+  <thead><tr><th>Envelope</th><th>Activities</th><th>Issues</th><th>Days</th></tr></thead>
+  <tbody>
+    <tr><td>Development</td><td>Design, Development, Tests</td><td>Public only</td><td>30</td></tr>
+    <tr><td>Project management</td><td>Management</td><td>Private only</td><td>10</td></tr>
+  </tbody>
+</table>
+<p>With these envelopes, development on a public issue goes to <em>Development</em>; the project manager's time on a
+recurring private issue goes to <em>Project management</em>; development on a private issue (internal work on a test
+environment, for instance) matches no envelope and is not charged to the client.</p>
+
+<h3 id="movements">Refills and adjustments</h3>
+<p>Movements change an envelope's credit on a date within the contract: a refill adds days (an amendment), an
+adjustment removes some (a debt taken over). Each one has a comment, shown in the history.</p>
+
+<h3 id="renewal">Renewal</h3>
+<p><em>Renew</em> prepares the next contract from the day after the current one, with the same length, trackers and
+envelopes; everything can be changed before saving. For each envelope with a balance, a box (unchecked by default)
+carries the days left over, or deducts the overrun. Either becomes a movement on the new contract's first day.</p>
+<p>The previous contract keeps its figures: carried days are not shown as consumption, and its chart stops on its last day.</p>
+
+<h3 id="subprojects">Subprojects</h3>
+<p>With <em>Include subprojects</em>, a contract also counts its subprojects' time. A subproject may still have
+contracts of its own: on the same tracker and date, the closest contract wins. A subproject's report never shows its
+parent's contract: its time covered by the parent appears as <em>Covered by the parent project</em>, without figures.</p>
+
+<h3 id="report">Reading the report</h3>
+<p>The contract buttons above the reports select what the whole page shows. Selections add up: all of them show every
+logged hour once; one contract shows that contract's report; <em>Outside contract</em> shows the time no contract takes.
+Each contract keeps its own balance: an overrun on one never uses another one's credit.</p>
+<p>Credit figures count every hour charged to the contract, whoever reads them, private issues included; issue lists
+still follow Redmine's permissions.</p>

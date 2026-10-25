@@ -84,7 +84,19 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
       check "reporting_section_run"
       check "reporting_section_build"
       check "reporting_section_workload"
+      click_button "Save"
+    end
+    assert_selector "#flash_notice"
+
+    within("#reporting-settings") { click_link "Time unit" }
+    within "#reporting-settings" do
       fill_in "reporting_setting_hours_per_day", with: "7.5"
+      click_button "Save"
+    end
+    assert_selector "#flash_notice"
+
+    within("#reporting-settings") { click_link "Run / Build trackers" }
+    within "#reporting-settings" do
       { "Bug" => "run", "Support request" => "run", "Feature request" => "build" }.each do |name, role|
         choose "reporting_tracker_#{Tracker.find_by!(name: name).id}_#{role}"
       end
@@ -92,41 +104,65 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
     screenshot "06-settings-filled", "#reporting-settings"
     within("#reporting-settings") { click_button "Save" }
     assert_selector "#flash_notice"
-    assert_equal 7.5, ReportingProjectSetting.find_by!(project: Project.find_by!(identifier: PROJECT)).hours_per_day
+    setting = ReportingProjectSetting.find_by!(project: Project.find_by!(identifier: PROJECT))
+    assert_equal 7.5, setting.hours_per_day
+    assert_equal %w[build run workload], setting.section_ids.sort
   end
 
-  def test_05_time_credit
+  def test_05_contract
+    project = Project.find_by!(identifier: PROJECT)
+    starts_on = Date.current.beginning_of_month << 11
     visit "/projects/#{PROJECT}/settings/reporting"
-    click_link "New credit"
-    select "Support request", from: "reporting_credit_policy_tracker_id"
-    fill_in "reporting_credit_policy_name", with: "Annual support contract"
-    fill_in "reporting_credit_policy_initial_credit_days", with: "20"
-    select "1", from: "reporting_credit_policy_anniversary_day"
-    select "January", from: "reporting_credit_policy_anniversary_month"
-    fill_date "reporting_credit_policy_active_from", Date.current.beginning_of_year
-    refill = "reporting_credit_policy[reporting_credit_refills_attributes][0]"
-    find("select[name='#{refill}[day]']").select("1")
-    find("select[name='#{refill}[month]']").select("July")
-    find("input[name='#{refill}[credit_days]']").fill_in(with: "5")
-    screenshot "07-credit-form", "#content"
+    within("#reporting-settings") { click_link "Contracts" }
+    click_link "New contract"
+    fill_in "reporting_credit_contract_name", with: "Support contract"
+    fill_date "reporting_credit_contract_starts_on", starts_on
+    fill_date "reporting_credit_contract_ends_on", (starts_on >> 12) - 1
+    uncheck "reporting_contract_tracker_#{Tracker.find_by!(name: 'Feature request').id}"
+    within("#reporting-envelope-0") do
+      fill_in "reporting_credit_contract_envelopes_attributes_0_name", with: "Development"
+      fill_in "reporting_credit_contract_envelopes_attributes_0_days", with: "40"
+      uncheck "reporting_credit_contract_envelopes_attributes_0_other_activities"
+      %w[Analysis Development Testing].each { |name| check name }
+      select "Public issues only", from: "reporting_credit_contract_envelopes_attributes_0_issue_privacy"
+      fill_date "reporting_credit_contract_envelopes_attributes_0_movements_attributes_0_date", starts_on >> 6
+      fill_in "reporting_credit_contract_envelopes_attributes_0_movements_attributes_0_days", with: "10"
+      fill_in "reporting_credit_contract_envelopes_attributes_0_movements_attributes_0_comment", with: "Amendment no. 1"
+    end
+    within("#reporting-envelope-1") do
+      fill_in "reporting_credit_contract_envelopes_attributes_1_name", with: "Support"
+      fill_in "reporting_credit_contract_envelopes_attributes_1_days", with: "15"
+      check "Support"
+    end
+    screenshot "07-contract-form", "#content"
     click_button "Create"
     assert_selector "#flash_notice"
-    assert_selector "table.reporting-credit-policies td", text: "Annual support contract"
-    screenshot "08-credit-list", find("table.reporting-credit-policies").ancestor("fieldset")
+    contract = project.reporting_credit_contracts.find_by!(name: "Support contract")
+    assert_equal [40, 15], contract.envelopes.map { |envelope| envelope.days.to_i }
+
+    within("#reporting-contracts-current") { click_link "Renew" }
+    assert_selector "h2", text: "Renewal of Support contract"
+    within("#reporting-envelope-0") { check "reporting_credit_contract_envelopes_attributes_0_carry" }
+    screenshot "08-contract-renewal", "#content"
+    fill_in "reporting_credit_contract_name", with: "Support contract (renewal)"
+    click_button "Create"
+    assert_selector "#flash_notice"
+    assert_selector "#reporting-contracts-upcoming td.name", text: "Support contract (renewal)"
+    screenshot "09-contract-list", "#reporting-settings"
   end
 
   def test_06_subproject_inherits_settings
     visit "/projects/reporting-demo-maintenance/settings/reporting"
     assert_selector "#reporting-settings p.warning"
-    screenshot "09-subproject-inherited", "#reporting-settings"
+    screenshot "10-subproject-inherited", "#reporting-settings"
   end
 
   def test_07_run_dashboard
     open_reporting(section: "run", tab: "flow")
-    screenshot "10-run-flow", "#content"
+    screenshot "11-run-flow", "#content"
     %w[activity consumption backlog performance].each_with_index do |tab, index|
       open_reporting(section: "run", tab: tab)
-      screenshot format("%02d-run-%s", 11 + index, tab), "#content"
+      screenshot format("%02d-run-%s", 12 + index, tab), "#content"
       # README illustration: the consumption tab below the filters.
       screenshot "home", "#content", from: ".reporting-sticky", max_height: 820 if tab == "consumption"
     end
@@ -134,11 +170,11 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
 
   def test_08_build_and_workload_dashboards
     open_reporting(section: "build", tab: "build")
-    screenshot "15-build", "#content"
+    screenshot "16-build", "#content"
     open_reporting(section: "build", tab: "burnup")
-    screenshot "16-build-burnup", "#content"
+    screenshot "17-build-burnup", "#content"
     open_reporting(section: "workload", tab: "workload")
-    screenshot "17-workload", "#content"
+    screenshot "18-workload", "#content"
   end
 
   def test_09_chart_opens_native_list
@@ -157,15 +193,27 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
     within_window(list) do
       assert_current_path "/issues", ignore_query: true
       assert_selector "table.issues tbody tr"
-      screenshot "18-drilldown-issues", "#content", max_height: 640
+      screenshot "19-drilldown-issues", "#content", max_height: 640
     end
     list.close
+  end
+
+  def test_10_contract_selection_and_help
+    open_reporting(section: "run", tab: "consumption")
+    contract = Project.find_by!(identifier: PROJECT).reporting_credit_contracts.find_by!(name: "Support contract")
+    find("#reporting-contract-#{contract.id}").click
+    assert_selector "#reporting-contract-#{contract.id}.selected"
+    wait_for_charts
+    screenshot "20-contract-selection", "#content", from: "#reporting-contract-bar", max_height: 900
+    visit "/projects/#{PROJECT}/reporting/help"
+    assert_selector ".reporting-help h3#envelopes"
+    screenshot "21-help", "#content", max_height: 1100
   end
 
   private
 
   # Demo issues and time without the configuration the document walks through:
-  # the generator's role permissions, module, settings and root credits are removed first.
+  # the generator's role permissions, module, settings and root contracts are removed first.
   def prepare_demo_project
     User.create!(login: ADMIN_LOGIN, firstname: "Redmine", lastname: "Admin", mail: "#{ADMIN_LOGIN}@example.invalid",
                  admin: true, language: "en", password: ADMIN_PASSWORD, password_confirmation: ADMIN_PASSWORD)
@@ -177,7 +225,7 @@ class ReportingConfigurationDocumentationTest < ApplicationSystemTestCase
     # Subprojects keep the module: the walkthrough enables it on the root project only.
     project.disable_module!(:reporting)
     ReportingProjectSetting.where(project_id: project.self_and_descendants.select(:id)).delete_all
-    project.reporting_credit_policies.destroy_all
+    project.reporting_credit_contracts.destroy_all
     FileUtils.mkdir_p(SCREENSHOTS)
   end
 

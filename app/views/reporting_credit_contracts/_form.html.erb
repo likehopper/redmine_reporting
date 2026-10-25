@@ -1,0 +1,108 @@
+<%#
+File: redmine_reporting/app/views/reporting_credit_contracts/_form.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<% content_for :header_tags do %>
+  <%= stylesheet_link_tag "reporting", plugin: "redmine_reporting" %>
+<% end %>
+<%= error_messages_for "contract" %>
+<% page = @settings_page %>
+<div class="box tabular">
+  <p><%= f.text_field :name, required: true, size: 40 %></p>
+  <p><%= f.text_area :description, rows: 2, cols: 60 %></p>
+  <p><%= f.date_field :starts_on, required: true %><%= calendar_for "reporting_credit_contract_starts_on" %></p>
+  <p><%= f.date_field :ends_on, required: true %><%= calendar_for "reporting_credit_contract_ends_on" %>
+    <em class="info"><%= l(:"reporting.contracts.dates_hint") %></em></p>
+  <p>
+    <label><%= l(:field_tracker_ids) %> <span class="required">*</span></label>
+    <%= hidden_field_tag "reporting_credit_contract[tracker_ids][]", "", id: nil %>
+    <% page.contract_trackers.each do |tracker| %>
+      <label class="inline"><%= check_box_tag "reporting_credit_contract[tracker_ids][]", tracker.id, @contract.tracker_ids.include?(tracker.id),
+                                  id: "reporting_contract_tracker_#{tracker.id}" %> <%= tracker.name %></label>
+    <% end %>
+    <em class="info"><%= l(:"reporting.contracts.trackers_hint") %></em>
+  </p>
+  <p><%= f.check_box :include_subprojects %>
+    <em class="info"><%= l(:"reporting.contracts.subprojects_hint") %></em></p>
+  <% closer = page.closer_contracts(@contract) %>
+  <% if closer.any? %>
+    <p class="warning"><%= l(:"reporting.contracts.closer_warning", contracts: closer.map { |other| "#{other.project.name} · #{other.name}" }.join(", ")) %></p>
+  <% end %>
+</div>
+
+<h3><%= l(:"reporting.contracts.envelopes") %> <%= reporting_help_link(@project, "envelopes") %></h3>
+<p class="info"><%= l(:"reporting.contracts.envelopes_intro") %></p>
+<% envelopes = @contract.envelopes.to_a %>
+<% envelopes += [ReportingCreditEnvelope.new(position: envelopes.size)] if @previous.nil? %>
+<% envelopes.each_with_index do |envelope, index| %>
+  <%= fields_for "reporting_credit_contract[envelopes_attributes][#{index}]", envelope do |ef| %>
+    <% prefix = "reporting_credit_contract_envelopes_attributes_#{index}" %>
+    <fieldset class="box tabular reporting-envelope" id="reporting-envelope-<%= index %>">
+      <legend><%= envelope.persisted? || @previous ? envelope.name : l(:"reporting.contracts.envelope_number", number: index + 1) %></legend>
+      <%= ef.hidden_field :id if envelope.persisted? %>
+      <%= ef.hidden_field :position, value: index %>
+      <p><label for="<%= prefix %>_name"><%= l(:field_name) %></label><%= ef.text_field :name, size: 30 %></p>
+      <p><label for="<%= prefix %>_days"><%= l(:field_days) %></label><%= ef.number_field :days, value: reporting_number(envelope.days), min: 0, step: 0.25, size: 6 %>
+        <em class="info"><%= l(:"reporting.contracts.days_hint", hours: reporting_hours(page.setting.hours_per_day)) %></em></p>
+      <p>
+        <label><%= l(:field_activity_ids) %></label>
+        <label class="inline"><%= ef.check_box :other_activities %> <%= l(:field_other_activities) %></label>
+        <%= reporting_tip(l(:"reporting.contracts.other_activities_hint")) %><br>
+        <%= hidden_field_tag "reporting_credit_contract[envelopes_attributes][#{index}][activity_ids][]", "", id: nil %>
+        <% page.activities(envelope.activity_ids).each do |activity| %>
+          <label class="inline"><%= check_box_tag "reporting_credit_contract[envelopes_attributes][#{index}][activity_ids][]", activity.id,
+                                      envelope.activity_ids.include?(activity.id), id: "#{prefix}_activity_#{activity.id}" %> <%= activity.name %></label>
+        <% end %>
+      </p>
+      <p><label for="<%= prefix %>_issue_privacy"><%= l(:field_issue_privacy) %></label>
+        <%= ef.select :issue_privacy, ReportingCreditEnvelope::PRIVACIES.map { |privacy| [l(:"reporting.contracts.privacy.#{privacy}"), privacy] } %>
+        <%= reporting_tip(l(:"reporting.contracts.privacy_hint")) %></p>
+      <% if envelope.carry_source_id.present? %>
+        <%= ef.hidden_field :carry_source_id %>
+        <% source = ReportingCreditEnvelope.find_by(id: envelope.carry_source_id) %>
+        <% balance = source ? page.carry_over(source) : 0 %>
+        <% unless balance.zero? %>
+          <p><label for="<%= prefix %>_carry"><%= l(:"reporting.contracts.carry") %></label>
+            <%= ef.check_box :carry, {checked: envelope.carry == "1"}, "1", "0" %>
+            <em class="info"><%= l(:"reporting.contracts.#{balance.positive? ? "carry_remaining" : "carry_debt"}", days: reporting_days(balance.abs)) %></em></p>
+        <% end %>
+      <% end %>
+      <% if envelope.persisted? %>
+        <p><label for="<%= prefix %>__destroy"><%= l(:button_delete) %></label><%= ef.check_box :_destroy %></p>
+      <% end %>
+
+      <table class="list reporting-movements">
+        <caption><%= l(:"reporting.contracts.movements") %> <%= reporting_tip(l(:"reporting.contracts.movements_hint")) %></caption>
+        <thead><tr><th><%= l(:label_date) %></th><th><%= l(:field_days) %></th><th><%= l(:field_comments) %></th><th><%= l(:button_delete) %></th></tr></thead>
+        <tbody>
+          <% (envelope.movements.to_a + Array.new(2) { ReportingCreditMovement.new }).each_with_index do |movement, row| %>
+            <%= fields_for "reporting_credit_contract[envelopes_attributes][#{index}][movements_attributes][#{row}]", movement do |mf| %>
+              <tr>
+                <td><%= mf.hidden_field :id if movement.persisted? %><%= mf.date_field :date, aria: {label: l(:label_date)} %></td>
+                <td><%= mf.number_field :days, value: reporting_number(movement.days), step: 0.25, size: 6, aria: {label: l(:field_days)} %></td>
+                <td><%= mf.text_field :comment, size: 40, maxlength: 255, aria: {label: l(:field_comments)} %>
+                  <% if movement.source_envelope %><em class="info"><%= l(:"reporting.contracts.carried_from", contract: movement.source_envelope.contract.name) %></em><% end %></td>
+                <td><%= mf.check_box :_destroy, aria: {label: l(:button_delete)} if movement.persisted? %></td>
+              </tr>
+            <% end %>
+          <% end %>
+        </tbody>
+      </table>
+    </fieldset>
+  <% end %>
+<% end %>

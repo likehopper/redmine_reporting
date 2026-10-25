@@ -114,9 +114,11 @@ class ReportingProjectSettingTest < ActiveSupport::TestCase
 
   def test_project_copy_and_deletion_carry_the_configuration
     ReportingProjectSetting.create!(project: @project, hours_per_day: 7, run_tracker_ids: [@tracker.id])
-    policy = @project.reporting_credit_policies.create!(tracker: @tracker, name: "TMA", initial_credit_days: 12,
-                                                        anniversary_month: 1, anniversary_day: 1)
-    policy.reporting_credit_refills.create!(month: 7, day: 1, credit_days: 3)
+    @project.reporting_credit_contracts.create!(name: "TMA", starts_on: Date.new(2026, 1, 1), ends_on: Date.new(2026, 12, 31),
+                                                tracker_ids: [@tracker.id], envelopes_attributes: [
+                                                  {name: "All", days: 12, other_activities: true,
+                                                   movements_attributes: [{date: Date.new(2026, 7, 1), days: 3}]}
+                                                ])
     copy = Project.copy_from(@project)
     copy.name = "Reporting copy"
     copy.identifier = "reporting-copy"
@@ -124,9 +126,11 @@ class ReportingProjectSettingTest < ActiveSupport::TestCase
     copy.reload
     assert_equal 7, copy.reporting_project_setting.hours_per_day
     assert_equal [@tracker.id], copy.reporting_project_setting.run_tracker_ids
-    assert_equal [[12, [3]]], copy.reporting_credit_policies.map { |item| [item.initial_credit_days, item.reporting_credit_refills.map(&:credit_days)] }
-    assert_difference -> { ReportingProjectSetting.count } => -1, -> { ReportingCreditPolicy.count } => -1,
-                      -> { ReportingCreditRefill.count } => -1 do
+    assert_equal [[[@tracker.id], [[12, [3]]]]], copy.reporting_credit_contracts.map { |contract|
+      [contract.tracker_ids, contract.envelopes.map { |envelope| [envelope.days, envelope.movements.map(&:days)] }]
+    }
+    assert_difference -> { ReportingProjectSetting.count } => -1, -> { ReportingCreditContract.count } => -1,
+                      -> { ReportingCreditEnvelope.count } => -1, -> { ReportingCreditMovement.count } => -1 do
       copy.destroy
     end
   end

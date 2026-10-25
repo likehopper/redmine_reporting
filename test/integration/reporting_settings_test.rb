@@ -28,19 +28,39 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     assert_equal 200, session.response.status
     page = Nokogiri::HTML5(session.response.body)
     assert page.at_css("#tab-reporting"), "reporting tab"
-    assert page.at_css("form#reporting-settings input#reporting_section_run[checked]")
+    # SLA statuses come from the SLA plugin only; their pane is hidden without it.
+    assert_equal %w[sections time_unit trackers contracts],
+                 page.css(".reporting-settings-nav a").map { |link| link["id"].delete_prefix("reporting-pane-") }
+    assert page.at_css(".reporting-settings-nav a#reporting-pane-sections.selected[aria-current='page']")
+    assert page.at_css("form.reporting-settings-form input#reporting_section_run[checked]")
     assert page.at_css("input#reporting_section_sla[disabled]"), "planned families cannot be enabled"
-    # SLA statuses come from the SLA plugin only; nothing is entered here without it.
-    refute page.at_css("table.reporting-sla-statuses")
-    refute page.at_css("input[name*='waiting_status']")
+    # One pane at a time: the other settings are not part of this form.
+    refute page.at_css("#reporting_setting_hours_per_day")
+    refute page.at_css("a[href$='/reporting/credit_contracts/new']")
     refute_includes session.response.body, "translation missing"
+
+    { "time_unit" => "#reporting_setting_hours_per_day", "trackers" => "table.reporting-tracker-roles",
+      "contracts" => "a[href$='/reporting/credit_contracts/new']", "sla_statuses" => "#reporting_section_run" }.each do |pane, selector|
+      session.get "/projects/#{@project.identifier}/settings/reporting", params: {reporting_pane: pane}
+      page = Nokogiri::HTML5(session.response.body)
+      # An unavailable pane falls back to the first one.
+      selected = pane == "sla_statuses" ? "sections" : pane
+      assert page.at_css("a#reporting-pane-#{selected}.selected"), pane
+      assert page.at_css(selector), pane
+      refute page.at_css("table.reporting-sla-statuses"), pane
+      refute_includes session.response.body, "translation missing"
+    end
 
     viewer = create_viewer
     viewer_session = authenticated_session(viewer)
     viewer_session.patch "/projects/#{@project.identifier}/reporting/settings", params: {reporting_setting: {hours_per_day: 4}}
     assert_equal 403, viewer_session.response.status
-    viewer_session.get "/projects/#{@project.identifier}/reporting/credit_policies/new"
+    viewer_session.get "/projects/#{@project.identifier}/reporting/credit_contracts/new"
     assert_equal 403, viewer_session.response.status
+    # The help page only needs the permission to view reporting.
+    viewer_session.get "/projects/#{@project.identifier}/reporting/help"
+    assert_equal 200, viewer_session.response.status
+    assert Nokogiri::HTML5(viewer_session.response.body).at_css(".reporting-help h3#envelopes")
   end
 
   def test_saving_settings_changes_the_dashboard
@@ -49,8 +69,8 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     session.patch "/projects/#{@project.identifier}/reporting/settings", params: {reporting_setting: {
       hours_per_day: "4", section_ids: ["", "run"],
       tracker_roles: {@tracker.id.to_s => "run", "999999" => "build"}
-    }}
-    assert_redirected_to_settings session
+    }, reporting_pane: "trackers"}
+    assert_redirected_to_settings session, pane: "trackers"
     setting = ReportingProjectSetting.find_by!(project: @project)
     assert_equal 4, setting.hours_per_day
     assert_equal [@tracker.id], setting.run_tracker_ids
@@ -62,7 +82,10 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     # 10 h estimated minus the child's 2 h spent, at 4 h per day.
     assert_equal 2.0, summary.fetch("remainingDays")
 
-    session.patch "/projects/#{@project.identifier}/reporting/settings", params: {reporting_setting: {section_ids: [""]}}
+    # Saving one pane leaves the others' values alone.
+    session.patch "/projects/#{@project.identifier}/reporting/settings", params: {reporting_setting: {section_ids: [""]}, reporting_pane: "bogus"}
+    assert_redirected_to_settings session
+    assert_equal [4, [@tracker.id]], setting.reload.then { |saved| [saved.hours_per_day, saved.run_tracker_ids] }
     session.get "/projects/#{@project.identifier}/reporting"
     assert_equal 200, session.response.status
     page = Nokogiri::HTML5(session.response.body)
@@ -106,61 +129,105 @@ class ReportingSettingsTest < ActionDispatch::IntegrationTest
     assert_equal 7, ReportingProjectSetting.find_by!(project: @project).hours_per_day
   end
 
-  def test_credit_policies_are_managed_from_the_project_settings
+  def test_contracts_are_managed_from_the_project_settings
     session = authenticated_session(@administrator)
-    session.get "/projects/#{@project.identifier}/reporting/credit_policies/new"
+    session.get "/projects/#{@project.identifier}/reporting/credit_contracts/new"
     assert_equal 200, session.response.status
     refute_includes session.response.body, "translation missing"
-    # Labels come from the plugin's field translations, not humanized column names.
-    assert_includes session.response.body, "Initial credit (days)"
-    session.post "/projects/#{@project.identifier}/reporting/credit_policies", params: {reporting_credit_policy: {
-      tracker_id: @tracker.id, name: "TMA", initial_credit_days: "20", anniversary_month: "1", anniversary_day: "1", enabled: "1",
-      reporting_credit_refills_attributes: {"0" => {month: "7", day: "1", credit_days: "5"}, "1" => {month: "", day: "", credit_days: ""}}
+    page = Nokogiri::HTML5(session.response.body)
+    # A new contract is prefilled with one envelope for all activities.
+    assert_equal "All activities", page.at_css("#reporting_credit_contract_envelopes_attributes_0_name")["value"]
+    assert page.at_css("#reporting_credit_contract_envelopes_attributes_0_other_activities[checked]")
+    assert page.at_css("a.reporting-help-link[href$='/reporting/help#envelopes']")
+
+    development = TimeEntryActivity.shared.active.first!
+    session.post "/projects/#{@project.identifier}/reporting/credit_contracts", params: {reporting_credit_contract: {
+      name: "TMA 2027", starts_on: "2027-01-01", ends_on: "2027-12-31", tracker_ids: ["", @tracker.id.to_s, "999999"],
+      envelopes_attributes: {
+        "0" => {name: "Development", days: "20", other_activities: "0", issue_privacy: "public", activity_ids: ["", development.id.to_s],
+                movements_attributes: {"0" => {date: "2027-06-01", days: "5", comment: "Amendment"}, "1" => {date: "", days: "", comment: ""}}},
+        "1" => {name: "", days: ""}
+      }
     }}
-    assert_redirected_to_settings session
-    policy = @project.reporting_credit_policies.find_by!(tracker: @tracker)
-    assert_equal [5], policy.reporting_credit_refills.map(&:credit_days)
+    assert_redirected_to_settings session, pane: "contracts"
+    contract = @project.reporting_credit_contracts.find_by!(name: "TMA 2027")
+    # Trackers outside the project are ignored; the blank envelope and movement rows too.
+    assert_equal [[@tracker.id], 1], [contract.tracker_ids, contract.envelopes.count]
+    assert_equal [[development.id], [5]], [contract.envelopes.first.activity_ids, contract.envelopes.first.movements.map(&:days)]
 
-    session.get "/projects/#{@project.identifier}/settings/reporting"
-    assert_includes Nokogiri::HTML5(session.response.body).css("table.reporting-credit-policies td").map(&:text), "TMA"
+    session.get "/projects/#{@project.identifier}/settings/reporting", params: {reporting_pane: "contracts"}
+    page = Nokogiri::HTML5(session.response.body)
+    assert_includes page.css("#reporting-contracts-upcoming td.name").map(&:text), "TMA 2027"
+    refute_includes session.response.body, "translation missing"
 
-    refill = policy.reporting_credit_refills.first
-    session.patch "/projects/#{@project.identifier}/reporting/credit_policies/#{policy.id}", params: {reporting_credit_policy: {
-      initial_credit_days: "-1", reporting_credit_refills_attributes: {"0" => {id: refill.id, _destroy: "1"}}
+    envelope = contract.envelopes.first
+    session.patch "/projects/#{@project.identifier}/reporting/credit_contracts/#{contract.id}", params: {reporting_credit_contract: {
+      ends_on: "2026-12-31"
     }}
     assert_equal 422, session.response.status
-    assert_equal 20, policy.reload.initial_credit_days
-    session.patch "/projects/#{@project.identifier}/reporting/credit_policies/#{policy.id}", params: {reporting_credit_policy: {
-      initial_credit_days: "30", reporting_credit_refills_attributes: {"0" => {id: refill.id, _destroy: "1"}}
+    assert_equal Date.new(2027, 12, 31), contract.reload.ends_on
+    session.patch "/projects/#{@project.identifier}/reporting/credit_contracts/#{contract.id}", params: {reporting_credit_contract: {
+      envelopes_attributes: {"0" => {id: envelope.id, days: "30", movements_attributes: {"0" => {id: envelope.movements.first.id, _destroy: "1"}}}}
     }}
-    assert_equal [30, []], [policy.reload.initial_credit_days, policy.reporting_credit_refills.to_a]
+    assert_redirected_to_settings session, pane: "contracts"
+    assert_equal [30, []], [envelope.reload.days, envelope.movements.to_a]
 
-    # A live policy from another project must remain inaccessible and unchanged.
+    # Renewing offers to carry the balance over; the days come from the server, not the form.
+    User.current = @administrator
+    TimeEntry.create!(project: @project, issue: @parent_issue, user: @administrator, activity: development, hours: 8, spent_on: Date.new(2027, 3, 1))
+    session.get "/projects/#{@project.identifier}/reporting/credit_contracts/#{contract.id}/renew"
+    page = Nokogiri::HTML5(session.response.body)
+    assert_equal ["2028-01-01", "2028-12-31"], %w[starts_on ends_on].map { |field| page.at_css("#reporting_credit_contract_#{field}")["value"] }
+    assert_includes page.text, "Carry over the 29d left"
+    refute_includes page.text, "Inactive Activity"
+    session.post "/projects/#{@project.identifier}/reporting/credit_contracts", params: {reporting_credit_contract: {
+      name: "TMA 2028", starts_on: "2028-01-01", ends_on: "2028-12-31", tracker_ids: [@tracker.id.to_s],
+      envelopes_attributes: {"0" => {name: "Development", days: "20", issue_privacy: "public", activity_ids: [development.id.to_s],
+                                     carry_source_id: envelope.id.to_s, carry: "1", movements_attributes: {"0" => {date: "2028-02-01", days: "999"}}}}
+    }}
+    assert_redirected_to_settings session, pane: "contracts"
+    renewal = @project.reporting_credit_contracts.find_by!(name: "TMA 2028").envelopes.first
+    carried = renewal.movements.find_by!(source_envelope_id: envelope.id)
+    assert_equal [Date.new(2028, 1, 1), 29, "Carried over from TMA 2027 (Development)"], [carried.date, carried.days, carried.comment]
+
+    # A contract from another project must remain inaccessible and unchanged.
     viewer = create_viewer
     viewer.members.first.roles.first.update!(permissions: [:view_reporting, :manage_reporting, :view_issues])
     restricted = authenticated_session(viewer)
-    foreign = @outside.reporting_credit_policies.create!(tracker: @tracker, name: "Other budget", initial_credit_days: 42,
-                                                        anniversary_month: 1, anniversary_day: 1)
-    path = "/projects/#{@project.identifier}/reporting/credit_policies/#{foreign.id}"
+    foreign = @outside.reporting_credit_contracts.create!(name: "Other budget", starts_on: Date.new(2027, 1, 1), ends_on: Date.new(2027, 12, 31),
+                                                        tracker_ids: [@tracker.id], envelopes_attributes: [{name: "All", days: 42, other_activities: true}])
+    path = "/projects/#{@project.identifier}/reporting/credit_contracts/#{foreign.id}"
     restricted.get "#{path}/edit"
     assert_equal 404, restricted.response.status
-    restricted.patch path, params: {reporting_credit_policy: {initial_credit_days: 999}}
+    restricted.get "#{path}/renew"
+    assert_equal 404, restricted.response.status
+    restricted.patch path, params: {reporting_credit_contract: {name: "Changed"}}
     assert_equal 404, restricted.response.status
     restricted.delete path
     assert_equal 404, restricted.response.status
-    assert_equal 42, foreign.reload.initial_credit_days
-    restricted.get "/projects/#{@outside.identifier}/reporting/credit_policies/#{foreign.id}/edit"
+    assert_equal "Other budget", foreign.reload.name
+    # Nor can its balance be carried into this project.
+    restricted.post "/projects/#{@project.identifier}/reporting/credit_contracts", params: {reporting_credit_contract: {
+      name: "Stolen", starts_on: "2029-01-01", ends_on: "2029-12-31", tracker_ids: [@tracker.id.to_s],
+      envelopes_attributes: {"0" => {name: "All", days: "1", other_activities: "1", carry_source_id: foreign.envelopes.first.id.to_s, carry: "1"}}
+    }}
+    assert_empty @project.reporting_credit_contracts.find_by!(name: "Stolen").envelopes.first.movements
+    restricted.get "/projects/#{@outside.identifier}/reporting/credit_contracts/#{foreign.id}/edit"
     assert_equal 403, restricted.response.status
 
-    session.delete "/projects/#{@project.identifier}/reporting/credit_policies/#{policy.id}"
-    refute ReportingCreditPolicy.exists?(policy.id)
+    session.delete "/projects/#{@project.identifier}/reporting/credit_contracts/#{contract.id}"
+    refute ReportingCreditContract.exists?(contract.id)
+    assert_nil carried.reload.source_envelope_id
   end
 
   private
 
-  def assert_redirected_to_settings(session)
+  def assert_redirected_to_settings(session, pane: nil)
     assert_equal 302, session.response.status
-    assert_equal "/projects/#{@project.identifier}/settings/reporting", URI(session.response.location).path
+    location = URI(session.response.location)
+    assert_equal "/projects/#{@project.identifier}/settings/reporting", location.path
+    selected = Rack::Utils.parse_query(location.query.to_s)["reporting_pane"]
+    pane ? assert_equal(pane, selected) : assert_nil(selected)
   end
 
   # Reloaded first: Redmine caches enabled modules on the project object.

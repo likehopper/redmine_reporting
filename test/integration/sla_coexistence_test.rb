@@ -34,6 +34,8 @@ if Redmine::Plugin.installed?(:redmine_sla)
       session = authenticated_session(@administrator)
       session.get "/projects/#{@project.identifier}/settings/reporting"
       assert_equal 200, session.response.status
+      assert_includes session.response.body, 'id="reporting-pane-sla_statuses"'
+      session.get "/projects/#{@project.identifier}/settings/reporting", params: {reporting_pane: "sla_statuses"}
       assert_includes session.response.body, "reporting-sla-statuses"
       session.get "/projects/#{@project.identifier}/reporting"
       assert_equal 200, session.response.status

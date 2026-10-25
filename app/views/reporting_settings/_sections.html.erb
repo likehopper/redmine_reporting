@@ -1,0 +1,36 @@
+<%#
+File: redmine_reporting/app/views/reporting_settings/_sections.html.erb
+
+Redmine Reporting - project reporting plugin
+SPDX-License-Identifier: GPL-2.0-or-later
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+-%>
+<div class="box tabular">
+  <%= hidden_field_tag "reporting_setting[section_ids][]", "", id: nil %>
+  <% page.sections.each do |section| %>
+    <p>
+      <label for="reporting_section_<%= section.id %>"><%= l(:"reporting.settings.section.#{section.id}") %></label>
+      <%= check_box_tag "reporting_setting[section_ids][]", section.id, setting.section_enabled?(section.id),
+            id: "reporting_section_#{section.id}", disabled: !section.selectable? %>
+      <em class="info">
+        <%= l(:"reporting.settings.section_desc.#{section.id}") %>
+        <% if section.requires == :sla %>
+          · <%= l(:"reporting.settings.sla.#{sla.state}") %>
+        <% end %>
+        <% if section.planned %>· <strong><%= l(:"reporting.settings.planned") %></strong><% end %>
+      </em>
+    </p>
+  <% end %>
+</div>

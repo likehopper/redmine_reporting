@@ -29,7 +29,7 @@ module RedmineReporting
 
       attr_reader :data
 
-      delegate :grid, :timelines, :time_entries, :spent_time, :policies, :first_day, :last_day, :days, to: :data
+      delegate :grid, :timelines, :time_entries, :spent_time, :first_day, :last_day, :days, to: :data
 
       # Redmine records in Redmine's own order (tracker, status and enumeration positions).
       def sorted(records)

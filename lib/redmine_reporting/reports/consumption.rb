@@ -20,54 +20,55 @@
 module RedmineReporting
   module Reports
     # What the client had, consumed and has left, over the selected period and over the
-    # contract. Each subproject is an account of its own; the project's figures add them up,
-    # so its summary rows and each subproject's own report agree.
+    # contracts, contract by contract and envelope by envelope. Contracts add up month by
+    # month: each one starts from its own credit and stops at its end, so an overrun on one
+    # never eats another one's credit. Time no contract takes is shown apart.
     class Consumption < Base
       def to_h
-        period = CreditLedger.sum(accounts.map { |account| account.ledger(period_months) })
+        period = ledger(period_months)
         {
-          period: series(period).merge(totals: totals(period)),
-          contract: series(CreditLedger.sum(accounts.map { |account| account.ledger(contract_months) })),
-          projects: accounts.length > 1 ? accounts.filter_map { |account| account_row(account) } : []
+          period: series(period).merge(totals: totals(period), outside: bucket_days(ContractFilters::NONE),
+                                       parent: bucket_days(ContractFilters::PARENT)),
+          contract: series(ledger(contract_months)),
+          contracts: contracts.filter_map { |contract| contract_row(contract) }
         }
       end
 
       private
 
+      def contracts
+        data.contracts
+      end
+
       def period_months
         @period_months ||= PeriodGrid.new(first_day, last_day, "month")
       end
 
-      # From the earliest credit start, or the period start when no credit applies.
+      # From the earliest contract start, or the period start without contracts.
       def contract_months
-        start = accounts.filter_map(&:start).min
+        start = contracts.map(&:starts_on).min
         PeriodGrid.new(start ? [start, last_day].min : first_day, last_day, "month")
       end
 
-      # The displayed project for its own credits and time, then each direct subproject with
-      # its whole subtree; a single account when there is nothing to break down.
-      def accounts
-        @accounts ||= begin
-          projects = data.credit_projects
-          root = data.query.project
-          branches = branches(root, projects)
-          branches = [[root, projects.map(&:id)]] if branches.length < 2
-          branches.map do |project, ids|
-            CreditAccount.new(project: project, project_ids: ids, data: data,
-                              policies: policies.select { |policy| ids.include?(policy.project_id) })
-          end
-        end
+      def ledger(grid)
+        return CreditLedger.build(envelopes: [], spent_days: {}, months: grid) if contracts.empty?
+
+        CreditLedger.sum(contracts.map { |contract| data.contract_account(contract).ledger_on(grid) })
       end
 
-      def branches(root, projects)
-        return [] unless root && projects.length > 1
+      # Time outside contracts or covered by a parent's, when the selection shows it.
+      def bucket_days(bucket)
+        return if bucket == ContractFilters::PARENT && data.query.contract_filter_parents.empty?
+        return unless bucket_selected?(bucket)
 
-        list = projects.include?(root) ? [[root, [root.id]]] : []
-        root.children.visible(data.user).sort_by(&:lft).each do |child|
-          ids = projects.select { |project| project.lft >= child.lft && project.rgt <= child.rgt }.map(&:id)
-          list << [child, ids] if ids.any?
-        end
-        list
+        round(data.unchargeable_days(bucket, first_day, last_day))
+      end
+
+      def bucket_selected?(bucket)
+        query = data.query
+        return true unless query.has_filter?("reporting_contract")
+
+        query.values_for("reporting_contract").include?(bucket) == (query.operator_for("reporting_contract") == "=")
       end
 
       def totals(ledger)
@@ -75,13 +76,29 @@ module RedmineReporting
          consumed: round(ledger.consumed), remaining: round(ledger.remaining), progress: ledger.progress}
       end
 
-      def account_row(account)
-        ledger = account.ledger(period_months)
-        return if ledger.available.zero? && ledger.consumed.zero? && ledger.opening_balance.zero?
+      # Only contracts running at some point of the period.
+      def contract_row(contract)
+        account = data.contract_account(contract)
+        ledger = account.ledger(first_day, last_day)
+        return unless ledger
 
-        project = account.project
-        {id: project.id, identifier: project.identifier, name: project.name, own: project == data.query.project,
-         **totals(ledger)}
+        project = contract.project
+        envelopes = account.envelopes.filter_map do |envelope|
+          envelope_ledger = account.envelope_ledger(envelope, first_day, last_day)
+          {name: envelope.name, **totals(envelope_ledger), **closing(account, envelope)}
+        end
+        {id: contract.id, name: contract.name, project: project.name, identifier: project.identifier,
+         own: project == data.query.project, from: contract.starts_on.iso8601, to: contract.ends_on.iso8601,
+         ended: contract.ends_on <= last_day, **totals(ledger),
+         closing: round(envelopes.sum { |envelope| envelope[:closing] || 0 }),
+         carried: round(envelopes.sum { |envelope| envelope[:carried] || 0 }), envelopes: envelopes}
+      end
+
+      # Balance left on the contract's last day, and what the next contract took over.
+      def closing(account, envelope)
+        return {} unless account.contract.ends_on <= last_day
+
+        {closing: round(account.closing_balance(envelope)), carried: round(account.carried_out(envelope))}
       end
 
       def series(ledger)
@@ -90,6 +107,7 @@ module RedmineReporting
           labels: rows.map { |row| row.period.label },
           periodStarts: rows.map { |row| row.period.start },
           periodRanges: rows.map { |row| {from: row.period.first_day.iso8601, to: row.period.last_day.iso8601} },
+          contractIds: contracts.map(&:id),
           spent: rows.map { |row| round(row.spent) },
           refills: rows.map { |row| round(row.refilled) },
           grants: rows.map { |row| round(row.granted) },

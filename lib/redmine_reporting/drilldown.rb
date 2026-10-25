@@ -38,9 +38,11 @@ module RedmineReporting
         filters = filters.except("fixed_version_id")
       end
       filters.each do |field, filter|
-        @query.add_filter(native_field(field), filter[:operator], filter[:values].dup)
+        values = field == "reporting_contract" ? native_contracts(filter[:values]) : filter[:values].dup
+        @query.add_filter(native_field(field), filter[:operator], values)
       end
       apply_selection
+      apply_contracts
     end
 
     def path
@@ -51,6 +53,22 @@ module RedmineReporting
 
     def list_options
       {}
+    end
+
+    # Credit figures open the time of their contracts only; the outside and parent cards
+    # the time no contract, or an ancestor's, takes.
+    def apply_contracts
+      restrict("reporting_contract", @parameters[:contracts].to_s.split(",")) if @parameters.key?(:contracts)
+      bucket = @parameters[:bucket].to_s
+      restrict("reporting_contract", native_contracts([bucket])) if [ContractFilters::NONE, ContractFilters::PARENT].include?(bucket)
+    end
+
+    # Native lists have no project to find a parent's contracts from: they get their IDs.
+    def native_contracts(values)
+      values = values.map(&:to_s)
+      return values unless values.include?(ContractFilters::PARENT)
+
+      values - [ContractFilters::PARENT] + @reporting_query.contract_filter_parents.map { |contract| contract.id.to_s }
     end
 
     def native_field(field)
@@ -201,12 +219,12 @@ module RedmineReporting
     end
 
     def native_field(field)
-      "issue.#{field}"
+      ReportingQuery::TIME_ENTRY_FIELDS.include?(field) ? field : "issue.#{field}"
     end
 
     def apply_selection
       # Null issue attributes must not include entries without an issue.
-      issue_filtered = @reporting_query.filters.keys.any? { |field| field != "project_id" }
+      issue_filtered = (@reporting_query.filters.keys - ["project_id", *ReportingQuery::TIME_ENTRY_FIELDS]).any?
       @query.add_filter("issue_id", "*", [""]) if issue_filtered
       apply_run_perimeter(issue_filtered)
       if %w[run build unclassified no_issue].include?(@parameters[:work_role])
