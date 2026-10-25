@@ -6,6 +6,19 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.5.1 validation — 2026-10-25
+
+This release adds SLA demo data and documentation. Locally, the demo smoke check passed
+on PostgreSQL 16 with redmine_sla v3.0.5, including the SLA report over the delays the
+SLA plugin computed (two SLA types, 120 ended delays each); Redmine 7.0.1 with SQLite ran
+141 tests and Redmine 6.1.4 with PostgreSQL 16 and redmine_sla v3.3.3 ran 146 tests,
+without failures or errors. The documentation screenshots were regenerated on
+PostgreSQL with redmine_sla v3.3.3. GitHub Actions results, including the new SLA demo
+job, are linked from the release pull request.
+
+The release-finalization changes only bump the version, date the changelog and
+update release validation documentation. Runtime fingerprints match the application files.
+
 ## Release 1.5.0 validation — 2026-10-25
 
 GitHub Actions passed all ten compatibility jobs for application commit

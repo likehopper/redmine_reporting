@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.1 — 2026-10-25
 
 - Demo data: with redmine_sla on PostgreSQL or MySQL, a demo SLA on the support trackers,
   whose delays the SLA plugin computes.
