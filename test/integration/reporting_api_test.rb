@@ -34,7 +34,11 @@ class ReportingApiTest < ActionDispatch::IntegrationTest
     Object.new.tap do |client|
       client.define_singleton_method(:get) do |path, params = {}|
         test.get("/#{path}", params: params, headers: test.instance_variable_get(:@key))
-        test.assert_response :success
+        unless test.response.successful?
+          refusal = test.response.headers["X-Mirror-Source-Refusal"]
+          detail = refusal ? " (Mirror source: #{refusal})" : ""
+          raise RedmineMirror::Error, "Redmine API returned HTTP #{test.response.status} for GET #{path}#{detail}"
+        end
         test.response.parsed_body
       end
     end
@@ -134,6 +138,32 @@ class ReportingApiTest < ActionDispatch::IntegrationTest
     contract = @outside.reporting_credit_contracts.first!
     assert_equal ["Support", [activity.id], [2.0]],
                  [contract.name, contract.envelopes.first.activity_ids, contract.envelopes.first.movements.map { |movement| movement.days.to_f }]
+  end
+
+  def test_mirror_exposes_one_reporting_module_and_mapping_page
+    skip "Redmine Mirror is not installed" unless Redmine::Plugin.installed?(:redmine_mirror)
+    @project.enable_module!(:mirror)
+    setting = MirrorProjectSetting.new(project: @project, source_url: "https://source.example", source_project_id: 7,
+      source_project_identifier: "source", catalog_status: "ready")
+    setting.selected_modules = ["reporting_settings"]
+    setting.source_catalog = {"source_modules" => %w[reporting], "tracker" => {@tracker.id.to_s => @tracker.name},
+                              "activity" => {}, "module_statistics" => {}}
+    setting.save!(validate: false)
+    session = authenticated_session(@administrator)
+
+    session.get "/projects/#{@project.identifier}/settings", params: {tab: "mirror"}
+    page = Nokogiri::HTML(session.response.body)
+    assert_equal 1, page.css("#connection_modules_reporting_settings").size
+    assert_empty page.css("#connection_modules_reporting_credit_contracts")
+
+    session.get "/projects/#{@project.identifier}/settings", params: {tab: "mirror", mirror_tab: "modules"}
+    page = Nokogiri::HTML(session.response.body)
+    assert_equal ["Reporting"], page.css("#mirror-module-list tbody tr td:first-child").map { |cell| cell.text.strip }
+
+    session.get "/projects/#{@project.identifier}/settings", params: {tab: "mirror", mirror_tab: "reporting_settings"}
+    page = Nokogiri::HTML(session.response.body)
+    assert_equal 1, page.css("#mirror-table-tracker").size
+    assert_equal 1, page.css("#mirror-table-activity").size
   end
 
   def test_reading_the_configuration_requires_the_manage_permission

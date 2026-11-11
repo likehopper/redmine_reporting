@@ -26,6 +26,7 @@ module RedmineReporting
     # its Mirror correspondence. The source only needs the read-only REST API.
     class Base < RedmineMirror::Adapters::Base
       def api_version; 1; end
+      def project_module; :reporting; end
 
       def mapping_tables
         [RedmineMirror::MappingTable.new("tracker")]
@@ -82,6 +83,17 @@ module RedmineReporting
     # owned by the source project is copied: inherited or default values stay with their owner.
     class Settings < Base
       def key; "reporting_settings"; end
+      def dependencies; ["reporting_credit_contracts"]; end
+
+      # Reporting is configured as one Mirror module. Contracts keep their own
+      # execution key, while this page owns every reference the feature needs.
+      def mapping_tables
+        super + [RedmineMirror::MappingTable.new("activity")]
+      end
+
+      def catalog_references(client, project_id)
+        super.merge("activity" => client.get("enumerations/time_entry_activities.json").fetch("time_entry_activities"))
+      end
 
       def records(client, project_id)
         setting = client.get("projects/#{Integer(project_id)}/reporting/settings.json").fetch("reporting_setting")
@@ -129,14 +141,11 @@ module RedmineReporting
     # and a contract left without any tracker is ignored. Carry-over links stay on the source.
     class CreditContracts < Base
       def key; "reporting_credit_contracts"; end
+      def selectable?; false; end
+      def configuration_parent; "reporting_settings"; end
 
-      def mapping_tables
-        super + [RedmineMirror::MappingTable.new("activity")]
-      end
-
-      def catalog_references(client, project_id)
-        super.merge("activity" => client.get("enumerations/time_entry_activities.json").fetch("time_entry_activities"))
-      end
+      def mapping_tables; super + [RedmineMirror::MappingTable.new("activity")]; end
+      def catalog_references(_client, _project_id); {}; end
 
       def records(client, project_id)
         path = "projects/#{Integer(project_id)}/reporting/credit_contracts.json"

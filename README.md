@@ -314,12 +314,12 @@ configuration (read-only):
 ### Redmine Mirror
 
 When [Redmine Mirror](https://www.redmine.org/plugins/redmine_mirror) is installed on
-the destination, it offers two modules: **Reporting settings** and **Reporting credit
-contracts**. They copy a project's own settings and its contracts from a source Redmine
-running the same Reporting release, mapping trackers and activities through Mirror's
-tables; an ignored tracker or activity is left out, and a contract left without tracker
-is ignored. Carry-over links stay on the source. Local changes are reported as Mirror
-conflicts, never overwritten; deletions are not copied.
+the destination, it offers one **Reporting** module. It copies a project's own settings
+and contracts from a source Redmine running the same Reporting release, with trackers
+and activities validated on the same mapping page. An ignored tracker or activity is
+left out, and a contract left without tracker is ignored. Carry-over links stay on the
+source. Local changes are reported as Mirror conflicts, never overwritten; deletions
+are not copied.
 
 ## Demo data
 
