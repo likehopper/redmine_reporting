@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.5.2 — 2026-11-12
 
 - Redmine Mirror exposes one **Reporting** module and mapping page for the plugin's
   settings and credit contracts. It follows the source project's Reporting module, so
