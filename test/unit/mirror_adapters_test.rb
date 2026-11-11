@@ -49,7 +49,8 @@ class ReportingMirrorAdaptersTest < ActiveSupport::TestCase
       adapter = RedmineMirror::REGISTRY[key]
       assert_kind_of RedmineReporting::MirrorAdapters::Base, adapter
       assert adapter.available?
-      assert_equal "Reporting settings", I18n.t(adapter.label, locale: :en) if key == "reporting_settings"
+      assert_equal :reporting, adapter.project_module
+      assert_equal "Reporting", I18n.t(adapter.label, locale: :en) if key == "reporting_settings"
     end
     # init.rb runs again after a code reload; registering twice is harmless.
     RedmineReporting::MirrorAdapters.register
@@ -57,6 +58,10 @@ class ReportingMirrorAdaptersTest < ActiveSupport::TestCase
     assert_equal "/projects/#{@project.identifier}/reporting/credit_contracts/3/edit",
                  RedmineMirror::REGISTRY["reporting_credit_contracts"].local_path(3, @project)
     assert_equal %w[tracker activity], RedmineMirror::REGISTRY["reporting_credit_contracts"].mapping_tables.map(&:key)
+    assert_equal %w[tracker activity], RedmineMirror::REGISTRY["reporting_settings"].mapping_tables.map(&:key)
+    refute RedmineMirror::REGISTRY["reporting_credit_contracts"].selectable?
+    assert_equal "reporting_settings", RedmineMirror::REGISTRY["reporting_credit_contracts"].configuration_parent
+    assert_equal %w[reporting_credit_contracts reporting_settings], RedmineMirror::REGISTRY.resolve(["reporting_settings"]).map(&:key)
     assert_equal "projects/7/settings/reporting", RedmineMirror::REGISTRY["reporting_settings"].remote_path(1, setting)
   end
 

@@ -1,6 +1,6 @@
 # <img src="assets/images/rapport-dactivite-64.png" width="64" height="64" alt=""> Redmine Reporting
 
-![Version](https://img.shields.io/badge/Version-1.5.1-orange)
+![Version](https://img.shields.io/badge/Version-1.5.2-orange)
 ![Redmine Version](https://img.shields.io/badge/Redmine-5.0--7.0-blue)
 ![Ruby](https://img.shields.io/badge/Ruby-3.1+-red)
 ![Rails](https://img.shields.io/badge/Rails-6.1+-brightgreen)
@@ -17,7 +17,7 @@ consumption, backlog and performance, computed from Redmine's own issues and tim
 entries. Chart selections and linked summary figures open native Redmine lists,
 with their filters, columns, sorting and exports.
 
-Version 1.5.1 covers **Run**, **Run & Support (SLA)**, **Build & Projects** and
+Version 1.5.2 covers **Run**, **Run & Support (SLA)**, **Build & Projects** and
 **Workload & Team** reports.
 
 ## Requirements
@@ -314,12 +314,12 @@ configuration (read-only):
 ### Redmine Mirror
 
 When [Redmine Mirror](https://www.redmine.org/plugins/redmine_mirror) is installed on
-the destination, it offers two modules: **Reporting settings** and **Reporting credit
-contracts**. They copy a project's own settings and its contracts from a source Redmine
-running the same Reporting release, mapping trackers and activities through Mirror's
-tables; an ignored tracker or activity is left out, and a contract left without tracker
-is ignored. Carry-over links stay on the source. Local changes are reported as Mirror
-conflicts, never overwritten; deletions are not copied.
+the destination, it offers one **Reporting** module. It copies a project's own settings
+and contracts from a source Redmine running the same Reporting release, with trackers
+and activities validated on the same mapping page. An ignored tracker or activity is
+left out, and a contract left without tracker is ignored. Carry-over links stay on the
+source. Local changes are reported as Mirror conflicts, never overwritten; deletions
+are not copied.
 
 ## Demo data
 

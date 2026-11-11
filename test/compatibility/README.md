@@ -6,6 +6,17 @@ it is not advertised as supported. Re-run the matrix when a release is available
 
 ## Validation
 
+## Release 1.5.2 validation — 2026-11-12
+
+The exact candidate, with Redmine Mirror 1.0.0-beta.42 mounted, passed locally on
+Redmine 6.1.4 / Ruby 3.4.11 / Rails 7.2.3.2 / SQLite 3: 142 tests and 1,323
+assertions, without failures, errors or skips. This includes Chromium, fresh
+installation, rollback/reinstallation, both Reporting Mirror adapters, and the
+rendered single Reporting module with its tracker and activity mapping tables.
+The GitHub compatibility workflow separately validates the five declared Redmine
+versions, PostgreSQL, MariaDB, strict MySQL, SLA coexistence and demo data on the
+release commit; those results must pass before tagging.
+
 ## Release 1.5.1 validation — 2026-10-25
 
 This release adds SLA demo data and documentation. Locally, the demo smoke check passed

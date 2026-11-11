@@ -17,7 +17,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 en:
   # Redmine Mirror modules (used only when Mirror is installed).
-  label_mirror_module_reporting_settings: "Reporting settings"
+  label_mirror_module_reporting_settings: "Reporting"
   label_mirror_module_reporting_credit_contracts: "Reporting credit contracts"
   label_reporting_backlog_on: "Open at date (status history)"
   label_reporting_invalid_range: "Invalid date range: use dates between 1900 and 2200 and at most %{count} periods."

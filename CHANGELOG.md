@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.5.2 — 2026-11-12
+
+- Redmine Mirror exposes one **Reporting** module and mapping page for the plugin's
+  settings and credit contracts. It follows the source project's Reporting module, so
+  unavailable data is greyed instead of reported as two failing pseudo-modules.
+
 ## 1.5.1 — 2026-10-25
 
 - Demo data: with redmine_sla on PostgreSQL or MySQL, a demo SLA on the support trackers,
